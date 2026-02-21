@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NEWSCAT - Ultra-Fast Multi-Modal AI News Classification System">
+    <meta name="theme-color" content="#6366f1">
+    <title>NEWSCAT | AI News Classification</title>
+
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%236366f1'/><stop offset='100%' style='stop-color:%23a855f7'/></linearGradient></defs><rect fill='url(%23g)' rx='22' width='100' height='100'/><text x='50%' y='58%' dominant-baseline='middle' text-anchor='middle' font-size='55' font-weight='bold' fill='white'>N</text></svg>">
+</head>
+
+<body>
+    <!-- Animated Background -->
+    <div class="bg-container">
+        <div class="bg-mesh"></div>
+        <div class="bg-gradient-orbs">
+            <div class="gradient-orb orb-1"></div>
+            <div class="gradient-orb orb-2"></div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div class="notification-container" id="notification-container"></div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner-container">
+            <div class="loading-pulse">
+                <i class="fas fa-bolt"
+                    style="font-size: 32px; color: white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);"></i>
+            </div>
+            <div class="loading-text" id="loading-text">Analyzing...</div>
+            <div class="loading-subtext" id="loading-subtext">Please wait while we process your content</div>
+            <div class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="app-wrapper">
+        <!-- Navigation -->
+        <nav class="main-nav">
+            <div class="nav-container">
+                <div class="nav-brand">
+                    <div class="brand-logo">
+                        <div class="logo-inner">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                    </div>
+                    <div class="brand-text">
+                        <span class="brand-name">NEWSCAT</span>
+                        <span class="brand-version">v4.1 Optimized</span>
+                    </div>
+                </div>
+
+                <div class="nav-status">
+                    <div class="status-pill" id="model-status">
+                        <span class="status-indicator"></span>
+                        <span class="status-label">Loading...</span>
+                    </div>
+                </div>
+
+                <div class="nav-stats">
+                    <div class="nav-stat">
+                        <span class="nav-stat-value" id="speed-indicator">~15ms</span>
+                        <span class="nav-stat-label">Speed</span>
+                    </div>
+                    <div class="nav-stat-divider"></div>
+                    <div class="nav-stat">
+                        <span class="nav-stat-value">98%</span>
+                        <span class="nav-stat-label">Accuracy</span>
+                    </div>
+                    <div class="nav-stat-divider"></div>
+                    <div class="nav-stat">
+                        <span class="nav-stat-value">10</span>
+                        <span class="nav-stat-label">Categories</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <i class="fas fa-rocket"></i>
+                    <span>Ultra-Fast AI Classification</span>
+                </div>
+                <h1 class="hero-title">
+                    <span class="title-line">Multi-Modal</span>
+                    <span class="title-gradient">News Classification</span>
+                </h1>
+                <p class="hero-description">
+                    Analyze news from <strong>Text</strong>, <strong>Images</strong>, <strong>Audio</strong>, and
+                    <strong>Video</strong>
+                    with optimized AI models delivering 98% accuracy in milliseconds
+                </p>
+
+                <!-- Input Type Selector -->
+                <div class="input-selector">
+                    <button class="selector-btn active" data-type="text" onclick="switchInputType('text')">
+                        <i class="fas fa-align-left"></i>
+                        <span>Text</span>
+                    </button>
+                    <button class="selector-btn" data-type="image" onclick="switchInputType('image')">
+                        <i class="fas fa-image"></i>
+                        <span>Image</span>
+                    </button>
+                    <button class="selector-btn" data-type="audio" onclick="switchInputType('audio')">
+                        <i class="fas fa-microphone"></i>
+                        <span>Audio</span>
+                    </button>
+                    <button class="selector-btn" data-type="video" onclick="switchInputType('video')">
+                        <i class="fas fa-video"></i>
+                        <span>Video</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Text Input Panel -->
+            <div class="input-panel active" id="text-panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-newspaper"></i> Enter News Article</h3>
+                    <div class="sample-buttons">
+                        <button class="sample-btn" onclick="loadSample('tech')">Tech</button>
+                        <button class="sample-btn" onclick="loadSample('sports')">Sports</button>
+                        <button class="sample-btn" onclick="loadSample('politics')">Politics</button>
+                        <button class="sample-btn" onclick="loadSample('business')">Business</button>
+                    </div>
+                </div>
+                <div class="textarea-wrapper">
+                    <textarea id="news-text"
+                        placeholder="Paste or type your news article here... (minimum 20 characters)"
+                        rows="8"></textarea>
+                    <div class="textarea-footer">
+                        <span class="char-count"><span id="char-count">0</span> characters</span>
+                        <button class="clear-btn" onclick="clearText()">
+                            <i class="fas fa-times"></i> Clear
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image Input Panel -->
+            <div class="input-panel" id="image-panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-image"></i> Upload Image</h3>
+                </div>
+                <div class="file-upload-area" id="image-drop-zone">
+                    <input type="file" id="image-input" accept="image/*" hidden
+                        onchange="handleFileSelect(event, 'image')">
+                    <div class="upload-content" onclick="document.getElementById('image-input').click()">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Drag & drop an image or click to browse</p>
+                        <span>JPG, PNG, GIF up to 10MB</span>
+                    </div>
+                    <div class="file-preview" id="image-preview" style="display: none;">
+                        <img id="image-preview-img" src="" alt="Preview">
+                        <button class="remove-file-btn" onclick="removeFile('image')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audio Input Panel -->
+            <div class="input-panel" id="audio-panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-microphone"></i> Upload Audio</h3>
+                </div>
+                <div class="file-upload-area" id="audio-drop-zone">
+                    <input type="file" id="audio-input" accept="audio/*" hidden
+                        onchange="handleFileSelect(event, 'audio')">
+                    <div class="upload-content" onclick="document.getElementById('audio-input').click()">
+                        <i class="fas fa-music"></i>
+                        <p>Drag & drop an audio file or click to browse</p>
+                        <span>MP3, WAV, M4A up to 50MB</span>
+                    </div>
+                    <div class="file-info" id="audio-info" style="display: none;">
+                        <i class="fas fa-file-audio"></i>
+                        <span id="audio-filename"></span>
+                        <button class="remove-file-btn" onclick="removeFile('audio')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Video Input Panel -->
+            <div class="input-panel" id="video-panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-video"></i> Upload Video</h3>
+                </div>
+                <div class="file-upload-area" id="video-drop-zone">
+                    <input type="file" id="video-input" accept="video/*" hidden
+                        onchange="handleFileSelect(event, 'video')">
+                    <div class="upload-content" onclick="document.getElementById('video-input').click()">
+                        <i class="fas fa-film"></i>
+                        <p>Drag & drop a video file or click to browse</p>
+                        <span>MP4, MOV, AVI up to 100MB</span>
+                    </div>
+                    <div class="file-info" id="video-info" style="display: none;">
+                        <i class="fas fa-file-video"></i>
+                        <span id="video-filename"></span>
+                        <button class="remove-file-btn" onclick="removeFile('video')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analyze Button -->
+            <div class="analyze-section">
+                <button class="analyze-btn" id="analyze-btn" onclick="analyzeContent()" disabled>
+                    <span class="btn-text">
+                        <i class="fas fa-bolt"></i>
+                        Analyze
+                    </span>
+                    <span class="btn-loading" style="display: none;">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        Processing...
+                    </span>
+                </button>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section" id="results-section" style="display: none;">
+                <div class="results-header">
+                    <h3><i class="fas fa-chart-pie"></i> Classification Results</h3>
+                    <div class="result-meta" id="result-meta"></div>
+                </div>
+
+                <div class="results-grid">
+                    <!-- Main Result Card -->
+                    <div class="result-card main-result" id="main-result">
+                        <div class="result-icon">
+                            <i class="fas fa-tag"></i>
+                        </div>
+                        <div class="result-content">
+                            <span class="result-label">Category</span>
+                            <span class="result-value" id="result-category">-</span>
+                        </div>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" id="confidence-fill"></div>
+                        </div>
+                        <span class="confidence-value" id="result-confidence">0%</span>
+                    </div>
+
+                    <!-- Processing Time Card -->
+                    <div class="result-card time-result">
+                        <div class="result-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="result-content">
+                            <span class="result-label">Processing Time</span>
+                            <span class="result-value" id="result-time">-</span>
+                        </div>
+                    </div>
+
+                    <!-- Model Info Card -->
+                    <div class="result-card model-result">
+                        <div class="result-icon">
+                            <i class="fas fa-microchip"></i>
+                        </div>
+                        <div class="result-content">
+                            <span class="result-label">Model</span>
+                            <span class="result-value" id="result-model">-</span>
+                        </div>
+                    </div>
+
+                    <!-- Cache Status Card -->
+                    <div class="result-card cache-result" id="cache-result">
+                        <div class="result-icon">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div class="result-content">
+                            <span class="result-label">Cache</span>
+                            <span class="result-value" id="result-cache">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Predictions -->
+                <div class="predictions-section" id="predictions-section">
+                    <h4><i class="fas fa-list-ol"></i> Top Predictions</h4>
+                    <div class="predictions-list" id="predictions-list"></div>
+                </div>
+
+                <!-- Keywords Section -->
+                <div class="keywords-section" id="keywords-section" style="display: none;">
+                    <h4><i class="fas fa-key"></i> Extracted Keywords</h4>
+                    <div class="keywords-list" id="keywords-list"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <div class="footer-content">
+                <p>NEWSCAT v4.1 - Optimized Multi-Modal AI Classification</p>
+                <div class="footer-links">
+                    <a href="#" onclick="showApiInfo()"><i class="fas fa-code"></i> API</a>
+                    <a href="#" onclick="showModelInfo()"><i class="fas fa-brain"></i> Models</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/main.js"></script>
+</body>
+
+</html>

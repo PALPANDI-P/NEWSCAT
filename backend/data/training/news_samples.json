@@ -1,0 +1,252 @@
+[
+    {
+        "id": 1,
+        "text": "Apple Inc. announced record quarterly earnings of $120 billion, driven by strong iPhone sales and growing Services revenue. CEO Tim Cook highlighted the company's expansion into emerging markets and the success of the new Apple Watch Series 9. The tech giant's stock surged 5% following the announcement, making Apple the world's most valuable company with a market cap of $3 trillion.",
+        "category": "technology"
+    },
+    {
+        "id": 2,
+        "text": "OpenAI has unveiled GPT-5, demonstrating unprecedented natural language capabilities. The model features enhanced reasoning and improved contextual awareness, potentially revolutionizing healthcare and education. Early tests show 40% improvement in complex problem-solving tasks compared to previous versions. The AI community has responded with both excitement and calls for responsible development guidelines.",
+        "category": "technology"
+    },
+    {
+        "id": 3,
+        "text": "Microsoft announced the acquisition of a leading cybersecurity startup for $2 billion, strengthening its enterprise security offerings. The deal includes advanced threat detection algorithms and a team of 200 security researchers. This move comes as businesses increasingly prioritize protection against ransomware and data breaches.",
+        "category": "technology"
+    },
+    {
+        "id": 4,
+        "text": "Google's quantum computer achieved a new milestone by solving complex optimization problems in seconds that would take classical computers thousands of years. The breakthrough could accelerate drug discovery and financial modeling. Researchers published their findings in Nature, demonstrating quantum supremacy in practical applications.",
+        "category": "technology"
+    },
+    {
+        "id": 5,
+        "text": "Tesla unveiled its next-generation electric vehicle battery technology, promising 500-mile range and 15-minute charging capability. The innovation uses new lithium-sulfur chemistry that reduces costs by 40%. Production is scheduled to begin at the Texas Gigafactory next year, potentially revolutionizing the EV market.",
+        "category": "technology"
+    },
+    {
+        "id": 6,
+        "text": "Manchester United defeated Liverpool 3-1 in a thrilling Premier League match at Old Trafford. Marcus Rashford scored twice, while Bruno Fernandes added a stunning free kick. The victory moves United into third place in the standings, just two points behind leaders Arsenal. Manager Erik ten Hag praised his team's fighting spirit.",
+        "category": "sports"
+    },
+    {
+        "id": 7,
+        "text": "In a stunning Wimbledon upset, unseeded Maria Rodriguez defeated reigning champion Novak Djokovic in straight sets 6-4, 7-5. The 21-year-old Spanish player showcased exceptional athleticism and strategic play, marking the first time in 15 years that a qualifier has reached the quarterfinals. Rodriguez will face world number one Carlos Alcaraz next.",
+        "category": "sports"
+    },
+    {
+        "id": 8,
+        "text": "The NBA All-Star Game delivered an exciting showcase of talent as Team LeBron defeated Team Durant 178-164. Giannis Antetokounmpo earned MVP honors with 35 points and 12 rebounds. The weekend also featured a record-breaking slam dunk contest where rookie Ja Morant jumped over three teammates for an incredible dunk.",
+        "category": "sports"
+    },
+    {
+        "id": 9,
+        "text": "The Kansas City Chiefs won Super Bowl LVIII in overtime, defeating the San Francisco 49ers 31-28. Patrick Mahomes threw for 378 yards and three touchdowns, including the game-winning pass to Travis Kelce. This marks the Chiefs' third championship in five years, cementing their dynasty status in NFL history.",
+        "category": "sports"
+    },
+    {
+        "id": 10,
+        "text": "Simone Biles made history at the World Gymnastics Championships by becoming the first gymnast to land a Yurchenko double pike vault in international competition. The four-time Olympic gold medalist added another gold to her collection, bringing her total to 37 world championship medals, the most by any gymnast in history.",
+        "category": "sports"
+    },
+    {
+        "id": 11,
+        "text": "The Senate passed a landmark $500 billion climate change bill today with bipartisan support, allocating funds for renewable energy initiatives and carbon capture technology. The legislation includes tax incentives for electric vehicles and funding for green infrastructure projects. President Biden is expected to sign the bill into law next week.",
+        "category": "politics"
+    },
+    {
+        "id": 12,
+        "text": "Congress approved a comprehensive immigration reform package that provides a pathway to citizenship for millions of undocumented immigrants. The bill also includes enhanced border security measures and reforms to the visa system. Both parties claimed victory, though critics on both sides expressed concerns about specific provisions.",
+        "category": "politics"
+    },
+    {
+        "id": 13,
+        "text": "The Supreme Court ruled 6-3 on a landmark case regarding digital privacy rights, establishing that law enforcement needs a warrant to access historical cell phone location data. The decision has significant implications for privacy in the digital age and could affect ongoing criminal investigations nationwide.",
+        "category": "politics"
+    },
+    {
+        "id": 14,
+        "text": "European Union leaders reached an agreement on a new trade deal with the United Kingdom, resolving post-Brexit tensions over Northern Ireland. The agreement reduces customs checks and eases the movement of goods between Great Britain and Northern Ireland. Both sides hailed the deal as a new chapter in EU-UK relations.",
+        "category": "politics"
+    },
+    {
+        "id": 15,
+        "text": "The United Nations Security Council passed a resolution authorizing humanitarian aid corridors in the conflict zone. The vote was 14-0 with one abstention, demonstrating rare international consensus. Aid organizations welcomed the decision, estimating it could help deliver critical supplies to over 2 million civilians.",
+        "category": "politics"
+    },
+    {
+        "id": 16,
+        "text": "Apple reported record quarterly earnings of $120 billion driven by strong iPhone sales and growing Services revenue. The company announced a $90 billion stock buyback program and increased its dividend by 10%. Analysts attribute the success to expansion into emerging markets and strong consumer loyalty.",
+        "category": "business"
+    },
+    {
+        "id": 17,
+        "text": "The Federal Reserve raised interest rates by 0.25 percentage points, signaling a more cautious approach to monetary tightening. Chairman Jerome Powell indicated that while inflation remains above target, the central bank sees signs of cooling. Markets responded positively, with the S&P 500 gaining 1.5% on the news.",
+        "category": "business"
+    },
+    {
+        "id": 18,
+        "text": "Amazon announced plans to hire 250,000 workers for the holiday season and invest $1.2 billion in employee education programs. The e-commerce giant also unveiled new warehouse automation technology designed to improve delivery speeds. Shares rose 3% on the announcements.",
+        "category": "business"
+    },
+    {
+        "id": 19,
+        "text": "Goldman Sachs reported better-than-expected quarterly profits, driven by strong performance in its trading division. Revenue reached $12.6 billion, exceeding analyst estimates. CEO David Solomon highlighted the firm's cost-cutting measures and strategic focus on core businesses as key factors in the results.",
+        "category": "business"
+    },
+    {
+        "id": 20,
+        "text": "Global oil prices surged 8% after OPEC+ announced unexpected production cuts of 1.5 million barrels per day. The decision caught markets by surprise and raised concerns about inflation. Energy stocks rallied while airlines and transportation companies warned of potential fare increases.",
+        "category": "business"
+    },
+    {
+        "id": 21,
+        "text": "The Academy Awards ceremony celebrated the best in film, with 'Oppenheimer' taking home Best Picture and Best Director for Christopher Nolan. Cillian Murphy won Best Actor for his portrayal of J. Robert Oppenheimer. The event featured moving tributes to cinema history and celebrated international filmmaking.",
+        "category": "entertainment"
+    },
+    {
+        "id": 22,
+        "text": "Taylor Swift's Eras Tour became the highest-grossing concert tour in history, surpassing $1 billion in ticket sales. The singer announced additional dates in Asia and Europe to meet overwhelming demand. Economists estimate the tour has generated over $5 billion in economic activity across host cities.",
+        "category": "entertainment"
+    },
+    {
+        "id": 23,
+        "text": "Netflix announced a groundbreaking partnership with major film studios to release highly anticipated movies simultaneously in theaters and on the streaming platform. The deal includes films from Warner Bros., Paramount, and Universal. Subscribers will have access to new releases at no additional cost.",
+        "category": "entertainment"
+    },
+    {
+        "id": 24,
+        "text": "The latest Marvel superhero film broke opening weekend box office records with $350 million domestically and $600 million globally. Critics praised the diverse cast and innovative visual effects. The film's success demonstrates continued audience appetite for the superhero genre despite recent market saturation.",
+        "category": "entertainment"
+    },
+    {
+        "id": 25,
+        "text": "Legendary actor Meryl Streep received a lifetime achievement award at the Golden Globes, celebrating her 50-year career in film. In her acceptance speech, she advocated for diversity in Hollywood and praised emerging talent. The ceremony also recognized breakthrough performances by several first-time nominees.",
+        "category": "entertainment"
+    },
+    {
+        "id": 26,
+        "text": "The FDA approved a groundbreaking new drug that shows 90% effectiveness in preventing Alzheimer's disease progression. Clinical trials demonstrated significant cognitive improvements in early-stage patients. The medication, developed over 15 years, represents a major breakthrough in neuroscience research.",
+        "category": "health"
+    },
+    {
+        "id": 27,
+        "text": "The World Health Organization declared the end of the global health emergency for COVID-19, marking a symbolic end to the pandemic phase. However, officials warned that the virus remains a significant health threat and urged continued vaccination efforts. Over 7 million deaths were recorded globally during the pandemic.",
+        "category": "health"
+    },
+    {
+        "id": 28,
+        "text": "Researchers at Johns Hopkins University announced a breakthrough in cancer treatment using personalized mRNA vaccines. Early trials showed 70% reduction in recurrence rates for melanoma patients. The approach could be adapted for other cancer types within the next five years.",
+        "category": "health"
+    },
+    {
+        "id": 29,
+        "text": "A new study published in the New England Journal of Medicine found that regular exercise reduces the risk of heart disease by 50% and stroke by 40%. The research followed 100,000 participants over 20 years. Doctors recommended at least 150 minutes of moderate activity per week for optimal health benefits.",
+        "category": "health"
+    },
+    {
+        "id": 30,
+        "text": "The CDC recommended a new respiratory syncytial virus (RSV) vaccine for all adults over 60, following clinical trials showing strong protection against severe illness. The vaccine is expected to prevent thousands of hospitalizations annually. Pharmacies will begin administering shots next month.",
+        "category": "health"
+    },
+    {
+        "id": 31,
+        "text": "NASA's James Webb Space Telescope captured stunning new images of distant galaxies, revealing previously unseen details of the early universe. The observations show galaxies forming just 300 million years after the Big Bang. Astronomers say the findings challenge current theories of cosmic evolution.",
+        "category": "science"
+    },
+    {
+        "id": 32,
+        "text": "Scientists at MIT achieved a breakthrough in nuclear fusion, sustaining a reaction that produced more energy than it consumed for the first time. The experiment generated 3.15 megajoules of energy from 2.05 megajoules of input. This milestone brings the dream of clean, limitless energy closer to reality.",
+        "category": "science"
+    },
+    {
+        "id": 33,
+        "text": "Researchers discovered a new species of dinosaur in Argentina, named 'Meraxes gigas,' with unusually short arms similar to T. rex. The finding suggests that reduced forelimbs evolved independently in multiple dinosaur lineages. The specimen is remarkably complete, with nearly all bones preserved.",
+        "category": "science"
+    },
+    {
+        "id": 34,
+        "text": "A team of geneticists successfully sequenced the complete genome of the giant squid, revealing surprising insights into its complex nervous system. The creature has over 35,000 genes, more than humans. The research could lead to new understanding of marine biology and evolution.",
+        "category": "science"
+    },
+    {
+        "id": 35,
+        "text": "Climate scientists reported that Antarctic ice shelves are melting faster than predicted, with some areas showing 40% more loss than previous estimates. The findings have significant implications for sea level rise projections. Researchers called for urgent action to reduce greenhouse gas emissions.",
+        "category": "science"
+    },
+    {
+        "id": 36,
+        "text": "The United Nations warned of a growing humanitarian crisis in the region, with over 5 million people facing acute food insecurity. Aid agencies are struggling to deliver supplies due to ongoing conflict. The World Food Programme appealed for $500 million in emergency funding.",
+        "category": "world"
+    },
+    {
+        "id": 37,
+        "text": "China and Russia signed a comprehensive strategic partnership agreement, deepening economic and military cooperation between the two nations. The deal includes energy projects worth $80 billion and joint military exercises. Western analysts view the alliance as a significant geopolitical shift.",
+        "category": "world"
+    },
+    {
+        "id": 38,
+        "text": "The African Union launched a continent-wide infrastructure initiative to connect all 54 member states through modern transportation networks. The $50 billion project includes highways, railways, and ports. Leaders say it will transform intra-African trade and economic development.",
+        "category": "world"
+    },
+    {
+        "id": 39,
+        "text": "Japan hosted the G7 summit, where leaders discussed global economic stability, climate change, and emerging technologies. The group announced coordinated sanctions against hostile nations and pledged $100 billion for developing nations' green energy transitions. The summit concluded with a joint declaration.",
+        "category": "world"
+    },
+    {
+        "id": 40,
+        "text": "India became the world's most populous nation with 1.43 billion people, surpassing China according to UN estimates. Demographers project the population will continue growing until 2060. The government announced new policies to address challenges in education, healthcare, and employment.",
+        "category": "world"
+    },
+    {
+        "id": 41,
+        "text": "Harvard University announced a revolutionary new online degree program offering full scholarships to students from developing nations. The initiative aims to democratize access to elite education. Initial applications exceeded 50,000 for 1,000 available spots in the first cohort.",
+        "category": "education"
+    },
+    {
+        "id": 42,
+        "text": "The Department of Education released new guidelines for student loan forgiveness, potentially canceling debt for 25 million borrowers. The plan targets those with low incomes and public service careers. Critics questioned the cost, while advocates called it a historic investment in the middle class.",
+        "category": "education"
+    },
+    {
+        "id": 43,
+        "text": "A major study found that students in schools with smaller class sizes score 15% higher on standardized tests. The research tracked 2 million students across 30 states. Education policymakers are calling for increased funding to reduce average class sizes nationwide.",
+        "category": "education"
+    },
+    {
+        "id": 44,
+        "text": "Oxford University researchers developed an AI-powered tutoring system that improved student learning outcomes by 40% in pilot programs. The technology adapts to individual learning styles and provides personalized feedback. Several school districts have announced plans to implement the system.",
+        "category": "education"
+    },
+    {
+        "id": 45,
+        "text": "The National Science Foundation awarded $1 billion in grants to universities for STEM education programs, focusing on underrepresented groups. The funding will support scholarships, research opportunities, and faculty development. Officials expect the investment to diversify the scientific workforce.",
+        "category": "education"
+    },
+    {
+        "id": 46,
+        "text": "The Amazon rainforest experienced its lowest deforestation rate in 15 years, following aggressive government enforcement policies. Satellite monitoring showed a 70% reduction in illegal clearing. Environmental groups cautiously celebrated while urging continued protection efforts.",
+        "category": "environment"
+    },
+    {
+        "id": 47,
+        "text": "The International Energy Agency reported that renewable energy sources now generate 40% of global electricity, marking a historic milestone. Solar and wind power led the growth, with capacity doubling over five years. The agency projected renewables will become the dominant energy source by 2030.",
+        "category": "environment"
+    },
+    {
+        "id": 48,
+        "text": "A landmark international agreement was reached to protect 30% of the world's oceans by 2030. The High Seas Treaty provides legal frameworks for creating marine protected areas in international waters. Conservationists called it the most significant environmental agreement in decades.",
+        "category": "environment"
+    },
+    {
+        "id": 49,
+        "text": "Electric vehicle sales surpassed 15 million globally in 2024, representing 20% of all new car sales. China led the market with 8 million EVs sold, followed by Europe and the United States. Industry analysts predict EVs will dominate new car sales by 2035.",
+        "category": "environment"
+    },
+    {
+        "id": 50,
+        "text": "Scientists discovered a massive coral reef system off the coast of Australia, previously unknown and untouched by climate change. The reef spans 500 kilometers and hosts hundreds of new species. Marine biologists are working to designate the area as a protected marine reserve.",
+        "category": "environment"
+    }
+]
