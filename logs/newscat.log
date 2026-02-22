@@ -1002,3 +1002,122 @@
 2026-02-20 23:58:39,261 - backend.models.model_manager - INFO - Loading model: simple
 2026-02-20 23:58:40,372 - backend.models.simple_classifier - INFO - SimpleNewsClassifier initialized (version=2.0.0)
 2026-02-20 23:58:40,372 - backend.models.model_manager - INFO - Model 'simple' loaded in 1.11s
+2026-02-21 21:49:35,265 - backend.models.model_manager - INFO - ModelManager initialized
+2026-02-21 21:49:35,271 - backend.models.model_manager - INFO - Loading model: simple
+2026-02-21 21:49:38,786 - backend.models.simple_classifier - INFO - SimpleNewsClassifier initialized (version=2.0.0)
+2026-02-21 21:49:38,786 - backend.models.model_manager - INFO - Model 'simple' loaded in 3.52s
+2026-02-21 21:53:37,856 - backend.models.model_manager - INFO - ModelManager initialized
+2026-02-21 21:53:37,856 - backend.models.model_manager - INFO - Loading model: simple
+2026-02-21 21:53:39,095 - backend.models.simple_classifier - INFO - SimpleNewsClassifier initialized (version=2.0.0)
+2026-02-21 21:53:39,095 - backend.models.model_manager - INFO - Model 'simple' loaded in 1.24s
+2026-02-21 21:56:09,166 - backend.models.model_manager - INFO - ModelManager initialized
+2026-02-21 21:56:09,166 - backend.models.model_manager - INFO - Loading model: simple
+2026-02-21 21:56:10,343 - backend.models.simple_classifier - INFO - SimpleNewsClassifier initialized (version=2.0.0)
+2026-02-21 21:56:10,343 - backend.models.model_manager - INFO - Model 'simple' loaded in 1.18s
+2026-02-21 22:17:40,591 - backend.models.model_manager - INFO - ModelManager initialized
+2026-02-21 22:17:40,591 - backend.models.model_manager - INFO - Loading model: simple
+2026-02-21 22:17:41,802 - backend.models.simple_classifier - INFO - SimpleNewsClassifier initialized (version=2.0.0)
+2026-02-21 22:17:41,802 - backend.models.model_manager - INFO - Model 'simple' loaded in 1.21s
+2026-02-21 22:33:23,103 - backend.models.model_manager - INFO - ModelManager initialized
+2026-02-21 22:33:23,104 - backend.models.model_manager - INFO - Loading model: simple
+2026-02-21 22:33:24,992 - backend.models.simple_classifier - INFO - SimpleNewsClassifier initialized (version=2.0.0)
+2026-02-21 22:33:24,992 - backend.models.model_manager - INFO - Model 'simple' loaded in 1.89s
+2026-02-21 22:34:05,729 - backend.models.model_manager - INFO - ModelManager initialized
+2026-02-21 22:34:05,729 - backend.models.model_manager - INFO - Loading model: simple
+2026-02-21 22:34:06,977 - backend.models.simple_classifier - INFO - SimpleNewsClassifier initialized (version=2.0.0)
+2026-02-21 22:34:06,979 - backend.models.model_manager - INFO - Model 'simple' loaded in 1.25s
+2026-02-21 23:14:10,139 - backend.models.model_manager - INFO - ModelManager initialized
+2026-02-21 23:14:10,158 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2026-02-21 23:14:10,158 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-21 23:14:12,289 - werkzeug - INFO - 127.0.0.1 - - [21/Feb/2026 23:14:12] "GET / HTTP/1.1" 200 -
+2026-02-21 23:14:12,304 - werkzeug - INFO - 127.0.0.1 - - [21/Feb/2026 23:14:12] "GET /css/style.css HTTP/1.1" 200 -
+2026-02-21 23:14:12,306 - werkzeug - INFO - 127.0.0.1 - - [21/Feb/2026 23:14:12] "GET /js/main.js HTTP/1.1" 200 -
+2026-02-21 23:14:12,337 - werkzeug - INFO - 127.0.0.1 - - [21/Feb/2026 23:14:12] "GET /api/categories HTTP/1.1" 200 -
+2026-02-21 23:14:12,338 - werkzeug - INFO - 127.0.0.1 - - [21/Feb/2026 23:14:12] "GET /api/health HTTP/1.1" 200 -
+2026-02-21 23:14:31,460 - backend.app - INFO - Classification request: 309 chars, enhanced=True
+2026-02-21 23:14:31,460 - backend.models.model_manager - INFO - Loading model: optimized
+2026-02-21 23:14:54,176 - backend.models.optimized_classifier - INFO - Pre-trained model loaded successfully
+2026-02-21 23:14:54,176 - backend.models.optimized_classifier - INFO - OptimizedEnsembleClassifier initialized (version=2.2.0)
+2026-02-21 23:14:54,176 - backend.models.model_manager - INFO - Model 'optimized' loaded in 22.72s
+2026-02-21 23:14:54,242 - backend.app - INFO - Classification: technology (102.95%) in 22784.38ms
+2026-02-21 23:14:54,242 - werkzeug - INFO - 127.0.0.1 - - [21/Feb/2026 23:14:54] "POST /api/classify HTTP/1.1" 200 -
+2026-02-21 23:33:13,202 - werkzeug - INFO - 127.0.0.1 - - [21/Feb/2026 23:33:13] "[36mGET / HTTP/1.1[0m" 304 -
+2026-02-21 23:33:13,224 - werkzeug - INFO - 127.0.0.1 - - [21/Feb/2026 23:33:13] "[36mGET /css/style.css HTTP/1.1[0m" 304 -
+2026-02-21 23:33:13,226 - werkzeug - INFO - 127.0.0.1 - - [21/Feb/2026 23:33:13] "[36mGET /js/main.js HTTP/1.1[0m" 304 -
+2026-02-21 23:33:13,250 - werkzeug - INFO - 127.0.0.1 - - [21/Feb/2026 23:33:13] "GET /api/categories HTTP/1.1" 200 -
+2026-02-21 23:33:13,253 - werkzeug - INFO - 127.0.0.1 - - [21/Feb/2026 23:33:13] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 00:04:15,244 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:04:15] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 00:05:34,186 - backend.app - ERROR - Classification error: 400 Bad Request: The browser (or proxy) sent a request that this server could not understand.
+Traceback (most recent call last):
+  File "C:\Users\PALPANDI\AppData\Local\Programs\Python\Python310\lib\site-packages\werkzeug\wrappers\request.py", line 611, in get_json
+    rv = self.json_module.loads(data)
+  File "C:\Users\PALPANDI\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\json\provider.py", line 188, in loads
+    return json.loads(s, **kwargs)
+  File "C:\Users\PALPANDI\AppData\Local\Programs\Python\Python310\lib\json\__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+  File "C:\Users\PALPANDI\AppData\Local\Programs\Python\Python310\lib\json\decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+  File "C:\Users\PALPANDI\AppData\Local\Programs\Python\Python310\lib\json\decoder.py", line 353, in raw_decode
+    obj, end = self.scan_once(s, idx)
+json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\PALPANDI\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\wrappers.py", line 130, in on_json_loading_failed
+    return super().on_json_loading_failed(e)
+  File "C:\Users\PALPANDI\AppData\Local\Programs\Python\Python310\lib\site-packages\werkzeug\wrappers\request.py", line 645, in on_json_loading_failed
+    raise BadRequest(f"Failed to decode JSON object: {e}")
+werkzeug.exceptions.BadRequest: 400 Bad Request: Failed to decode JSON object: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "E:\NEWSCAT\backend\app.py", line 345, in classify
+    data = request.get_json()
+  File "C:\Users\PALPANDI\AppData\Local\Programs\Python\Python310\lib\site-packages\werkzeug\wrappers\request.py", line 620, in get_json
+    rv = self.on_json_loading_failed(e)
+  File "C:\Users\PALPANDI\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\wrappers.py", line 135, in on_json_loading_failed
+    raise BadRequest() from e
+werkzeug.exceptions.BadRequest: 400 Bad Request: The browser (or proxy) sent a request that this server could not understand.
+2026-02-22 00:05:34,195 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:05:34] "[35m[1mPOST /api/classify HTTP/1.1[0m" 500 -
+2026-02-22 00:09:20,325 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:09:20] "GET / HTTP/1.1" 200 -
+2026-02-22 00:09:20,393 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:09:20] "GET /css/style.css HTTP/1.1" 200 -
+2026-02-22 00:09:20,573 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:09:20] "GET /js/main.js HTTP/1.1" 200 -
+2026-02-22 00:09:21,179 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:09:21] "GET /api/categories HTTP/1.1" 200 -
+2026-02-22 00:09:21,179 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:09:21] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 00:09:38,815 - backend.models.model_manager - INFO - Loading model: image_processor
+2026-02-22 00:09:38,841 - backend.models.model_manager - INFO - Model 'image_processor' loaded in 0.03s
+2026-02-22 00:09:52,563 - backend.models.image_processor - INFO - EasyOCR initialized successfully
+2026-02-22 00:10:45,105 - backend.app - INFO - Image classification: 1449 chars extracted
+2026-02-22 00:10:45,210 - backend.app - INFO - Image classification: business (56.69%)
+2026-02-22 00:10:45,221 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:10:45] "POST /api/classify/image HTTP/1.1" 200 -
+2026-02-22 00:30:00,740 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:30:00] "GET / HTTP/1.1" 200 -
+2026-02-22 00:30:00,759 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:30:00] "[36mGET /css/style.css HTTP/1.1[0m" 304 -
+2026-02-22 00:30:00,985 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:30:00] "GET /js/main.js HTTP/1.1" 200 -
+2026-02-22 00:30:01,302 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:30:01] "GET /api/categories HTTP/1.1" 200 -
+2026-02-22 00:30:01,302 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:30:01] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 00:31:07,561 - backend.app - INFO - Image classification: 1449 chars extracted
+2026-02-22 00:31:07,561 - backend.app - INFO - Image classification: business (56.69%)
+2026-02-22 00:31:07,566 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:31:07] "POST /api/classify/image HTTP/1.1" 200 -
+2026-02-22 00:44:42,614 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:44:42] "GET / HTTP/1.1" 200 -
+2026-02-22 00:44:42,647 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:44:42] "GET /css/style.css HTTP/1.1" 200 -
+2026-02-22 00:44:42,885 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:44:42] "GET /js/main.js HTTP/1.1" 200 -
+2026-02-22 00:44:43,216 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:44:43] "GET /api/categories HTTP/1.1" 200 -
+2026-02-22 00:44:43,220 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:44:43] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 00:44:43,226 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:44:43] "GET /api/model/info HTTP/1.1" 200 -
+2026-02-22 00:44:43,482 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:44:43] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 00:44:47,817 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:44:47] "GET /api/model/info HTTP/1.1" 200 -
+2026-02-22 00:44:52,999 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:44:52] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 00:45:31,930 - backend.app - INFO - Image classification: 76 chars extracted
+2026-02-22 00:45:32,046 - backend.app - INFO - Image classification: education (69.55%)
+2026-02-22 00:45:32,046 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:45:32] "POST /api/classify/image HTTP/1.1" 200 -
+2026-02-22 00:45:32,401 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:45:32] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 00:47:31,796 - backend.app - INFO - Image classification: 5488 chars extracted
+2026-02-22 00:47:31,891 - backend.app - INFO - Image classification: sports (115.28%)
+2026-02-22 00:47:31,891 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:47:31] "POST /api/classify/image HTTP/1.1" 200 -
+2026-02-22 00:47:32,230 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:47:32] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 00:48:07,472 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:48:07] "GET /api/model/info HTTP/1.1" 200 -
+2026-02-22 00:48:26,340 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:48:26] "GET /api/model/info HTTP/1.1" 200 -
+2026-02-22 00:48:33,923 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:48:33] "GET /api/health HTTP/1.1" 200 -

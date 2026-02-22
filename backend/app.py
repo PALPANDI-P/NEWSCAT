@@ -62,15 +62,33 @@ _cache_lock = threading.Lock()
 executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="newscat_worker")
 
 # ===== LOGGING SETUP =====
+# Ensure logs directory exists
+LOG_DIR = Path(__file__).resolve().parent.parent / 'logs'
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('logs/newscat.log', encoding='utf-8'),
+        logging.FileHandler(str(LOG_DIR / 'newscat.log'), encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
 logger = logging.getLogger(__name__)
+
+
+# ===== APP INITIALIZATION =====
+# Get the project root directory (parent of backend folder)
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+FRONTEND_DIR = PROJECT_ROOT / 'frontend'
+
+app = Flask(__name__, 
+            static_folder=str(FRONTEND_DIR),
+            template_folder=str(FRONTEND_DIR))
+app.config.from_object(DevelopmentConfig)
+
+# Enable CORS
+CORS(app, origins=app.config['CORS_ORIGINS'])
 
 
 # ===== MODEL MANAGER FOR LAZY LOADING =====
@@ -98,9 +116,9 @@ def _init_model_manager():
     # Simple Classifier (Final Fallback)
     def load_simple():
         from backend.models.simple_classifier import SimpleNewsClassifier
-        return SimpleNewsClassifier(config=app.config)
+        return SimpleNewsClassifier(config=dict(app.config))
     
-    manager.register('simple', load_simple, preload=True)  # Always available
+    manager.register('simple', load_simple, preload=False)  # Lazy load for faster startup
     
     # Keyword Extractor
     def load_keyword_extractor():
@@ -111,7 +129,7 @@ def _init_model_manager():
             from backend.models.keyword_extractor import KeywordExtractor
             return KeywordExtractor()
     
-    manager.register('keyword_extractor', load_keyword_extractor, preload=True)
+    manager.register('keyword_extractor', load_keyword_extractor, preload=False)  # Lazy load
     
     # Image Processor
     def load_image_processor():
@@ -137,21 +155,29 @@ def _init_model_manager():
     return manager
 
 
-# ===== APP INITIALIZATION =====
-# Get the project root directory (parent of backend folder)
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-FRONTEND_DIR = PROJECT_ROOT / 'frontend'
-
-app = Flask(__name__, 
-            static_folder=str(FRONTEND_DIR),
-            template_folder=str(FRONTEND_DIR))
-app.config.from_object(DevelopmentConfig)
-
-# Enable CORS
-CORS(app, origins=app.config['CORS_ORIGINS'])
-
 # Initialize model manager
 model_manager = _init_model_manager()
+
+# ===== CLASSIFIERS DICT FOR BACKWARD COMPATIBILITY =====
+# This provides compatibility with tests and older code
+# NOTE: Models are lazy-loaded, so we don't populate this dict at import time
+# The dict will be populated on first access via get_classifier()
+classifiers = {
+    'simple': None,
+    'enhanced': None,
+    'keyword_extractor': None
+}
+
+def _ensure_classifiers_loaded():
+    """Ensure classifiers are loaded (called on first classification request)"""
+    global classifiers
+    if classifiers['simple'] is None:
+        classifiers['simple'] = model_manager.get('simple')
+    if classifiers['keyword_extractor'] is None:
+        classifiers['keyword_extractor'] = model_manager.get('keyword_extractor')
+    if classifiers['enhanced'] is None:
+        classifiers['enhanced'] = model_manager.get('simple')  # Use simple as enhanced fallback
+    return classifiers
 
 
 # ===== CACHE FUNCTIONS =====
@@ -521,10 +547,17 @@ def health():
     manager = get_model_manager()
     model_status = manager.get_status()
     
+    # Build classifiers status for frontend compatibility
+    classifiers_status = {}
+    for model_name, info in model_status.get('models', {}).items():
+        classifiers_status[model_name] = info.get('loaded', False)
+    
     return create_success_response({
+        'status': 'healthy',
         'service': 'NEWSCAT',
         'version': '5.0.0',
         'phase': 'Multi-Modal AI - Optimized with Lazy Loading',
+        'classifiers': classifiers_status,
         'models': model_status,
         'cache': {
             'size': len(_response_cache),

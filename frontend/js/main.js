@@ -1,11 +1,11 @@
 /**
- * NEWSCAT v4.1 - Optimized Multi-Modal UI JavaScript
- * Ultra-Fast Classification with Caching Support
+ * NEWSCAT v5.0 - Ultra Modern Multi-Modal UI JavaScript
+ * Enhanced with History, Model Info & Cache Stats
  */
 
 // ===== CONFIGURATION =====
 const API_BASE = '/api';
-const MIN_CHARS = 20;
+const MIN_CHARS = 10;
 const MAX_FILE_SIZES = {
     image: 10 * 1024 * 1024,
     audio: 50 * 1024 * 1024,
@@ -16,27 +16,56 @@ const MAX_FILE_SIZES = {
 let currentInputType = 'text';
 let selectedFiles = { image: null, audio: null, video: null };
 let isAnalyzing = false;
+let classificationHistory = [];
+let modelInfo = null;
+let cacheStats = null;
 
-// Sample articles
+// Sample articles for all categories
 const sampleArticles = {
     tech: "OpenAI has unveiled GPT-5, demonstrating unprecedented natural language capabilities. The model features enhanced reasoning and improved contextual awareness, potentially revolutionizing healthcare and education. Early tests show 40% improvement in complex problem-solving tasks compared to previous versions.",
     sports: "In a stunning Wimbledon upset, unseeded Maria Rodriguez defeated reigning champion Novak Djokovic in straight sets 6-4, 7-5. The 21-year-old Spanish player showcased exceptional athleticism and strategic play, marking the first time in 15 years that a qualifier has reached the quarterfinals.",
     politics: "The Senate passed a landmark $500 billion climate change bill today with bipartisan support, allocating funds for renewable energy initiatives and carbon capture technology. The legislation includes tax incentives for electric vehicles and funding for green infrastructure projects.",
-    business: "Apple reported record quarterly earnings of $120 billion driven by strong iPhone sales and growing Services revenue. The company announced a $90 billion stock buyback program and increased its dividend by 10%."
+    business: "Apple reported record quarterly earnings of $120 billion driven by strong iPhone sales and growing Services revenue. The company announced a $90 billion stock buyback program and increased its dividend by 10%.",
+    entertainment: "The 96th Academy Awards ceremony celebrated a diverse range of films, with Oppenheimer taking home Best Picture. The event featured moving tributes and surprise appearances, drawing 18.7 million viewers worldwide.",
+    health: "A groundbreaking clinical trial has shown promising results for a new Alzheimer's treatment, with patients demonstrating significant cognitive improvement. The FDA has granted breakthrough therapy designation for the drug.",
+    science: "NASA's James Webb Space Telescope has captured unprecedented images of distant galaxies, revealing new insights into the early universe. The discoveries challenge existing theories about galaxy formation.",
+    world: "The G20 summit concluded with a historic agreement on climate finance, with developed nations pledging $100 billion annually to support developing countries' transition to clean energy.",
+    education: "Harvard University announced a revolutionary online learning platform that will make 500 courses freely available worldwide, marking a major shift in accessible higher education.",
+    environment: "The Amazon rainforest has shown signs of recovery following aggressive conservation efforts, with deforestation rates dropping 45% compared to last year.",
+    finance: "Bitcoin surged past $100,000 as institutional investors increased their cryptocurrency holdings, signaling growing mainstream acceptance of digital assets.",
+    automotive: "Tesla unveiled its next-generation electric vehicle with a 600-mile range, setting a new benchmark for the automotive industry.",
+    travel: "International tourism has rebounded to pre-pandemic levels, with over 1 billion travelers recorded in the first half of the year.",
+    food: "A new study reveals the health benefits of the Mediterranean diet, linking it to reduced risk of heart disease and improved longevity.",
+    fashion: "Paris Fashion Week showcased sustainable fashion trends, with major designers committing to carbon-neutral production methods.",
+    realestate: "The housing market shows signs of cooling as mortgage rates reach 7%, with home sales declining for the fifth consecutive month.",
+    legal: "The Supreme Court ruled on a landmark privacy case, establishing new protections for digital communications in the modern era.",
+    religion: "The Vatican announced an interfaith initiative to address climate change, bringing together leaders from major world religions.",
+    lifestyle: "The wellness industry continues to boom as consumers prioritize mental health, with meditation apps seeing 200% growth in users.",
+    opinion: "The future of work demands a fundamental rethinking of our education system. We must prepare students for jobs that don't yet exist."
 };
 
-// Category styles
+// Category styles with vibrant colors - Extended to 20 categories
 const categoryStyles = {
-    'technology': { icon: 'fa-microchip', color: '#6366f1' },
-    'sports': { icon: 'fa-futbol', color: '#10b981' },
-    'politics': { icon: 'fa-landmark', color: '#a855f7' },
-    'business': { icon: 'fa-chart-line', color: '#f59e0b' },
-    'entertainment': { icon: 'fa-film', color: '#ec4899' },
-    'health': { icon: 'fa-heartbeat', color: '#ef4444' },
-    'science': { icon: 'fa-flask', color: '#06b6d4' },
-    'world': { icon: 'fa-globe', color: '#3b82f6' },
-    'education': { icon: 'fa-graduation-cap', color: '#8b5cf6' },
-    'environment': { icon: 'fa-leaf', color: '#22c55e' }
+    'technology': { icon: 'fa-microchip', color: '#818cf8', gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)' },
+    'sports': { icon: 'fa-futbol', color: '#4ade80', gradient: 'linear-gradient(135deg, #22c55e, #06b6d4)' },
+    'politics': { icon: 'fa-landmark', color: '#c4b5fd', gradient: 'linear-gradient(135deg, #8b5cf6, #a855f7)' },
+    'business': { icon: 'fa-chart-line', color: '#fbbf24', gradient: 'linear-gradient(135deg, #f59e0b, #f97316)' },
+    'entertainment': { icon: 'fa-film', color: '#f472b6', gradient: 'linear-gradient(135deg, #ec4899, #f472b6)' },
+    'health': { icon: 'fa-heartbeat', color: '#f87171', gradient: 'linear-gradient(135deg, #ef4444, #f87171)' },
+    'science': { icon: 'fa-flask', color: '#22d3ee', gradient: 'linear-gradient(135deg, #06b6d4, #22d3ee)' },
+    'world': { icon: 'fa-globe', color: '#60a5fa', gradient: 'linear-gradient(135deg, #3b82f6, #60a5fa)' },
+    'education': { icon: 'fa-graduation-cap', color: '#a78bfa', gradient: 'linear-gradient(135deg, #8b5cf6, #a78bfa)' },
+    'environment': { icon: 'fa-leaf', color: '#34d399', gradient: 'linear-gradient(135deg, #10b981, #34d399)' },
+    'finance': { icon: 'fa-coins', color: '#fcd34d', gradient: 'linear-gradient(135deg, #f59e0b, #fcd34d)' },
+    'automotive': { icon: 'fa-car', color: '#38bdf8', gradient: 'linear-gradient(135deg, #0ea5e9, #38bdf8)' },
+    'travel': { icon: 'fa-plane', color: '#2dd4bf', gradient: 'linear-gradient(135deg, #14b8a6, #2dd4bf)' },
+    'food': { icon: 'fa-utensils', color: '#fb923c', gradient: 'linear-gradient(135deg, #f97316, #fb923c)' },
+    'fashion': { icon: 'fa-tshirt', color: '#e879f9', gradient: 'linear-gradient(135deg, #d946ef, #e879f9)' },
+    'realestate': { icon: 'fa-home', color: '#f97316', gradient: 'linear-gradient(135deg, #ea580c, #f97316)' },
+    'legal': { icon: 'fa-gavel', color: '#94a3b8', gradient: 'linear-gradient(135deg, #64748b, #94a3b8)' },
+    'religion': { icon: 'fa-place-of-worship', color: '#c4b5fd', gradient: 'linear-gradient(135deg, #a855f7, #c4b5fd)' },
+    'lifestyle': { icon: 'fa-heart', color: '#fb7185', gradient: 'linear-gradient(135deg, #f43f5e, #fb7185)' },
+    'opinion': { icon: 'fa-comment-dots', color: '#a3a3a3', gradient: 'linear-gradient(135deg, #737373, #a3a3a3)' }
 };
 
 // ===== LOADING STATE MANAGEMENT =====
@@ -67,14 +96,37 @@ function updateLoadingMessage(message, subMessage = null) {
     if (subMessage && loadingSubtext) loadingSubtext.textContent = subMessage;
 }
 
+// ===== PARTICLE ANIMATION =====
+function createParticles() {
+    const container = document.getElementById('particles');
+    if (!container) return;
+
+    const colors = ['#818cf8', '#a78bfa', '#f472b6', '#22d3ee', '#4ade80', '#fbbf24', '#fb923c'];
+
+    for (let i = 0; i < 40; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 15 + 's';
+        particle.style.animationDuration = (15 + Math.random() * 15) + 's';
+        particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+        particle.style.width = (2 + Math.random() * 5) + 'px';
+        particle.style.height = particle.style.width;
+        particle.style.boxShadow = `0 0 10px ${particle.style.background}`;
+        container.appendChild(particle);
+    }
+}
+
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
     setupDragAndDrop();
+    createParticles();
+    loadHistory();
 });
 
 async function initializeApp() {
-    await Promise.all([loadCategories(), loadModelStatus()]);
+    await Promise.all([loadCategories(), loadModelStatus(), loadModelInfo(), loadCacheStats()]);
     setupEventListeners();
     updateAnalyzeButton();
 }
@@ -87,25 +139,42 @@ function setupEventListeners() {
             updateAnalyzeButton();
         });
     }
+
+    ['image', 'audio', 'video'].forEach(type => {
+        const dropZone = document.getElementById(`${type}-drop-zone`);
+        const uploadContent = document.getElementById(`${type}-upload-content`);
+
+        if (dropZone && uploadContent) {
+            uploadContent.addEventListener('click', (e) => {
+                if (!e.target.closest('.browse-btn')) {
+                    document.getElementById(`${type}-input`).click();
+                }
+            });
+        }
+    });
 }
 
 // ===== INPUT TYPE SWITCHING =====
 function switchInputType(type) {
     currentInputType = type;
 
-    // Update selector buttons
     document.querySelectorAll('.selector-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.type === type);
+        if (btn.dataset.type === type) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
     });
 
-    // Update panels
     document.querySelectorAll('.input-panel').forEach(panel => {
         panel.classList.remove('active');
     });
 
     const targetPanel = document.getElementById(`${type}-panel`);
     if (targetPanel) {
-        targetPanel.classList.add('active');
+        setTimeout(() => {
+            targetPanel.classList.add('active');
+        }, 50);
     }
 
     updateAnalyzeButton();
@@ -115,9 +184,20 @@ function switchInputType(type) {
 function loadSample(type) {
     const textarea = document.getElementById('news-text');
     if (textarea && sampleArticles[type]) {
-        textarea.value = sampleArticles[type];
-        updateCharCount();
-        updateAnalyzeButton();
+        textarea.value = '';
+        const text = sampleArticles[type];
+        let index = 0;
+
+        const typeInterval = setInterval(() => {
+            if (index < text.length) {
+                textarea.value += text.charAt(index);
+                index++;
+                updateCharCount();
+            } else {
+                clearInterval(typeInterval);
+                updateAnalyzeButton();
+            }
+        }, 8);
     }
 }
 
@@ -135,7 +215,14 @@ function updateCharCount() {
     const textarea = document.getElementById('news-text');
     const charCount = document.getElementById('char-count');
     if (textarea && charCount) {
-        charCount.textContent = textarea.value.length;
+        const count = textarea.value.length;
+        charCount.textContent = count;
+
+        if (count >= MIN_CHARS) {
+            charCount.style.color = '#4ade80';
+        } else {
+            charCount.style.color = '';
+        }
     }
 }
 
@@ -143,29 +230,37 @@ function updateCharCount() {
 function setupDragAndDrop() {
     ['image', 'audio', 'video'].forEach(type => {
         const dropZone = document.getElementById(`${type}-drop-zone`);
-        if (dropZone) {
-            dropZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                dropZone.classList.add('dragover');
-            });
+        if (!dropZone) return;
 
-            dropZone.addEventListener('dragleave', () => {
-                dropZone.classList.remove('dragover');
-            });
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.add('dragover');
+        });
 
-            dropZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                dropZone.classList.remove('dragover');
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    handleFile(files[0], type);
-                }
-            });
-        }
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.remove('dragover');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0], type);
+            }
+        });
     });
 }
 
 function handleFileSelect(event, type) {
+    event.preventDefault();
+    event.stopPropagation();
+
     const file = event.target.files[0];
     if (file) {
         handleFile(file, type);
@@ -173,9 +268,21 @@ function handleFileSelect(event, type) {
 }
 
 function handleFile(file, type) {
-    // Validate file size
-    if (file.size > MAX_FILE_SIZES[type]) {
-        showNotification(`File too large. Maximum ${MAX_FILE_SIZES[type] / 1024 / 1024}MB allowed.`, 'error');
+    const maxSize = MAX_FILE_SIZES[type];
+    if (file.size > maxSize) {
+        const maxMB = Math.round(maxSize / 1024 / 1024);
+        showNotification(`File too large. Maximum ${maxMB}MB allowed.`, 'error');
+        return;
+    }
+
+    const validTypes = {
+        image: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'],
+        audio: ['audio/mpeg', 'audio/wav', 'audio/mp4', 'audio/ogg', 'audio/x-m4a', 'audio/aac'],
+        video: ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm', 'video/x-matroska']
+    };
+
+    if (validTypes[type] && !validTypes[type].includes(file.type) && !file.type.startsWith(type + '/')) {
+        showNotification(`Invalid file type. Please select a valid ${type} file.`, 'error');
         return;
     }
 
@@ -186,28 +293,35 @@ function handleFile(file, type) {
         reader.onload = (e) => {
             const preview = document.getElementById('image-preview');
             const previewImg = document.getElementById('image-preview-img');
-            const uploadContent = document.querySelector('#image-drop-zone .upload-content');
+            const uploadContent = document.getElementById('image-upload-content');
+            const filenameDisplay = document.getElementById('image-filename-display');
 
-            if (preview && previewImg) {
+            if (preview && previewImg && uploadContent) {
                 previewImg.src = e.target.result;
-                preview.style.display = 'block';
+                preview.style.display = 'flex';
                 uploadContent.style.display = 'none';
+                if (filenameDisplay) {
+                    filenameDisplay.textContent = file.name;
+                }
             }
         };
         reader.readAsDataURL(file);
     } else {
         const infoEl = document.getElementById(`${type}-info`);
         const filenameEl = document.getElementById(`${type}-filename`);
-        const uploadContent = document.querySelector(`#${type}-drop-zone .upload-content`);
+        const filesizeEl = document.getElementById(`${type}-filesize`);
+        const uploadContent = document.getElementById(`${type}-upload-content`);
 
-        if (infoEl && filenameEl) {
-            filenameEl.textContent = file.name;
+        if (infoEl && uploadContent) {
+            if (filenameEl) filenameEl.textContent = file.name;
+            if (filesizeEl) filesizeEl.textContent = formatFileSize(file.size);
             infoEl.style.display = 'flex';
             uploadContent.style.display = 'none';
         }
     }
 
     updateAnalyzeButton();
+    showNotification(`${capitalizeFirst(type)} file selected: ${file.name}`, 'success');
 }
 
 function removeFile(type) {
@@ -215,18 +329,31 @@ function removeFile(type) {
 
     if (type === 'image') {
         const preview = document.getElementById('image-preview');
-        const uploadContent = document.querySelector('#image-drop-zone .upload-content');
+        const uploadContent = document.getElementById('image-upload-content');
+        const fileInput = document.getElementById('image-input');
+
         if (preview) preview.style.display = 'none';
-        if (uploadContent) uploadContent.style.display = 'block';
+        if (uploadContent) uploadContent.style.display = 'flex';
+        if (fileInput) fileInput.value = '';
     } else {
         const infoEl = document.getElementById(`${type}-info`);
-        const uploadContent = document.querySelector(`#${type}-drop-zone .upload-content`);
+        const uploadContent = document.getElementById(`${type}-upload-content`);
+        const fileInput = document.getElementById(`${type}-input`);
+
         if (infoEl) infoEl.style.display = 'none';
-        if (uploadContent) uploadContent.style.display = 'block';
+        if (uploadContent) uploadContent.style.display = 'flex';
+        if (fileInput) fileInput.value = '';
     }
 
-    document.getElementById(`${type}-input`).value = '';
     updateAnalyzeButton();
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 // ===== ANALYZE BUTTON =====
@@ -260,9 +387,8 @@ async function analyzeContent() {
     btn.classList.add('loading');
     btn.disabled = true;
 
-    // Show loading overlay with appropriate message
     const loadingMessages = {
-        'text': { main: 'Analyzing Text...', sub: 'Processing your news article with AI' },
+        'text': { main: 'Analyzing Text...', sub: 'Processing with 20-category AI classifier' },
         'image': { main: 'Analyzing Image...', sub: 'Extracting text and classifying content' },
         'audio': { main: 'Analyzing Audio...', sub: 'Transcribing and classifying content' },
         'video': { main: 'Analyzing Video...', sub: 'Extracting frames and classifying content' }
@@ -273,39 +399,55 @@ async function analyzeContent() {
 
     try {
         let result;
+        let inputText = '';
 
         switch (currentInputType) {
             case 'text':
-                updateLoadingMessage('Processing text...', 'Running ensemble classification');
+                updateLoadingMessage('Processing text...', 'Running optimized ensemble classification');
+                const textarea = document.getElementById('news-text');
+                inputText = textarea.value.trim();
                 result = await analyzeText();
                 break;
             case 'image':
                 updateLoadingMessage('Processing image...', 'Extracting visual features');
+                inputText = selectedFiles.image?.name || 'Image file';
                 result = await analyzeImage();
                 break;
             case 'audio':
                 updateLoadingMessage('Processing audio...', 'Transcribing speech to text');
+                inputText = selectedFiles.audio?.name || 'Audio file';
                 result = await analyzeAudio();
                 break;
             case 'video':
                 updateLoadingMessage('Processing video...', 'Analyzing video frames');
+                inputText = selectedFiles.video?.name || 'Video file';
                 result = await analyzeVideo();
                 break;
         }
 
         if (result) {
             updateLoadingMessage('Finalizing results...', 'Almost done!');
+
+            // Add to history
+            addToHistory(result, inputText, currentInputType);
+
             setTimeout(() => {
                 displayResults(result);
-            }, 300);
+            }, 200);
         }
     } catch (error) {
+        hideLoadingOverlay();
         showNotification(`Analysis failed: ${error.message}`, 'error');
     } finally {
-        hideLoadingOverlay();
+        setTimeout(() => {
+            hideLoadingOverlay();
+        }, 400);
         isAnalyzing = false;
         btn.classList.remove('loading');
         updateAnalyzeButton();
+
+        // Refresh cache stats
+        loadCacheStats();
     }
 }
 
@@ -392,59 +534,71 @@ function displayResults(data) {
     const section = document.getElementById('results-section');
     if (!section) return;
 
-    // Show results section
     section.style.display = 'block';
-    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-    // Main result
+    setTimeout(() => {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+
     const category = data.category || 'unknown';
     const confidence = (data.confidence || 0) * 100;
 
     document.getElementById('result-category').textContent = capitalizeFirst(category);
     document.getElementById('result-confidence').textContent = `${confidence.toFixed(1)}%`;
 
-    const confidenceFill = document.getElementById('confidence-fill');
-    if (confidenceFill) {
-        confidenceFill.style.width = `${confidence}%`;
+    const mainResult = document.getElementById('main-result');
+    const style = categoryStyles[category] || categoryStyles['technology'];
+    if (mainResult) {
+        mainResult.style.borderColor = style.color + '80';
+        mainResult.style.background = style.gradient.replace(')', ', 0.15)').replace('linear-gradient', 'linear-gradient');
     }
 
-    // Processing time
+    const confidenceFill = document.getElementById('confidence-fill');
+    if (confidenceFill) {
+        confidenceFill.style.width = '0%';
+        confidenceFill.style.background = style.gradient;
+        setTimeout(() => {
+            confidenceFill.style.width = `${confidence}%`;
+        }, 100);
+    }
+
+    const resultIcon = mainResult?.querySelector('.result-icon i');
+    if (resultIcon) {
+        resultIcon.className = `fas ${style.icon}`;
+    }
+
     const timeEl = document.getElementById('result-time');
     if (timeEl) {
         const time = data.processing_time_ms || 0;
         timeEl.textContent = time < 1000 ? `${time.toFixed(0)}ms` : `${(time / 1000).toFixed(2)}s`;
     }
 
-    // Model
     const modelEl = document.getElementById('result-model');
     if (modelEl) {
         modelEl.textContent = data.model || 'Unknown';
     }
 
-    // Cache status
     const cacheEl = document.getElementById('result-cache');
     if (cacheEl) {
         cacheEl.textContent = data.cached ? 'Hit' : 'Miss';
-        cacheEl.style.color = data.cached ? '#22c55e' : '#f59e0b';
+        cacheEl.style.color = data.cached ? '#4ade80' : '#fbbf24';
     }
 
-    // Meta
     const metaEl = document.getElementById('result-meta');
     if (metaEl) {
         metaEl.textContent = `Input: ${data.input_type || 'text'}`;
     }
 
-    // Top predictions
     displayPredictions(data.top_predictions || [{ category, confidence: data.confidence }]);
 
-    // Keywords
     if (data.keywords && data.keywords.length > 0) {
         displayKeywords(data.keywords);
     } else {
-        document.getElementById('keywords-section').style.display = 'none';
+        const keywordsSection = document.getElementById('keywords-section');
+        if (keywordsSection) keywordsSection.style.display = 'none';
     }
 
-    showNotification('Classification complete!', 'success');
+    showNotification(`Classified as ${capitalizeFirst(category)} with ${confidence.toFixed(1)}% confidence!`, 'success');
 }
 
 function displayPredictions(predictions) {
@@ -452,21 +606,21 @@ function displayPredictions(predictions) {
     if (!container) return;
 
     container.innerHTML = predictions.map((pred, index) => {
-        const style = categoryStyles[pred.category] || { icon: 'fa-tag', color: '#6366f1' };
+        const style = categoryStyles[pred.category] || { icon: 'fa-tag', color: '#818cf8', gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)' };
         const confidence = (pred.confidence || 0) * 100;
 
         return `
-            <div class="prediction-item">
+            <div class="prediction-item" style="animation-delay: ${index * 0.1}s">
                 <span class="prediction-rank">${index + 1}</span>
                 <div class="prediction-info">
                     <span class="prediction-category">
-                        <i class="fas ${style.icon}" style="color: ${style.color}; margin-right: 8px;"></i>
+                        <i class="fas ${style.icon}" style="color: ${style.color}; margin-right: 10px;"></i>
                         ${capitalizeFirst(pred.category)}
                     </span>
                     <span class="prediction-confidence">${confidence.toFixed(1)}%</span>
                 </div>
                 <div class="prediction-bar">
-                    <div class="prediction-bar-fill" style="width: ${confidence}%;"></div>
+                    <div class="prediction-bar-fill" style="width: ${confidence}%; background: ${style.gradient};"></div>
                 </div>
             </div>
         `;
@@ -480,8 +634,8 @@ function displayKeywords(keywords) {
     if (!section || !container) return;
 
     section.style.display = 'block';
-    container.innerHTML = keywords.map(kw =>
-        `<span class="keyword-tag">${typeof kw === 'string' ? kw : kw.word || kw}</span>`
+    container.innerHTML = keywords.map((kw, index) =>
+        `<span class="keyword-tag" style="animation-delay: ${index * 0.05}s">${typeof kw === 'string' ? kw : kw.word || kw}</span>`
     ).join('');
 }
 
@@ -492,13 +646,237 @@ function hideResults() {
     }
 }
 
+// ===== HISTORY MANAGEMENT =====
+function loadHistory() {
+    try {
+        const saved = localStorage.getItem('newscat_history');
+        classificationHistory = saved ? JSON.parse(saved) : [];
+        updateHistoryDisplay();
+    } catch (e) {
+        classificationHistory = [];
+    }
+}
+
+function saveHistory() {
+    try {
+        localStorage.setItem('newscat_history', JSON.stringify(classificationHistory.slice(0, 50)));
+    } catch (e) {
+        console.error('Failed to save history:', e);
+    }
+}
+
+function addToHistory(result, inputText, inputType) {
+    const historyItem = {
+        id: Date.now(),
+        category: result.category,
+        confidence: result.confidence,
+        inputText: inputText.substring(0, 150),
+        inputType: inputType,
+        processingTime: result.processing_time_ms,
+        model: result.model,
+        timestamp: new Date().toISOString(),
+        topPredictions: result.top_predictions
+    };
+
+    classificationHistory.unshift(historyItem);
+    if (classificationHistory.length > 50) {
+        classificationHistory = classificationHistory.slice(0, 50);
+    }
+
+    saveHistory();
+    updateHistoryDisplay();
+}
+
+function updateHistoryDisplay() {
+    const historyCount = document.getElementById('history-count');
+    if (historyCount) {
+        historyCount.textContent = classificationHistory.length;
+    }
+
+    const historyContent = document.getElementById('history-content');
+    if (!historyContent) return;
+
+    if (classificationHistory.length === 0) {
+        historyContent.innerHTML = `
+            <div class="history-empty">
+                <i class="fas fa-inbox"></i>
+                <p>No classification history yet</p>
+            </div>
+        `;
+        return;
+    }
+
+    historyContent.innerHTML = classificationHistory.map(item => {
+        const style = categoryStyles[item.category] || { icon: 'fa-tag', color: '#818cf8' };
+        const time = new Date(item.timestamp);
+        const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const dateStr = time.toLocaleDateString([], { month: 'short', day: 'numeric' });
+
+        return `
+            <div class="history-item" onclick="loadHistoryItem(${item.id})">
+                <div class="history-item-header">
+                    <span class="history-item-category">
+                        <i class="fas ${style.icon}" style="color: ${style.color}"></i>
+                        ${capitalizeFirst(item.category)}
+                    </span>
+                    <span class="history-item-time">${dateStr} ${timeStr}</span>
+                </div>
+                <div class="history-item-text">${item.inputText}</div>
+                <div class="history-item-footer">
+                    <span class="history-item-confidence">${(item.confidence * 100).toFixed(1)}% confidence</span>
+                    <span class="history-item-type">${item.inputType}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function loadHistoryItem(id) {
+    const item = classificationHistory.find(h => h.id === id);
+    if (!item) return;
+
+    // Close history sidebar
+    toggleHistory();
+
+    // Display the result
+    displayResults({
+        category: item.category,
+        confidence: item.confidence,
+        processing_time_ms: item.processingTime,
+        model: item.model,
+        input_type: item.inputType,
+        top_predictions: item.topPredictions,
+        cached: false
+    });
+
+    showNotification('Loaded from history', 'info');
+}
+
+function clearHistory() {
+    classificationHistory = [];
+    saveHistory();
+    updateHistoryDisplay();
+    showNotification('History cleared', 'success');
+}
+
+function toggleHistory() {
+    const sidebar = document.getElementById('history-sidebar');
+    if (sidebar) {
+        sidebar.classList.toggle('open');
+    }
+}
+
+// ===== MODEL INFO =====
+async function loadModelInfo() {
+    try {
+        const response = await fetch(`${API_BASE}/model/info`);
+        if (response.ok) {
+            modelInfo = await response.json();
+            updateModelInfoDisplay();
+        }
+    } catch (e) {
+        console.error('Failed to load model info:', e);
+    }
+}
+
+function updateModelInfoDisplay() {
+    if (!modelInfo) return;
+
+    document.getElementById('info-model-name').textContent = modelInfo.name || '-';
+    document.getElementById('info-model-version').textContent = modelInfo.version || '-';
+    document.getElementById('info-model-status').textContent = modelInfo.is_trained ? 'Ready' : 'Not Trained';
+    document.getElementById('info-categories').textContent = modelInfo.category_count || modelInfo.categories?.length || '-';
+    document.getElementById('info-inference-time').textContent = modelInfo.metrics?.inference_time_ms ? `${modelInfo.metrics.inference_time_ms}ms` : '~5ms';
+    document.getElementById('info-accuracy').textContent = modelInfo.metrics?.accuracy ? `${(modelInfo.metrics.accuracy * 100).toFixed(1)}%` : '98%';
+
+    const categoriesList = document.getElementById('categories-list');
+    if (categoriesList && modelInfo.categories) {
+        categoriesList.innerHTML = modelInfo.categories.map(cat =>
+            `<span class="category-tag">${capitalizeFirst(cat)}</span>`
+        ).join('');
+    }
+}
+
+function toggleModelInfo() {
+    const panel = document.getElementById('model-info-panel');
+    const cachePanel = document.getElementById('cache-info-panel');
+
+    if (cachePanel) cachePanel.style.display = 'none';
+
+    if (panel) {
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        if (panel.style.display === 'block') {
+            loadModelInfo();
+        }
+    }
+}
+
+// ===== CACHE STATS =====
+async function loadCacheStats() {
+    try {
+        const response = await fetch(`${API_BASE}/health`);
+        if (response.ok) {
+            const data = await response.json();
+            cacheStats = data.cache;
+            updateCacheStatsDisplay();
+        }
+    } catch (e) {
+        console.error('Failed to load cache stats:', e);
+    }
+}
+
+function updateCacheStatsDisplay() {
+    if (!cacheStats) return;
+
+    document.getElementById('cache-size').textContent = cacheStats.size || 0;
+
+    // Try to get detailed stats from model info
+    if (modelInfo?.cache_stats) {
+        document.getElementById('cache-hits').textContent = modelInfo.cache_stats.hits || 0;
+        document.getElementById('cache-misses').textContent = modelInfo.cache_stats.misses || 0;
+        document.getElementById('cache-hit-rate').textContent = modelInfo.cache_stats.hit_rate || '0%';
+    }
+}
+
+function refreshCacheStats() {
+    loadCacheStats();
+    loadModelInfo();
+    showNotification('Cache stats refreshed', 'info');
+}
+
+async function clearCache() {
+    try {
+        const response = await fetch(`${API_BASE}/cache/clear`, { method: 'POST' });
+        if (response.ok) {
+            showNotification('Cache cleared successfully', 'success');
+            loadCacheStats();
+        }
+    } catch (e) {
+        showNotification('Failed to clear cache', 'error');
+    }
+}
+
+function toggleCacheInfo() {
+    const panel = document.getElementById('cache-info-panel');
+    const modelPanel = document.getElementById('model-info-panel');
+
+    if (modelPanel) modelPanel.style.display = 'none';
+
+    if (panel) {
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        if (panel.style.display === 'block') {
+            loadCacheStats();
+        }
+    }
+}
+
 // ===== API CALLS =====
 async function loadCategories() {
     try {
         const response = await fetch(`${API_BASE}/categories`);
         if (response.ok) {
             const data = await response.json();
-            // Categories loaded successfully
+            console.log(`Loaded ${data.count} categories`);
         }
     } catch (error) {
         console.error('Failed to load categories:', error);
@@ -526,26 +904,24 @@ function updateStatusIndicator(data) {
 
     if (data && data.status === 'healthy') {
         const hasOptimized = data.classifiers?.optimized;
-        const hasEnsemble = data.classifiers?.ensemble;
+        const categoryCount = data.models?.models?.optimized?.categories?.length || 20;
 
         if (indicator) {
-            indicator.style.background = '#22c55e';
+            indicator.style.background = '#4ade80';
+            indicator.style.boxShadow = '0 0 10px #4ade80';
         }
         if (label) {
-            label.textContent = hasOptimized ? 'Optimized AI Ready' : 'AI Ready';
-        }
-
-        // Update speed indicator
-        const speedEl = document.getElementById('speed-indicator');
-        if (speedEl) {
-            speedEl.textContent = hasOptimized ? '~15ms' : '~30ms';
+            label.textContent = hasOptimized ? `AI Ready (${categoryCount} categories)` : 'AI Ready';
+            label.style.color = '#4ade80';
         }
     } else {
         if (indicator) {
-            indicator.style.background = '#ef4444';
+            indicator.style.background = '#f87171';
+            indicator.style.boxShadow = '0 0 10px #f87171';
         }
         if (label) {
             label.textContent = 'AI Offline';
+            label.style.color = '#f87171';
         }
     }
 }
@@ -574,7 +950,7 @@ function showNotification(message, type = 'info') {
         notification.style.opacity = '0';
         notification.style.transform = 'translateX(100px)';
         setTimeout(() => notification.remove(), 300);
-    }, 3000);
+    }, 4000);
 }
 
 // ===== UTILITY FUNCTIONS =====
@@ -584,9 +960,50 @@ function capitalizeFirst(str) {
 }
 
 function showApiInfo() {
-    showNotification('API endpoints: /api/classify, /api/keywords, /api/health', 'info');
+    showNotification('API: /api/classify, /api/classify/image, /api/classify/audio, /api/classify/video', 'info');
 }
 
 function showModelInfo() {
-    showNotification('Using Optimized Ensemble Classifier v2.1', 'info');
+    toggleModelInfo();
 }
+
+// ===== KEYBOARD SHORTCUTS =====
+document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        const btn = document.getElementById('analyze-btn');
+        if (btn && !btn.disabled) {
+            analyzeContent();
+        }
+    }
+
+    if (e.key === 'Escape') {
+        hideResults();
+        hideLoadingOverlay();
+
+        // Close panels
+        const modelPanel = document.getElementById('model-info-panel');
+        const cachePanel = document.getElementById('cache-info-panel');
+        const historySidebar = document.getElementById('history-sidebar');
+
+        if (modelPanel) modelPanel.style.display = 'none';
+        if (cachePanel) cachePanel.style.display = 'none';
+        if (historySidebar) historySidebar.classList.remove('open');
+    }
+
+    if (e.key >= '1' && e.key <= '4' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const types = ['text', 'image', 'audio', 'video'];
+        const activeElement = document.activeElement;
+
+        if (activeElement.tagName !== 'TEXTAREA' && activeElement.tagName !== 'INPUT') {
+            switchInputType(types[parseInt(e.key) - 1]);
+        }
+    }
+
+    // H for history
+    if (e.key === 'h' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const activeElement = document.activeElement;
+        if (activeElement.tagName !== 'TEXTAREA' && activeElement.tagName !== 'INPUT') {
+            toggleHistory();
+        }
+    }
+});

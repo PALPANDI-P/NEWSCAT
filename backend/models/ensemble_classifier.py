@@ -96,8 +96,13 @@ class EnsembleNewsClassifier(BaseNewsClassifier):
         super().__init__(name, config)
         self.version = "2.0.0"
         
-        # Text processor
-        self.text_processor = AdvancedTextProcessor(use_spacy=True)
+        # Text processor - with fallback if spaCy not available
+        try:
+            self.text_processor = AdvancedTextProcessor(use_spacy=True, use_nltk=True)
+        except Exception as e:
+            logger.warning(f"AdvancedTextProcessor initialization failed: {e}, using basic processor")
+            from backend.models.text_processor import TextProcessor
+            self.text_processor = TextProcessor(use_advanced=True)
         
         # TF-IDF Vectorizer with optimized parameters
         self.vectorizer = TfidfVectorizer(

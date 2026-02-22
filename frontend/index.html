@@ -33,7 +33,10 @@
         <div class="bg-gradient-orbs">
             <div class="gradient-orb orb-1"></div>
             <div class="gradient-orb orb-2"></div>
+            <div class="gradient-orb orb-3"></div>
+            <div class="gradient-orb orb-4"></div>
         </div>
+        <div class="floating-particles" id="particles"></div>
     </div>
 
     <!-- Notification Container -->
@@ -48,6 +51,9 @@
             </div>
             <div class="loading-text" id="loading-text">Analyzing...</div>
             <div class="loading-subtext" id="loading-subtext">Please wait while we process your content</div>
+            <div class="loading-progress">
+                <div class="loading-progress-bar" id="loading-progress-bar"></div>
+            </div>
             <div class="loading-dots">
                 <span></span>
                 <span></span>
@@ -69,7 +75,7 @@
                     </div>
                     <div class="brand-text">
                         <span class="brand-name">NEWSCAT</span>
-                        <span class="brand-version">v4.1 Optimized</span>
+                        <span class="brand-version">v5.0 Ultra</span>
                     </div>
                 </div>
 
@@ -80,24 +86,138 @@
                     </div>
                 </div>
 
-                <div class="nav-stats">
-                    <div class="nav-stat">
-                        <span class="nav-stat-value" id="speed-indicator">~15ms</span>
-                        <span class="nav-stat-label">Speed</span>
-                    </div>
-                    <div class="nav-stat-divider"></div>
-                    <div class="nav-stat">
-                        <span class="nav-stat-value">98%</span>
-                        <span class="nav-stat-label">Accuracy</span>
-                    </div>
-                    <div class="nav-stat-divider"></div>
-                    <div class="nav-stat">
-                        <span class="nav-stat-value">10</span>
-                        <span class="nav-stat-label">Categories</span>
-                    </div>
+                <div class="nav-actions">
+                    <button class="nav-btn" onclick="toggleHistory()" title="View History">
+                        <i class="fas fa-history"></i>
+                        <span class="history-count" id="history-count">0</span>
+                    </button>
+                    <button class="nav-btn" onclick="toggleModelInfo()" title="Model Info">
+                        <i class="fas fa-microchip"></i>
+                    </button>
+                    <button class="nav-btn" onclick="toggleCacheInfo()" title="Cache Stats">
+                        <i class="fas fa-database"></i>
+                    </button>
                 </div>
             </div>
         </nav>
+
+        <!-- Model Info Panel -->
+        <div class="info-panel model-info-panel" id="model-info-panel" style="display: none;">
+            <div class="info-panel-header">
+                <h3><i class="fas fa-microchip"></i> Model Information</h3>
+                <button class="close-panel-btn" onclick="toggleModelInfo()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="info-panel-content">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Model Name</span>
+                        <span class="info-value" id="info-model-name">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Version</span>
+                        <span class="info-value" id="info-model-version">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Status</span>
+                        <span class="info-value status-badge" id="info-model-status">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Categories</span>
+                        <span class="info-value" id="info-categories">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Inference Time</span>
+                        <span class="info-value" id="info-inference-time">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Accuracy</span>
+                        <span class="info-value" id="info-accuracy">-</span>
+                    </div>
+                </div>
+                <div class="categories-list" id="categories-list"></div>
+            </div>
+        </div>
+
+        <!-- Cache Info Panel -->
+        <div class="info-panel cache-info-panel" id="cache-info-panel" style="display: none;">
+            <div class="info-panel-header">
+                <h3><i class="fas fa-database"></i> Cache Statistics</h3>
+                <button class="close-panel-btn" onclick="toggleCacheInfo()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="info-panel-content">
+                <div class="cache-stats-grid">
+                    <div class="cache-stat-item">
+                        <div class="cache-stat-icon">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <div class="cache-stat-info">
+                            <span class="cache-stat-value" id="cache-size">0</span>
+                            <span class="cache-stat-label">Cached Items</span>
+                        </div>
+                    </div>
+                    <div class="cache-stat-item">
+                        <div class="cache-stat-icon success">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="cache-stat-info">
+                            <span class="cache-stat-value" id="cache-hits">0</span>
+                            <span class="cache-stat-label">Cache Hits</span>
+                        </div>
+                    </div>
+                    <div class="cache-stat-item">
+                        <div class="cache-stat-icon warning">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="cache-stat-info">
+                            <span class="cache-stat-value" id="cache-misses">0</span>
+                            <span class="cache-stat-label">Cache Misses</span>
+                        </div>
+                    </div>
+                    <div class="cache-stat-item">
+                        <div class="cache-stat-icon info">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div class="cache-stat-info">
+                            <span class="cache-stat-value" id="cache-hit-rate">0%</span>
+                            <span class="cache-stat-label">Hit Rate</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="cache-actions">
+                    <button class="cache-action-btn" onclick="refreshCacheStats()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button class="cache-action-btn danger" onclick="clearCache()">
+                        <i class="fas fa-trash"></i> Clear Cache
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Sidebar -->
+        <div class="history-sidebar" id="history-sidebar">
+            <div class="history-header">
+                <h3><i class="fas fa-history"></i> Classification History</h3>
+                <div class="history-actions">
+                    <button class="history-action-btn" onclick="clearHistory()" title="Clear All">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <button class="history-action-btn" onclick="toggleHistory()" title="Close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="history-content" id="history-content">
+                <div class="history-empty">
+                    <i class="fas fa-inbox"></i>
+                    <p>No classification history yet</p>
+                </div>
+            </div>
+        </div>
 
         <!-- Hero Section -->
         <section class="hero">
@@ -145,15 +265,27 @@
                 <div class="panel-header">
                     <h3><i class="fas fa-newspaper"></i> Enter News Article</h3>
                     <div class="sample-buttons">
-                        <button class="sample-btn" onclick="loadSample('tech')">Tech</button>
-                        <button class="sample-btn" onclick="loadSample('sports')">Sports</button>
-                        <button class="sample-btn" onclick="loadSample('politics')">Politics</button>
-                        <button class="sample-btn" onclick="loadSample('business')">Business</button>
+                        <button class="sample-btn" onclick="loadSample('tech')"><i class="fas fa-microchip"></i>
+                            Tech</button>
+                        <button class="sample-btn" onclick="loadSample('sports')"><i class="fas fa-futbol"></i>
+                            Sports</button>
+                        <button class="sample-btn" onclick="loadSample('politics')"><i class="fas fa-landmark"></i>
+                            Politics</button>
+                        <button class="sample-btn" onclick="loadSample('business')"><i class="fas fa-chart-line"></i>
+                            Business</button>
+                        <button class="sample-btn" onclick="loadSample('health')"><i class="fas fa-heartbeat"></i>
+                            Health</button>
+                        <button class="sample-btn" onclick="loadSample('science')"><i class="fas fa-flask"></i>
+                            Science</button>
+                        <button class="sample-btn" onclick="loadSample('entertainment')"><i class="fas fa-film"></i>
+                            Entertainment</button>
+                        <button class="sample-btn" onclick="loadSample('finance')"><i class="fas fa-coins"></i>
+                            Finance</button>
                     </div>
                 </div>
                 <div class="textarea-wrapper">
                     <textarea id="news-text"
-                        placeholder="Paste or type your news article here... (minimum 20 characters)"
+                        placeholder="Paste or type your news article here... (minimum 10 characters)"
                         rows="8"></textarea>
                     <div class="textarea-footer">
                         <span class="char-count"><span id="char-count">0</span> characters</span>
@@ -170,15 +302,24 @@
                     <h3><i class="fas fa-image"></i> Upload Image</h3>
                 </div>
                 <div class="file-upload-area" id="image-drop-zone">
-                    <input type="file" id="image-input" accept="image/*" hidden
+                    <input type="file" id="image-input" accept="image/*" style="display: none;"
                         onchange="handleFileSelect(event, 'image')">
-                    <div class="upload-content" onclick="document.getElementById('image-input').click()">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <p>Drag & drop an image or click to browse</p>
-                        <span>JPG, PNG, GIF up to 10MB</span>
+                    <div class="upload-content" id="image-upload-content">
+                        <div class="upload-icon-wrapper">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <p class="upload-title">Drag & drop an image or click to browse</p>
+                        <span class="upload-hint">JPG, PNG, GIF, WebP up to 10MB</span>
+                        <button class="browse-btn"
+                            onclick="event.stopPropagation(); document.getElementById('image-input').click();">
+                            <i class="fas fa-folder-open"></i> Browse Files
+                        </button>
                     </div>
                     <div class="file-preview" id="image-preview" style="display: none;">
                         <img id="image-preview-img" src="" alt="Preview">
+                        <div class="file-preview-info">
+                            <span id="image-filename-display"></span>
+                        </div>
                         <button class="remove-file-btn" onclick="removeFile('image')">
                             <i class="fas fa-times"></i>
                         </button>
@@ -192,16 +333,27 @@
                     <h3><i class="fas fa-microphone"></i> Upload Audio</h3>
                 </div>
                 <div class="file-upload-area" id="audio-drop-zone">
-                    <input type="file" id="audio-input" accept="audio/*" hidden
+                    <input type="file" id="audio-input" accept="audio/*" style="display: none;"
                         onchange="handleFileSelect(event, 'audio')">
-                    <div class="upload-content" onclick="document.getElementById('audio-input').click()">
-                        <i class="fas fa-music"></i>
-                        <p>Drag & drop an audio file or click to browse</p>
-                        <span>MP3, WAV, M4A up to 50MB</span>
+                    <div class="upload-content" id="audio-upload-content">
+                        <div class="upload-icon-wrapper audio-icon">
+                            <i class="fas fa-music"></i>
+                        </div>
+                        <p class="upload-title">Drag & drop an audio file or click to browse</p>
+                        <span class="upload-hint">MP3, WAV, M4A, OGG up to 50MB</span>
+                        <button class="browse-btn"
+                            onclick="event.stopPropagation(); document.getElementById('audio-input').click();">
+                            <i class="fas fa-folder-open"></i> Browse Files
+                        </button>
                     </div>
                     <div class="file-info" id="audio-info" style="display: none;">
-                        <i class="fas fa-file-audio"></i>
-                        <span id="audio-filename"></span>
+                        <div class="file-info-icon">
+                            <i class="fas fa-file-audio"></i>
+                        </div>
+                        <div class="file-info-details">
+                            <span class="file-name" id="audio-filename"></span>
+                            <span class="file-size" id="audio-filesize"></span>
+                        </div>
                         <button class="remove-file-btn" onclick="removeFile('audio')">
                             <i class="fas fa-times"></i>
                         </button>
@@ -215,16 +367,27 @@
                     <h3><i class="fas fa-video"></i> Upload Video</h3>
                 </div>
                 <div class="file-upload-area" id="video-drop-zone">
-                    <input type="file" id="video-input" accept="video/*" hidden
+                    <input type="file" id="video-input" accept="video/*" style="display: none;"
                         onchange="handleFileSelect(event, 'video')">
-                    <div class="upload-content" onclick="document.getElementById('video-input').click()">
-                        <i class="fas fa-film"></i>
-                        <p>Drag & drop a video file or click to browse</p>
-                        <span>MP4, MOV, AVI up to 100MB</span>
+                    <div class="upload-content" id="video-upload-content">
+                        <div class="upload-icon-wrapper video-icon">
+                            <i class="fas fa-film"></i>
+                        </div>
+                        <p class="upload-title">Drag & drop a video file or click to browse</p>
+                        <span class="upload-hint">MP4, MOV, AVI, WebM up to 100MB</span>
+                        <button class="browse-btn"
+                            onclick="event.stopPropagation(); document.getElementById('video-input').click();">
+                            <i class="fas fa-folder-open"></i> Browse Files
+                        </button>
                     </div>
                     <div class="file-info" id="video-info" style="display: none;">
-                        <i class="fas fa-file-video"></i>
-                        <span id="video-filename"></span>
+                        <div class="file-info-icon">
+                            <i class="fas fa-file-video"></i>
+                        </div>
+                        <div class="file-info-details">
+                            <span class="file-name" id="video-filename"></span>
+                            <span class="file-size" id="video-filesize"></span>
+                        </div>
                         <button class="remove-file-btn" onclick="removeFile('video')">
                             <i class="fas fa-times"></i>
                         </button>
@@ -320,7 +483,7 @@
         <!-- Footer -->
         <footer class="main-footer">
             <div class="footer-content">
-                <p>NEWSCAT v4.1 - Optimized Multi-Modal AI Classification</p>
+                <p>NEWSCAT v5.0 - Optimized Multi-Modal AI Classification</p>
                 <div class="footer-links">
                     <a href="#" onclick="showApiInfo()"><i class="fas fa-code"></i> API</a>
                     <a href="#" onclick="showModelInfo()"><i class="fas fa-brain"></i> Models</a>

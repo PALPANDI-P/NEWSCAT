@@ -20,7 +20,7 @@ class Config:
     TESTING = False
     
     # Server
-    HOST = os.getenv('HOST', 'localhost')
+    HOST = os.getenv('HOST', '127.0.0.1')
     PORT = int(os.getenv('PORT', 5000))
     
     # Paths
@@ -31,11 +31,6 @@ class Config:
     MODEL_DIR = DATA_DIR / 'models' / 'pretrained'
     TRAINING_DATA_DIR = DATA_DIR / 'training'
     LOG_DIR = BASE_DIR / 'logs'
-    
-    # Create directories
-    MODEL_DIR.mkdir(parents=True, exist_ok=True)
-    TRAINING_DATA_DIR.mkdir(parents=True, exist_ok=True)
-    LOG_DIR.mkdir(parents=True, exist_ok=True)
     
     # Model settings
     DEFAULT_CLASSIFIER = os.getenv('DEFAULT_CLASSIFIER', 'enhanced')
@@ -48,25 +43,42 @@ class Config:
     
     # Feature extraction
     TFIDF_MAX_FEATURES = int(os.getenv('TFIDF_MAX_FEATURES', 5000))
-    NGRAM_RANGE = tuple(map(int, os.getenv('NGRAM_RANGE', '1,3').split(',')))
+    NGRAM_RANGE = (1, 2)  # Fixed tuple for ngram range
     USE_LEMMATIZATION = os.getenv('USE_LEMMATIZATION', 'True').lower() == 'true'
     
     # Training data
     TRAINING_DATA_PATH = Path(os.getenv('TRAINING_DATA_PATH', 
                                        TRAINING_DATA_DIR / 'news_samples.json'))
     
-    # Categories
+    # Categories - Extended to 20 categories
     CATEGORIES = {
-        'politics': 'Government, elections, policies',
-        'sports': 'Sports events, athletes, teams',
-        'technology': 'Tech innovations, AI, software',
-        'business': 'Markets, companies, economy',
-        'entertainment': 'Movies, music, celebrities',
-        'health': 'Medical news, healthcare',
-        'science': 'Scientific discoveries, research',
-        'world': 'International news, global events',
-        'education': 'Schools, universities, learning',
-        'environment': 'Climate, nature, conservation'
+        # Core Categories
+        'technology': 'Tech innovations, AI, software, gadgets',
+        'sports': 'Sports events, athletes, teams, championships',
+        'politics': 'Government, elections, policies, legislation',
+        'business': 'Markets, companies, economy, corporate news',
+        'entertainment': 'Movies, music, celebrities, streaming',
+        
+        # Extended Categories
+        'health': 'Medical news, healthcare, wellness, diseases',
+        'science': 'Scientific discoveries, research, space, physics',
+        'world': 'International news, global events, diplomacy',
+        'education': 'Schools, universities, learning, academic',
+        'environment': 'Climate, nature, conservation, sustainability',
+        
+        # Specialized Categories
+        'finance': 'Cryptocurrency, investing, banking, markets',
+        'automotive': 'Cars, electric vehicles, auto industry',
+        'travel': 'Tourism, destinations, airlines, hotels',
+        'food': 'Restaurants, cooking, nutrition, food industry',
+        'fashion': 'Clothing, designers, trends, luxury brands',
+        
+        # Niche Categories
+        'realestate': 'Housing market, property, mortgages',
+        'legal': 'Lawsuits, court cases, legal proceedings',
+        'religion': 'Faith, spirituality, religious news',
+        'lifestyle': 'Wellness, relationships, personal growth',
+        'opinion': 'Editorials, commentary, analysis'
     }
     
     # Performance
@@ -82,6 +94,23 @@ class Config:
     ENABLE_SENTIMENT_ANALYSIS = True
     ENABLE_ENTITY_EXTRACTION = True
     ENABLE_KEYWORD_EXTRACTION = True
+    
+    @classmethod
+    def ensure_directories(cls):
+        """Create necessary directories if they don't exist"""
+        try:
+            cls.MODEL_DIR.mkdir(parents=True, exist_ok=True)
+            cls.TRAINING_DATA_DIR.mkdir(parents=True, exist_ok=True)
+            cls.LOG_DIR.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            print(f"Warning: Could not create directories: {e}")
+
+
+# Create directories on module load (with error handling)
+try:
+    Config.ensure_directories()
+except Exception as e:
+    print(f"Warning: Directory creation failed: {e}")
 
 
 class DevelopmentConfig(Config):
