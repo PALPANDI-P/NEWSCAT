@@ -248,5 +248,380 @@
         "id": 50,
         "text": "Scientists discovered a massive coral reef system off the coast of Australia, previously unknown and untouched by climate change. The reef spans 500 kilometers and hosts hundreds of new species. Marine biologists are working to designate the area as a protected marine reserve.",
         "category": "environment"
+    },
+    {
+        "id": 51,
+        "text": "A major plane crash involving a commercial airliner resulted in 150 casualties when the aircraft encountered severe turbulence and lost altitude rapidly. Emergency response teams arrived at the crash site within minutes, but the impact was catastrophic. Aviation authorities have launched an investigation into the cause of the accident.",
+        "category": "accidents"
+    },
+    {
+        "id": 52,
+        "text": "A train derailment in Ohio caused a massive chemical spill when several tank cars carrying hazardous materials overturned. Residents within a 5-mile radius were evacuated as a precaution. The National Transportation Safety Board is investigating whether track maintenance issues contributed to the accident.",
+        "category": "accidents"
+    },
+    {
+        "id": 53,
+        "text": "A multi-vehicle pileup on Interstate 95 during heavy fog left 12 people injured and caused miles of traffic backup. The collision involved more than 40 vehicles, including several tractor-trailers. Emergency crews worked for hours to extract trapped passengers from the wreckage.",
+        "category": "accidents"
+    },
+    {
+        "id": 54,
+        "text": "An industrial accident at a chemical plant in Texas resulted in a massive explosion that injured 23 workers. The blast shattered windows in nearby homes and could be felt miles away. OSHA investigators are examining whether safety protocols were violated at the facility.",
+        "category": "accidents"
+    },
+    {
+        "id": 55,
+        "text": "A drunk driving accident claimed the lives of a family of four when their vehicle was struck head-on by a wrong-way driver. The suspect, who had a blood alcohol level three times the legal limit, survived and faces multiple charges of vehicular manslaughter.",
+        "category": "accidents"
+    },
+    {
+        "id": 56,
+        "text": "Police arrested a suspect in connection with a series of armed robberies targeting convenience stores across the city. The 28-year-old male was taken into custody following a high-speed chase. Investigators linked him to at least 12 incidents through surveillance footage and forensic evidence.",
+        "category": "crime"
+    },
+    {
+        "id": 57,
+        "text": "A mass shooting at a shopping mall left 8 dead and 15 injured before police neutralized the gunman. The attack has reignited debates about gun control legislation. Authorities are investigating whether the shooter had accomplices or acted alone.",
+        "category": "crime"
+    },
+    {
+        "id": 58,
+        "text": "Federal authorities dismantled a major drug trafficking operation that smuggled millions of dollars worth of narcotics across the southern border. The investigation resulted in 45 arrests and the seizure of 2,000 kilograms of fentanyl. The DEA called it one of the largest busts in recent history.",
+        "category": "crime"
+    },
+    {
+        "id": 59,
+        "text": "A notorious serial killer was sentenced to life in prison after being convicted of murdering 12 women over a 15-year period. DNA evidence finally linked the defendant to the cold cases. Victims' families expressed relief that justice had finally been served.",
+        "category": "crime"
+    },
+    {
+        "id": 60,
+        "text": "Cybercrime investigators uncovered an identity theft ring that stole personal information from over 100,000 people. The sophisticated operation used phishing emails and malware to access bank accounts. Authorities warn consumers to be vigilant about protecting their financial data.",
+        "category": "crime"
+    },
+    {
+        "id": 61,
+        "text": "A powerful 7.8 magnitude earthquake struck southeastern Turkey, killing more than 40,000 people and destroying thousands of buildings. Rescue teams from around the world joined the search for survivors trapped under rubble. The disaster caused an estimated $34 billion in damages.",
+        "category": "disasters"
+    },
+    {
+        "id": 62,
+        "text": "Hurricane Maria made landfall as a Category 5 storm, devastating Puerto Rico and leaving the island without power for months. The death toll eventually reached nearly 3,000. Recovery efforts continue years after the disaster, with many homes still awaiting repairs.",
+        "category": "disasters"
+    },
+    {
+        "id": 63,
+        "text": "Wildfires in California burned over 2 million acres, destroying entire towns and forcing hundreds of thousands to evacuate. Firefighters from multiple states battled the blazes for weeks. Climate scientists warn that fire seasons are becoming longer and more intense.",
+        "category": "disasters"
+    },
+    {
+        "id": 64,
+        "text": "A tsunami triggered by an undersea earthquake devastated coastal communities in Indonesia, killing over 2,000 people. The waves reached heights of 20 feet in some areas. Early warning systems failed to alert residents in time for evacuation.",
+        "category": "disasters"
+    },
+    {
+        "id": 65,
+        "text": "Historic flooding in Pakistan submerged one-third of the country, affecting 33 million people and causing $30 billion in damages. Monsoon rains of unprecedented intensity overwhelmed drainage systems. The UN called it a climate catastrophe of epic proportions.",
+        "category": "disasters"
+    },
+    {
+        "id": 66,
+        "text": "Thousands of protesters gathered in the capital to demand government reforms, marking the largest demonstration in decades. Protesters carried placards calling for an end to corruption and greater democratic freedoms. Police presence was heavy but the march remained peaceful.",
+        "category": "protests"
+    },
+    {
+        "id": 67,
+        "text": "A general strike paralyzed France as millions of workers walked off the job to protest pension reform legislation. Transportation, schools, and public services were severely disrupted. Union leaders vowed to continue the protests until the government withdraws the bill.",
+        "category": "protests"
+    },
+    {
+        "id": 68,
+        "text": "Climate activists staged a sit-in at a major oil refinery, blocking access roads and demanding an end to fossil fuel extraction. Police arrested 200 demonstrators for trespassing. The protest highlights growing pressure on energy companies to address climate change.",
+        "category": "protests"
+    },
+    {
+        "id": 69,
+        "text": "Student protests against tuition hikes spread to universities across the country, with walkouts and occupation of administrative buildings. Students demanded affordable education and debt relief. University officials agreed to meet with student representatives.",
+        "category": "protests"
+    },
+    {
+        "id": 70,
+        "text": "Anti-government protests in Iran entered their third week despite a violent crackdown by security forces. Demonstrators are demanding women's rights and regime change. International human rights organizations have condemned the use of lethal force against protesters.",
+        "category": "protests"
+    },
+    {
+        "id": 71,
+        "text": "The unemployment rate fell to 3.5%, the lowest level in 50 years, as employers added 300,000 jobs in the latest report. Hiring was strong across healthcare, technology, and hospitality sectors. Economists see signs of a robust labor market despite recession concerns.",
+        "category": "career"
+    },
+    {
+        "id": 72,
+        "text": "Major tech companies announced layoffs affecting 100,000 workers globally as the industry adjusts to post-pandemic realities. Meta, Google, and Amazon were among the companies reducing headcount. Affected employees are competing for fewer positions in a tightening job market.",
+        "category": "career"
+    },
+    {
+        "id": 73,
+        "text": "Remote work has become permanent for 30% of office workers, fundamentally changing the employment landscape. Companies are adopting hybrid models that combine office and home work. Real estate markets are adjusting as workers relocate to more affordable areas.",
+        "category": "career"
+    },
+    {
+        "id": 74,
+        "text": "A new report shows the gig economy now employs 55 million Americans, raising questions about worker classification and benefits. Ride-share drivers and delivery workers are organizing for better pay and protections. Legislators are debating new labor laws for the sector.",
+        "category": "career"
+    },
+    {
+        "id": 75,
+        "text": "Career experts recommend upskilling in artificial intelligence and data analysis as automation transforms the workplace. Workers who adapt to new technologies are commanding higher salaries. Companies are investing billions in employee training programs.",
+        "category": "career"
+    },
+    {
+        "id": 76,
+        "text": "Wedding industry trends show couples are spending more on personalized experiences, with the average wedding costing $35,000. Destination weddings have increased 40% since the pandemic. Marriage rates are slowly recovering after hitting historic lows.",
+        "category": "relationships"
+    },
+    {
+        "id": 77,
+        "text": "Divorce rates have stabilized after increasing during the pandemic, with 40% of marriages still ending in separation. Family courts report increasing complexity in custody arrangements. Mediation services are becoming more popular than litigation.",
+        "category": "relationships"
+    },
+    {
+        "id": 78,
+        "text": "Dating app usage has reached record levels, with 40% of new couples meeting online. Apps are introducing new features like video dating and compatibility matching. Relationship experts warn about the challenges of finding meaningful connections in the digital age.",
+        "category": "relationships"
+    },
+    {
+        "id": 79,
+        "text": "Parenting styles are evolving as millennials raise children with different approaches than previous generations. Gentle parenting and conscious discipline are gaining popularity. Studies show children benefit from emotionally supportive parenting techniques.",
+        "category": "relationships"
+    },
+    {
+        "id": 80,
+        "text": "Adoption rates have increased 15% as more families choose to grow through adoption. International adoptions have become more complex due to changing regulations. Support groups help adoptive families navigate the unique challenges they face.",
+        "category": "relationships"
+    },
+    {
+        "id": 81,
+        "text": "Mental health awareness has reached unprecedented levels, with more people seeking therapy than ever before. Teletherapy platforms have made mental health services more accessible. Employers are expanding mental health benefits to support employee wellbeing.",
+        "category": "mentalhealth"
+    },
+    {
+        "id": 82,
+        "text": "A new study reveals that 1 in 5 adults experience mental illness each year, with depression and anxiety being most common. Researchers emphasize the importance of early intervention and treatment. Stigma around mental health continues to decrease.",
+        "category": "mentalhealth"
+    },
+    {
+        "id": 83,
+        "text": "Suicide prevention hotlines report a 40% increase in calls following the launch of the new 988 emergency number. Mental health advocates celebrate the easier access to crisis support. Training for crisis counselors has expanded to meet demand.",
+        "category": "mentalhealth"
+    },
+    {
+        "id": 84,
+        "text": "Research shows that cognitive behavioral therapy is as effective as medication for treating many mental health conditions. The therapy helps patients identify and change negative thought patterns. Insurance coverage for mental health treatment has improved significantly.",
+        "category": "mentalhealth"
+    },
+    {
+        "id": 85,
+        "text": "Workplace burnout has been recognized as an occupational phenomenon by the WHO, affecting 70% of workers surveyed. Companies are implementing wellness programs and mental health days. Experts recommend setting boundaries and practicing self-care.",
+        "category": "mentalhealth"
+    },
+    {
+        "id": 86,
+        "text": "An investigative report revealed widespread corruption in city government, leading to the resignation of three officials. The months-long investigation uncovered evidence of bribery and kickbacks. Federal prosecutors are considering criminal charges.",
+        "category": "investigative"
+    },
+    {
+        "id": 87,
+        "text": "A whistleblower exposed safety violations at a major pharmaceutical company that endangered patients. Leaked documents showed the company knew about contamination risks for years. Congressional hearings have been scheduled to investigate the allegations.",
+        "category": "investigative"
+    },
+    {
+        "id": 88,
+        "text": "An in-depth investigation into human trafficking networks led to the rescue of 200 victims and 50 arrests. The special report documented how criminal organizations exploit vulnerable populations. Law enforcement agencies coordinated across multiple states.",
+        "category": "investigative"
+    },
+    {
+        "id": 89,
+        "text": "Investigative journalists uncovered a scheme to defraud investors of billions through a complex web of shell companies. The expose revealed connections to powerful political figures. Regulators have frozen assets pending investigation.",
+        "category": "investigative"
+    },
+    {
+        "id": 90,
+        "text": "A deep dive into environmental violations at chemical plants revealed systematic pollution of waterways. Documents obtained through FOIA requests showed regulators ignored complaints from residents. The EPA has launched an enforcement action.",
+        "category": "investigative"
+    },
+    {
+        "id": 91,
+        "text": "BREAKING: A major earthquake has struck the Pacific coast, with initial reports of significant damage. Emergency services are responding to the affected areas. Residents are advised to stay away from coastal areas due to tsunami risk.",
+        "category": "breaking"
+    },
+    {
+        "id": 92,
+        "text": "JUST IN: The President has announced a new executive order on immigration reform. The order provides a pathway to citizenship for millions of undocumented immigrants. Full details are expected in a press conference this afternoon.",
+        "category": "breaking"
+    },
+    {
+        "id": 93,
+        "text": "DEVELOPING: A hostage situation is unfolding at a downtown bank. Police have surrounded the building and negotiators are on scene. Nearby buildings have been evacuated as a precaution.",
+        "category": "breaking"
+    },
+    {
+        "id": 94,
+        "text": "URGENT: Severe weather warnings are in effect for the Midwest as a tornado outbreak is expected. Residents are advised to seek shelter immediately. Multiple tornadoes have already been spotted on the ground.",
+        "category": "breaking"
+    },
+    {
+        "id": 95,
+        "text": "LIVE UPDATE: Stock markets have halted trading after a sudden 10% drop triggered circuit breakers. Financial analysts point to concerns about inflation and interest rates. Trading is expected to resume in 15 minutes.",
+        "category": "breaking"
+    },
+    {
+        "id": 96,
+        "text": "A historic blizzard dumped 4 feet of snow on the Northeast, paralyzing travel and closing schools for a week. The National Weather Service said it was the largest snowfall in 50 years. Power outages affected over 500,000 customers.",
+        "category": "weather"
+    },
+    {
+        "id": 97,
+        "text": "Meteorologists are tracking a developing hurricane in the Atlantic that could strengthen to Category 4 before making landfall. Coastal residents are advised to prepare evacuation plans. The storm is expected to reach the mainland within 5 days.",
+        "category": "weather"
+    },
+    {
+        "id": 98,
+        "text": "A record-breaking heat wave in Europe sent temperatures above 110°F, causing wildfires and health emergencies. Climate scientists attribute the extreme weather to climate change. At least 1,000 heat-related deaths have been reported.",
+        "category": "weather"
+    },
+    {
+        "id": 99,
+        "text": "Severe thunderstorms produced damaging hail and tornadoes across the Plains states. The Storm Prediction Center issued numerous tornado warnings throughout the day. Cleanup efforts are underway as residents assess the damage.",
+        "category": "weather"
+    },
+    {
+        "id": 100,
+        "text": "Drought conditions have worsened across the Western United States, with reservoirs at historic lows. Water restrictions are in effect for millions of residents. Farmers are struggling with reduced water allocations for crops.",
+        "category": "weather"
+    },
+    {
+        "id": 101,
+        "text": "Congress passed a $1 trillion infrastructure bill to repair aging bridges, roads, and water systems across the nation. The legislation includes funding for broadband expansion and electric vehicle charging stations. Construction projects are expected to create millions of jobs.",
+        "category": "infrastructure"
+    },
+    {
+        "id": 102,
+        "text": "A bridge collapse in Pittsburgh injured 10 people and highlighted the nation's crumbling infrastructure. The 50-year-old bridge had been rated as structurally deficient. Engineers warn that thousands of bridges across the country need urgent repairs.",
+        "category": "infrastructure"
+    },
+    {
+        "id": 103,
+        "text": "The power grid in Texas failed during a winter storm, leaving millions without electricity in freezing temperatures. The blackout caused hundreds of deaths and billions in damages. Regulators are pushing for grid modernization to prevent future failures.",
+        "category": "infrastructure"
+    },
+    {
+        "id": 104,
+        "text": "A major water main break flooded streets in downtown Los Angeles, causing extensive damage to businesses. The 100-year-old pipe was part of the city's aging water infrastructure. Officials are accelerating plans to replace deteriorating pipes.",
+        "category": "infrastructure"
+    },
+    {
+        "id": 105,
+        "text": "Public transit systems are struggling with declining ridership and aging infrastructure post-pandemic. Subway systems in major cities face billions in deferred maintenance. Federal funding is being allocated to modernize transportation networks.",
+        "category": "infrastructure"
+    },
+    {
+        "id": 106,
+        "text": "A TikTok video went viral with over 100 million views, launching an unknown dancer to instant fame. The platform's algorithm continues to create overnight celebrities. Brands are rushing to partner with viral content creators.",
+        "category": "socialmedia"
+    },
+    {
+        "id": 107,
+        "text": "Instagram introduced new features to combat cyberbullying and protect user mental health. The platform will hide like counts by default and add content warnings. Social media companies face increasing pressure to address harmful content.",
+        "category": "socialmedia"
+    },
+    {
+        "id": 108,
+        "text": "Twitter's policy changes under new ownership sparked debate about free speech and content moderation. Millions of users joined alternative platforms in response. Advertisers have raised concerns about brand safety on the platform.",
+        "category": "socialmedia"
+    },
+    {
+        "id": 109,
+        "text": "YouTube creators are earning millions through the platform's partner program, with top influencers building media empires. The creator economy is now valued at over $100 billion. Traditional media companies are competing for digital talent.",
+        "category": "socialmedia"
+    },
+    {
+        "id": 110,
+        "text": "Social media trends show Gen Z prefers short-form video content on platforms like TikTok over traditional social networks. Brands are adapting marketing strategies to reach younger audiences. The shift is reshaping the digital advertising landscape.",
+        "category": "socialmedia"
+    },
+    {
+        "id": 111,
+        "text": "The latest installment in the popular video game franchise broke sales records with $800 million in first-weekend revenue. Critics praised the game's innovative gameplay and stunning graphics. The success demonstrates the growing cultural impact of gaming.",
+        "category": "gaming"
+    },
+    {
+        "id": 112,
+        "text": "Esports tournaments are drawing larger audiences than traditional sports events, with millions watching online. Prize pools have reached $40 million for major competitions. Professional gamers are becoming celebrities with lucrative sponsorship deals.",
+        "category": "gaming"
+    },
+    {
+        "id": 113,
+        "text": "Sony and Microsoft announced next-generation gaming consoles with advanced graphics and faster processing. The new systems support 8K resolution and ray tracing technology. Pre-orders sold out within minutes of becoming available.",
+        "category": "gaming"
+    },
+    {
+        "id": 114,
+        "text": "Video game developers are unionizing at major studios, demanding better working conditions and fair compensation. The movement follows reports of crunch culture and overtime without pay. Industry leaders are responding with policy changes.",
+        "category": "gaming"
+    },
+    {
+        "id": 115,
+        "text": "Cloud gaming services are transforming the industry, allowing players to stream games without expensive hardware. Tech giants are investing billions in gaming infrastructure. The technology could democratize access to high-end gaming experiences.",
+        "category": "gaming"
+    },
+    {
+        "id": 116,
+        "text": "SpaceX successfully launched 60 more Starlink satellites, expanding its constellation to over 4,000 spacecraft. The company aims to provide global broadband coverage from orbit. Astronomers have raised concerns about light pollution from satellites.",
+        "category": "space"
+    },
+    {
+        "id": 117,
+        "text": "NASA's Artemis program successfully sent astronauts around the Moon for the first time in 50 years. The mission is a stepping stone to landing humans on the lunar surface by 2025. The agency plans to establish a permanent Moon base.",
+        "category": "space"
+    },
+    {
+        "id": 118,
+        "text": "The James Webb Space Telescope captured unprecedented images of distant galaxies, revealing the universe's earliest stars. The $10 billion telescope is revolutionizing our understanding of cosmic evolution. Scientists say the findings will take decades to fully analyze.",
+        "category": "space"
+    },
+    {
+        "id": 119,
+        "text": "Space tourism took a major step forward as private citizens paid $55 million each for trips to the International Space Station. SpaceX, Blue Origin, and Virgin Galactic are competing in the emerging market. Regulators are developing safety standards for commercial spaceflight.",
+        "category": "space"
+    },
+    {
+        "id": 120,
+        "text": "China successfully landed a rover on Mars, becoming the second nation to operate on the red planet. The achievement demonstrates China's growing space capabilities. International cooperation in space exploration faces geopolitical challenges.",
+        "category": "space"
+    },
+    {
+        "id": 121,
+        "text": "Global food prices reached record highs as drought and conflict disrupted agricultural production. The UN warned of a looming food crisis affecting millions in developing nations. Farmers are struggling with rising fertilizer and fuel costs.",
+        "category": "agriculture"
+    },
+    {
+        "id": 122,
+        "text": "Vertical farming startups are attracting billions in investment as the technology promises year-round crop production with less water. Indoor farms can grow produce 10 times more efficiently than traditional agriculture. The industry is scaling rapidly in urban areas.",
+        "category": "agriculture"
+    },
+    {
+        "id": 123,
+        "text": "Farmers are adopting precision agriculture technology, using drones and AI to optimize crop yields and reduce chemical use. The technology can reduce water consumption by 30% while maintaining productivity. Agricultural equipment manufacturers are investing heavily in automation.",
+        "category": "agriculture"
+    },
+    {
+        "id": 124,
+        "text": "The farm bill being debated in Congress would provide $500 billion in subsidies and nutrition programs over 10 years. The legislation affects everything from crop insurance to food stamps. Rural communities are watching the debate closely.",
+        "category": "agriculture"
+    },
+    {
+        "id": 125,
+        "text": "Organic farming has grown 300% in the past decade as consumers demand pesticide-free produce. Certification requirements ensure products meet strict standards. Conventional farmers are transitioning to organic methods to capture premium prices.",
+        "category": "agriculture"
     }
 ]

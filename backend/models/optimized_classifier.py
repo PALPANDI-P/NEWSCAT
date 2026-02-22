@@ -437,6 +437,208 @@ class OptimizedEnsembleClassifier(BaseNewsClassifier):
                           'my view', 'in my opinion', 'i believe', 'from my perspective',
                           'critical', 'supportive', 'against', 'for', 'versus'],
                 'low': ['think', 'believe', 'say', 'feel', 'opinion']
+            },
+            
+            # === REAL INCIDENT CATEGORIES ===
+            'accidents': {
+                'high': ['plane crash', 'train derailment', 'car accident', 'traffic collision',
+                        'industrial accident', 'workplace accident', 'fatal crash', 'multi-vehicle',
+                        'pileup', 'head-on collision', 'hit-and-run', 'drunk driving accident',
+                        'aviation accident', 'maritime accident', 'factory explosion'],
+                'medium': ['accident', 'crash', 'collision', 'casualty', 'injured', 'wounded',
+                          'emergency response', 'rescue operation', 'airbag', 'seatbelt',
+                          'speeding', 'drunk driving', 'dwi', 'dui', 'traffic accident',
+                          'road accident', 'car wreck', 'vehicle crash', 'injury crash',
+                          'fatal accident', 'serious injury', 'air crash', 'train crash',
+                          'boat accident', 'workplace injury', 'industrial incident'],
+                'low': ['incident', 'hurt', 'damage', 'wreck', 'crash', 'accident']
+            },
+            'crime': {
+                'high': ['murder', 'homicide', 'robbery', 'burglary', 'assault', 'kidnapping',
+                        'arson', 'fraud', 'embezzlement', 'organized crime', 'serial killer',
+                        'mass shooting', 'violent crime', 'drug trafficking', 'human trafficking',
+                        'money laundering', 'racketeering', 'extortion', 'blackmail'],
+                'medium': ['crime', 'criminal', 'arrest', 'police', 'investigation', 'suspect',
+                          'victim', 'theft', 'stolen', 'illegal', 'felony', 'misdemeanor',
+                          'gang', 'drug dealer', 'weapon', 'firearm', 'shooting', 'stabbing',
+                          'domestic violence', 'hate crime', 'white-collar crime', 'cybercrime',
+                          'identity theft', 'credit card fraud', 'bank robbery', 'carjacking',
+                          'home invasion', 'assault and battery', 'sexual assault', 'vandalism'],
+                'low': ['offense', 'illegal', 'charged', 'detained', 'criminal', 'police']
+            },
+            'disasters': {
+                'high': ['earthquake', 'hurricane', 'tsunami', 'wildfire', 'tornado', 'flood',
+                        'volcanic eruption', 'landslide', 'typhoon', 'cyclone', 'natural disaster',
+                        'disaster relief', 'disaster response', 'catastrophic event'],
+                'medium': ['disaster', 'catastrophe', 'evacuation', 'emergency', 'relief effort',
+                          'casualty', 'destruction', 'devastation', 'aftermath', 'rescue team',
+                          'humanitarian aid', 'fema', 'red cross', 'disaster zone', 'state of emergency',
+                          'natural catastrophe', 'severe weather', 'storm damage', 'flood warning',
+                          'earthquake magnitude', 'richter scale', 'storm surge', 'flash flood',
+                          'wildfire season', 'fire evacuation', 'tornado warning', 'hurricane warning'],
+                'low': ['calamity', 'tragedy', 'emergency', 'crisis', 'disaster']
+            },
+            'protests': {
+                'high': ['protest', 'demonstration', 'rally', 'march', 'strike', 'civil unrest',
+                        'riot', 'uprising', 'activism', 'activist', 'boycott', 'sit-in', 'walkout',
+                        'occupy movement', 'street protest', 'mass demonstration'],
+                'medium': ['demonstrator', 'protester', 'crowd', 'gathering', 'movement', 'cause',
+                          'demand', 'slogan', 'placard', 'banner', 'civil disobedience', 'labor strike',
+                          'union strike', 'general strike', 'hunger strike', 'protest march',
+                          'anti-government', 'anti-war', 'climate protest', 'student protest',
+                          'workers protest', 'political protest', 'social movement', 'advocacy group',
+                          'tear gas', 'rubber bullets', 'police clash', 'arrests at protest'],
+                'low': ['unrest', 'dissent', 'opposition', 'movement', 'protest']
+            },
+            
+            # === HUMAN-CENTRIC CATEGORIES ===
+            'career': {
+                'high': ['job market', 'employment', 'unemployment rate', 'hiring', 'layoff',
+                        'jobless claims', 'workforce', 'recruitment', 'job opening', 'career fair',
+                        'resume tips', 'job interview', 'job search', 'career change'],
+                'medium': ['job', 'career', 'work', 'employer', 'employee', 'salary', 'wage',
+                          'hiring freeze', 'job cut', 'furlough', 'remote work', 'hybrid work',
+                          'workplace', 'profession', 'occupation', 'freelance', 'gig economy',
+                          'contract work', 'part-time', 'full-time', 'internship', 'apprenticeship',
+                          'promotion', 'resignation', 'retirement', 'work-life balance',
+                          'employee benefits', 'health insurance', '401k', 'paid leave',
+                          'human resources', 'talent acquisition', 'headhunter', 'recruiter'],
+                'low': ['work', 'hire', 'position', 'role', 'job', 'career']
+            },
+            'relationships': {
+                'high': ['marriage', 'divorce', 'wedding', 'dating', 'relationship', 'engagement',
+                        'anniversary', 'family', 'parenting', 'custody battle', 'adoption',
+                        'surrogate', 'prenuptial', 'separation agreement'],
+                'medium': ['couple', 'spouse', 'partner', 'marital', 'matrimony', 'separation',
+                          'alimony', 'child support', 'blended family', 'single parent',
+                          'dating app', 'matchmaking', 'romance', 'relationship advice',
+                          'marriage counseling', 'couples therapy', 'family therapy',
+                          'parenting tips', 'child custody', 'visitation rights',
+                          'domestic partnership', 'civil union', 'common-law marriage',
+                          'infidelity', 'cheating', 'breakup', 'reconciliation'],
+                'low': ['love', 'partner', 'family', 'marriage', 'relationship']
+            },
+            'mentalhealth': {
+                'high': ['mental health', 'depression', 'anxiety', 'therapy', 'psychologist',
+                        'psychiatrist', 'suicide prevention', 'mental illness', 'ptsd',
+                        'bipolar disorder', 'schizophrenia', 'mental health crisis',
+                        'psychiatric', 'mental health awareness', 'suicide hotline'],
+                'medium': ['mental', 'psychological', 'counseling', 'therapist', 'cognitive',
+                          'behavioral', 'stress', 'burnout', 'trauma', 'disorder', 'wellbeing',
+                          'self-care', 'mindfulness', 'meditation', 'anxiety attack',
+                          'panic attack', 'social anxiety', 'ocd', 'eating disorder',
+                          'addiction', 'substance abuse', 'rehabilitation', 'mental health treatment',
+                          'antidepressant', 'ssri', 'therapy session', 'group therapy',
+                          'cbt', 'dbt', 'emotional support', 'mental wellness'],
+                'low': ['stress', 'anxiety', 'mental', 'emotional', 'depression']
+            },
+            
+            # === SPECIALIZED NEWS TYPES ===
+            'investigative': {
+                'high': ['investigation', 'expose', 'whistleblower', 'deep dive', 'special report',
+                        'investigative journalism', 'uncovered', 'revealed', 'leaked documents',
+                        'confidential', 'insider report', 'exclusive investigation'],
+                'medium': ['investigative', 'in-depth', 'analysis', 'reporting', 'uncovered',
+                          'exclusive', 'insider', 'source', 'documentary', 'freedom of information',
+                          'foia', 'investigative report', 'hidden truth', 'cover-up',
+                          'scandal exposed', 'corruption revealed', 'secret documents',
+                          'whistleblower protection', 'anonymous source', 'leaked information',
+                          'investigative series', 'months-long investigation'],
+                'low': ['report', 'investigation', 'findings', 'research', 'expose']
+            },
+            'breaking': {
+                'high': ['breaking news', 'just in', 'developing story', 'live update', 'urgent',
+                        'alert', 'emergency broadcast', 'this just in', 'special report',
+                        'breaking development', 'breaking alert', 'news alert'],
+                'medium': ['breaking', 'developing', 'latest', 'update', 'ongoing', 'situation',
+                          'unfold', 'live coverage', 'real-time', 'moment', 'happening now',
+                          'urgent news', 'flash news', 'news flash', 'just announced',
+                          'immediately', 'right now', 'at this hour', 'as it happens',
+                          'live blog', 'rolling coverage', 'continuous updates'],
+                'low': ['new', 'latest', 'update', 'current', 'breaking']
+            },
+            'weather': {
+                'high': ['weather forecast', 'storm', 'hurricane', 'tornado warning', 'blizzard',
+                        'heat wave', 'cold front', 'tropical storm', 'weather alert',
+                        'meteorologist', 'severe weather', 'weather emergency'],
+                'medium': ['weather', 'forecast', 'temperature', 'rain', 'snow', 'wind',
+                          'humidity', 'climate', 'meteorology', 'drought', 'flood warning',
+                          'severe weather', 'outlook', 'prediction', 'weather pattern',
+                          'barometric pressure', 'wind chill', 'heat index', 'uv index',
+                          'air quality', 'pollen count', 'weather service', 'national weather service',
+                          'weather channel', 'accuweather', 'weather radar', 'satellite imagery',
+                          'precipitation', 'thunderstorm', 'lightning', 'hail'],
+                'low': ['rain', 'sunny', 'cloudy', 'forecast', 'weather']
+            },
+            
+            # === ADDITIONAL CATEGORIES ===
+            'infrastructure': {
+                'high': ['infrastructure bill', 'bridge collapse', 'road construction', 'public works',
+                        'utility outage', 'power grid', 'water main break', 'transportation system',
+                        'highway project', 'infrastructure investment', 'public infrastructure'],
+                'medium': ['infrastructure', 'construction', 'bridge', 'highway', 'road',
+                          'utility', 'power', 'water', 'sewage', 'transit', 'railway',
+                          'airport', 'port', 'dam', 'tunnel', 'power plant', 'water treatment',
+                          'electrical grid', 'telecommunications', 'broadband infrastructure',
+                          'public transit', 'mass transit', 'light rail', 'subway system',
+                          'infrastructure repair', 'infrastructure maintenance', 'civil engineering',
+                          'public works project', 'municipal infrastructure'],
+                'low': ['build', 'project', 'public', 'facility', 'infrastructure']
+            },
+            'socialmedia': {
+                'high': ['viral', 'trending', 'tiktok', 'instagram', 'twitter', 'facebook',
+                        'youtube', 'influencer', 'content creator', 'social media platform',
+                        'hashtag', 'social media trend', 'viral video', 'going viral'],
+                'medium': ['social media', 'post', 'tweet', 'video', 'stream', 'follower',
+                          'like', 'share', 'comment', 'dm', 'viral video', 'meme',
+                          'challenge', 'platform policy', 'content moderation', 'algorithm',
+                          'engagement', 'reach', 'impressions', 'social network',
+                          'user-generated content', 'live stream', 'stories', 'reels',
+                          'threads', 'x platform', 'meta', 'snapchat', 'pinterest',
+                          'linkedin', 'reddit', 'discord', 'twitch', 'kick'],
+                'low': ['online', 'post', 'share', 'viral', 'social']
+            },
+            'gaming': {
+                'high': ['video game', 'esports', 'gaming', 'playstation', 'xbox', 'nintendo',
+                        'pc gaming', 'game release', 'gaming tournament', 'game developer',
+                        'game studio', 'gaming industry', 'professional gaming'],
+                'medium': ['game', 'gamer', 'console', 'gaming', 'multiplayer', 'online gaming',
+                          'streamer', 'twitch', 'game studio', 'dlc', 'patch', 'update',
+                          'beta', 'release date', 'game review', 'gameplay', 'fps',
+                          'mmorpg', 'battle royale', 'mob', 'rpg', 'indie game',
+                          'aaa game', 'game engine', 'unity', 'unreal engine',
+                          'steam', 'epic games', 'playstation plus', 'xbox game pass',
+                          'nintendo switch', 'gaming pc', 'gaming laptop', 'controller',
+                          'gaming chair', 'gaming headset', 'esports tournament', 'prize pool'],
+                'low': ['play', 'game', 'gaming', 'console', 'player']
+            },
+            'space': {
+                'high': ['spacex', 'nasa', 'rocket launch', 'space station', 'mars mission',
+                        'moon landing', 'satellite', 'astronaut', 'space exploration',
+                        'iss', 'international space station', 'space mission'],
+                'medium': ['space', 'orbit', 'launch', 'rocket', 'spacecraft', 'mission',
+                          'telescope', 'hubble', 'james webb', 'asteroid', 'comet',
+                          'meteor', 'space agency', 'spacewalk', 'space suit',
+                          'launch pad', 'countdown', 'liftoff', 're-entry',
+                          'space tourism', 'commercial space', 'blue origin', 'virgin galactic',
+                          'rocket lab', 'boeing starliner', 'orion spacecraft', 'artemis',
+                          'lunar mission', 'mars rover', 'perseverance', 'curiosity rover',
+                          'space debris', 'satellite constellation', 'starlink'],
+                'low': ['orbit', 'launch', 'mission', 'space', 'rocket']
+            },
+            'agriculture': {
+                'high': ['farming', 'agriculture', 'crop', 'harvest', 'livestock', 'farm bill',
+                        'agricultural', 'drought', 'food production', 'farmers market',
+                        'agricultural policy', 'farm subsidy', 'crop yield'],
+                'medium': ['farm', 'farmer', 'agriculture', 'cultivation', 'irrigation',
+                          'pesticide', 'fertilizer', 'organic farming', 'dairy', 'poultry',
+                          'cattle', 'wheat', 'corn', 'soybean', 'rice', 'cotton',
+                          'farm equipment', 'tractor', 'harvester', 'agribusiness',
+                          'farm income', 'commodity prices', 'food security', 'sustainable farming',
+                          'precision agriculture', 'vertical farming', 'hydroponics',
+                          'aquaculture', 'fish farming', 'beekeeping', 'honey production',
+                          'farm labor', 'migrant workers', 'rural economy'],
+                'low': ['farm', 'grow', 'harvest', 'rural', 'agriculture']
             }
         }
         
@@ -457,8 +659,8 @@ class OptimizedEnsembleClassifier(BaseNewsClassifier):
             'low': 1.0
         }
         
-        # Category list for frontend
-        self.categories = list(self._category_keywords.keys())
+        # Note: self.categories is inherited from BaseNewsClassifier as a dict
+        # Do NOT overwrite it with a list, as _create_response() depends on it being a dict
         
         # Try to load pre-trained model
         self._try_load_model()

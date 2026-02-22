@@ -1121,3 +1121,387 @@ werkzeug.exceptions.BadRequest: 400 Bad Request: The browser (or proxy) sent a r
 2026-02-22 00:48:07,472 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:48:07] "GET /api/model/info HTTP/1.1" 200 -
 2026-02-22 00:48:26,340 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:48:26] "GET /api/model/info HTTP/1.1" 200 -
 2026-02-22 00:48:33,923 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 00:48:33] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 19:55:20,595 - backend.models.model_manager - INFO - ModelManager initialized
+2026-02-22 19:55:20,650 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2026-02-22 19:55:20,656 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-22 19:55:23,426 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:55:23] "GET / HTTP/1.1" 200 -
+2026-02-22 19:55:23,532 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:55:23] "GET /css/style.css HTTP/1.1" 200 -
+2026-02-22 19:55:23,534 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:55:23] "GET /js/main.js HTTP/1.1" 200 -
+2026-02-22 19:55:23,573 - backend.models.model_manager - INFO - Loading model: optimized
+2026-02-22 19:55:23,574 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:55:23] "GET /api/categories HTTP/1.1" 200 -
+2026-02-22 19:55:23,576 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:55:23] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 19:55:23,605 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:55:23] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 19:55:35,365 - backend.models.optimized_classifier - INFO - Pre-trained model loaded successfully
+2026-02-22 19:55:35,365 - backend.models.optimized_classifier - INFO - OptimizedEnsembleClassifier v3.5.0 initialized with 20 categories
+2026-02-22 19:55:35,365 - backend.models.model_manager - INFO - Model 'optimized' loaded in 11.79s
+2026-02-22 19:55:35,365 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:55:35] "GET /api/model/info HTTP/1.1" 200 -
+2026-02-22 19:56:18,903 - backend.models.model_manager - INFO - ModelManager initialized
+2026-02-22 19:56:18,968 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2026-02-22 19:56:18,968 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-22 19:56:18,987 - werkzeug - INFO -  * Restarting with watchdog (windowsapi)
+2026-02-22 19:56:19,240 - backend.models.model_manager - INFO - ModelManager initialized
+2026-02-22 19:56:19,258 - werkzeug - WARNING -  * Debugger is active!
+2026-02-22 19:56:19,285 - werkzeug - INFO -  * Debugger PIN: 131-966-199
+2026-02-22 19:56:20,454 - __main__ - INFO - Opening browser: http://127.0.0.1:5000
+2026-02-22 19:56:20,668 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:56:20] "[36mGET / HTTP/1.1[0m" 304 -
+2026-02-22 19:56:20,689 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:56:20] "[36mGET /css/style.css HTTP/1.1[0m" 304 -
+2026-02-22 19:56:20,691 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:56:20] "[36mGET /js/main.js HTTP/1.1[0m" 304 -
+2026-02-22 19:56:20,756 - __main__ - INFO - Opening browser: http://127.0.0.1:5000
+2026-02-22 19:56:20,810 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:56:20] "GET /api/categories HTTP/1.1" 200 -
+2026-02-22 19:56:20,814 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:56:20] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 19:56:20,814 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:56:20] "GET /api/model/info HTTP/1.1" 200 -
+2026-02-22 19:56:20,820 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:56:20] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 19:56:20,905 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:56:20] "[36mGET / HTTP/1.1[0m" 304 -
+2026-02-22 19:56:20,928 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:56:20] "[36mGET /css/style.css HTTP/1.1[0m" 304 -
+2026-02-22 19:56:20,928 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:56:20] "[36mGET /js/main.js HTTP/1.1[0m" 304 -
+2026-02-22 19:56:20,965 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:56:20] "GET /api/categories HTTP/1.1" 200 -
+2026-02-22 19:56:20,967 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:56:20] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 19:56:20,970 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:56:20] "GET /api/model/info HTTP/1.1" 200 -
+2026-02-22 19:56:20,972 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:56:20] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 19:56:41,478 - backend.models.model_manager - INFO - Loading model: image_processor
+2026-02-22 19:56:41,513 - backend.models.model_manager - INFO - Model 'image_processor' loaded in 0.03s
+2026-02-22 19:56:50,770 - backend.models.image_processor - INFO - EasyOCR initialized successfully
+2026-02-22 19:57:13,886 - backend.app - INFO - Image classification: 1449 chars extracted
+2026-02-22 19:57:13,985 - backend.models.optimized_classifier - ERROR - Classification error: 'list' object has no attribute 'get'
+2026-02-22 19:57:13,993 - backend.app - ERROR - Image classification error: 'list' object has no attribute 'get'
+Traceback (most recent call last):
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 558, in classify
+    rule_result = self._advanced_rule_based_classify(text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 643, in _advanced_rule_based_classify
+    result = self._create_response(best_category, confidence, features)
+  File "E:\NEWSCAT\backend\models\base_classifier.py", line 94, in _create_response
+    'category_name': self.categories.get(category, category),
+AttributeError: 'list' object has no attribute 'get'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\NEWSCAT\backend\app.py", line 710, in classify_image
+    result = classifier.classify(extracted_text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 588, in classify
+    return self._advanced_rule_based_classify(text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 643, in _advanced_rule_based_classify
+    result = self._create_response(best_category, confidence, features)
+  File "E:\NEWSCAT\backend\models\base_classifier.py", line 94, in _create_response
+    'category_name': self.categories.get(category, category),
+AttributeError: 'list' object has no attribute 'get'
+2026-02-22 19:57:13,993 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:57:13] "[35m[1mPOST /api/classify/image HTTP/1.1[0m" 500 -
+2026-02-22 19:57:14,002 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:57:14] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 19:58:17,378 - backend.app - INFO - Image classification: 1449 chars extracted
+2026-02-22 19:58:17,459 - backend.models.optimized_classifier - ERROR - Classification error: 'list' object has no attribute 'get'
+2026-02-22 19:58:17,459 - backend.app - ERROR - Image classification error: 'list' object has no attribute 'get'
+Traceback (most recent call last):
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 558, in classify
+    rule_result = self._advanced_rule_based_classify(text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 643, in _advanced_rule_based_classify
+    result = self._create_response(best_category, confidence, features)
+  File "E:\NEWSCAT\backend\models\base_classifier.py", line 94, in _create_response
+    'category_name': self.categories.get(category, category),
+AttributeError: 'list' object has no attribute 'get'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\NEWSCAT\backend\app.py", line 710, in classify_image
+    result = classifier.classify(extracted_text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 588, in classify
+    return self._advanced_rule_based_classify(text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 643, in _advanced_rule_based_classify
+    result = self._create_response(best_category, confidence, features)
+  File "E:\NEWSCAT\backend\models\base_classifier.py", line 94, in _create_response
+    'category_name': self.categories.get(category, category),
+AttributeError: 'list' object has no attribute 'get'
+2026-02-22 19:58:17,467 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:58:17] "[35m[1mPOST /api/classify/image HTTP/1.1[0m" 500 -
+2026-02-22 19:58:17,476 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 19:58:17] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 20:04:07,313 - backend.app - INFO - Image classification: 1449 chars extracted
+2026-02-22 20:04:07,410 - backend.models.optimized_classifier - ERROR - Classification error: 'list' object has no attribute 'get'
+2026-02-22 20:04:07,418 - backend.app - ERROR - Image classification error: 'list' object has no attribute 'get'
+Traceback (most recent call last):
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 558, in classify
+    rule_result = self._advanced_rule_based_classify(text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 643, in _advanced_rule_based_classify
+    result = self._create_response(best_category, confidence, features)
+  File "E:\NEWSCAT\backend\models\base_classifier.py", line 94, in _create_response
+    'category_name': self.categories.get(category, category),
+AttributeError: 'list' object has no attribute 'get'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\NEWSCAT\backend\app.py", line 710, in classify_image
+    result = classifier.classify(extracted_text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 588, in classify
+    return self._advanced_rule_based_classify(text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 643, in _advanced_rule_based_classify
+    result = self._create_response(best_category, confidence, features)
+  File "E:\NEWSCAT\backend\models\base_classifier.py", line 94, in _create_response
+    'category_name': self.categories.get(category, category),
+AttributeError: 'list' object has no attribute 'get'
+2026-02-22 20:04:07,420 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:04:07] "[35m[1mPOST /api/classify/image HTTP/1.1[0m" 500 -
+2026-02-22 20:04:07,439 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:04:07] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 20:04:20,998 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:04:20] "[36mGET / HTTP/1.1[0m" 304 -
+2026-02-22 20:04:21,027 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:04:21] "[36mGET /css/style.css HTTP/1.1[0m" 304 -
+2026-02-22 20:04:21,030 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:04:21] "[36mGET /js/main.js HTTP/1.1[0m" 304 -
+2026-02-22 20:04:21,074 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:04:21] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 20:04:21,079 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:04:21] "GET /api/categories HTTP/1.1" 200 -
+2026-02-22 20:04:21,083 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:04:21] "GET /api/model/info HTTP/1.1" 200 -
+2026-02-22 20:04:21,093 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:04:21] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 20:04:31,615 - backend.app - INFO - Classification request: 292 chars, enhanced=True
+2026-02-22 20:04:31,728 - backend.models.optimized_classifier - ERROR - Classification error: 'list' object has no attribute 'get'
+2026-02-22 20:04:31,728 - backend.app - ERROR - Classification error: 'list' object has no attribute 'get'
+Traceback (most recent call last):
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 574, in classify
+    result = self._create_response(category, confidence, features)
+  File "E:\NEWSCAT\backend\models\base_classifier.py", line 94, in _create_response
+    'category_name': self.categories.get(category, category),
+AttributeError: 'list' object has no attribute 'get'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\NEWSCAT\backend\app.py", line 379, in classify
+    result = classifier.classify(text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 588, in classify
+    return self._advanced_rule_based_classify(text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 643, in _advanced_rule_based_classify
+    result = self._create_response(best_category, confidence, features)
+  File "E:\NEWSCAT\backend\models\base_classifier.py", line 94, in _create_response
+    'category_name': self.categories.get(category, category),
+AttributeError: 'list' object has no attribute 'get'
+2026-02-22 20:04:31,739 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:04:31] "[35m[1mPOST /api/classify HTTP/1.1[0m" 500 -
+2026-02-22 20:04:31,759 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:04:31] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 20:04:36,003 - backend.app - INFO - Classification request: 292 chars, enhanced=True
+2026-02-22 20:04:36,072 - backend.models.optimized_classifier - ERROR - Classification error: 'list' object has no attribute 'get'
+2026-02-22 20:04:36,072 - backend.app - ERROR - Classification error: 'list' object has no attribute 'get'
+Traceback (most recent call last):
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 574, in classify
+    result = self._create_response(category, confidence, features)
+  File "E:\NEWSCAT\backend\models\base_classifier.py", line 94, in _create_response
+    'category_name': self.categories.get(category, category),
+AttributeError: 'list' object has no attribute 'get'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\NEWSCAT\backend\app.py", line 379, in classify
+    result = classifier.classify(text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 588, in classify
+    return self._advanced_rule_based_classify(text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 643, in _advanced_rule_based_classify
+    result = self._create_response(best_category, confidence, features)
+  File "E:\NEWSCAT\backend\models\base_classifier.py", line 94, in _create_response
+    'category_name': self.categories.get(category, category),
+AttributeError: 'list' object has no attribute 'get'
+2026-02-22 20:04:36,072 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:04:36] "[35m[1mPOST /api/classify HTTP/1.1[0m" 500 -
+2026-02-22 20:04:36,080 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:04:36] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 20:04:40,907 - backend.app - INFO - Classification request: 292 chars, enhanced=True
+2026-02-22 20:04:40,984 - backend.models.optimized_classifier - ERROR - Classification error: 'list' object has no attribute 'get'
+2026-02-22 20:04:40,984 - backend.app - ERROR - Classification error: 'list' object has no attribute 'get'
+Traceback (most recent call last):
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 574, in classify
+    result = self._create_response(category, confidence, features)
+  File "E:\NEWSCAT\backend\models\base_classifier.py", line 94, in _create_response
+    'category_name': self.categories.get(category, category),
+AttributeError: 'list' object has no attribute 'get'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\NEWSCAT\backend\app.py", line 379, in classify
+    result = classifier.classify(text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 588, in classify
+    return self._advanced_rule_based_classify(text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 643, in _advanced_rule_based_classify
+    result = self._create_response(best_category, confidence, features)
+  File "E:\NEWSCAT\backend\models\base_classifier.py", line 94, in _create_response
+    'category_name': self.categories.get(category, category),
+AttributeError: 'list' object has no attribute 'get'
+2026-02-22 20:04:40,991 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:04:40] "[35m[1mPOST /api/classify HTTP/1.1[0m" 500 -
+2026-02-22 20:04:41,000 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:04:41] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 20:04:58,576 - backend.app - INFO - Image classification: 1449 chars extracted
+2026-02-22 20:04:58,643 - backend.models.optimized_classifier - ERROR - Classification error: 'list' object has no attribute 'get'
+2026-02-22 20:04:58,643 - backend.app - ERROR - Image classification error: 'list' object has no attribute 'get'
+Traceback (most recent call last):
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 558, in classify
+    rule_result = self._advanced_rule_based_classify(text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 643, in _advanced_rule_based_classify
+    result = self._create_response(best_category, confidence, features)
+  File "E:\NEWSCAT\backend\models\base_classifier.py", line 94, in _create_response
+    'category_name': self.categories.get(category, category),
+AttributeError: 'list' object has no attribute 'get'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\NEWSCAT\backend\app.py", line 710, in classify_image
+    result = classifier.classify(extracted_text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 588, in classify
+    return self._advanced_rule_based_classify(text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 643, in _advanced_rule_based_classify
+    result = self._create_response(best_category, confidence, features)
+  File "E:\NEWSCAT\backend\models\base_classifier.py", line 94, in _create_response
+    'category_name': self.categories.get(category, category),
+AttributeError: 'list' object has no attribute 'get'
+2026-02-22 20:04:58,643 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:04:58] "[35m[1mPOST /api/classify/image HTTP/1.1[0m" 500 -
+2026-02-22 20:04:58,664 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:04:58] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 20:05:10,818 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:05:10] "[36mGET / HTTP/1.1[0m" 304 -
+2026-02-22 20:05:10,843 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:05:10] "[36mGET /css/style.css HTTP/1.1[0m" 304 -
+2026-02-22 20:05:10,847 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:05:10] "[36mGET /js/main.js HTTP/1.1[0m" 304 -
+2026-02-22 20:05:10,890 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:05:10] "GET /api/categories HTTP/1.1" 200 -
+2026-02-22 20:05:10,893 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:05:10] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 20:05:10,896 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:05:10] "GET /api/model/info HTTP/1.1" 200 -
+2026-02-22 20:05:10,899 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:05:10] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 20:05:27,964 - backend.app - INFO - Classification request: 204 chars, enhanced=True
+2026-02-22 20:05:28,028 - backend.models.optimized_classifier - ERROR - Classification error: 'list' object has no attribute 'get'
+2026-02-22 20:05:28,030 - backend.app - ERROR - Classification error: 'list' object has no attribute 'get'
+Traceback (most recent call last):
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 574, in classify
+    result = self._create_response(category, confidence, features)
+  File "E:\NEWSCAT\backend\models\base_classifier.py", line 94, in _create_response
+    'category_name': self.categories.get(category, category),
+AttributeError: 'list' object has no attribute 'get'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\NEWSCAT\backend\app.py", line 379, in classify
+    result = classifier.classify(text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 588, in classify
+    return self._advanced_rule_based_classify(text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 643, in _advanced_rule_based_classify
+    result = self._create_response(best_category, confidence, features)
+  File "E:\NEWSCAT\backend\models\base_classifier.py", line 94, in _create_response
+    'category_name': self.categories.get(category, category),
+AttributeError: 'list' object has no attribute 'get'
+2026-02-22 20:05:28,034 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:05:28] "[35m[1mPOST /api/classify HTTP/1.1[0m" 500 -
+2026-02-22 20:05:28,046 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:05:28] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 20:05:34,713 - backend.app - INFO - Classification request: 204 chars, enhanced=True
+2026-02-22 20:05:34,823 - backend.models.optimized_classifier - ERROR - Classification error: 'list' object has no attribute 'get'
+2026-02-22 20:05:34,826 - backend.app - ERROR - Classification error: 'list' object has no attribute 'get'
+Traceback (most recent call last):
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 574, in classify
+    result = self._create_response(category, confidence, features)
+  File "E:\NEWSCAT\backend\models\base_classifier.py", line 94, in _create_response
+    'category_name': self.categories.get(category, category),
+AttributeError: 'list' object has no attribute 'get'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\NEWSCAT\backend\app.py", line 379, in classify
+    result = classifier.classify(text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 588, in classify
+    return self._advanced_rule_based_classify(text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 643, in _advanced_rule_based_classify
+    result = self._create_response(best_category, confidence, features)
+  File "E:\NEWSCAT\backend\models\base_classifier.py", line 94, in _create_response
+    'category_name': self.categories.get(category, category),
+AttributeError: 'list' object has no attribute 'get'
+2026-02-22 20:05:34,832 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:05:34] "[35m[1mPOST /api/classify HTTP/1.1[0m" 500 -
+2026-02-22 20:05:34,847 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:05:34] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 20:05:40,287 - backend.app - INFO - Classification request: 204 chars, enhanced=True
+2026-02-22 20:05:40,375 - backend.models.optimized_classifier - ERROR - Classification error: 'list' object has no attribute 'get'
+2026-02-22 20:05:40,376 - backend.app - ERROR - Classification error: 'list' object has no attribute 'get'
+Traceback (most recent call last):
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 574, in classify
+    result = self._create_response(category, confidence, features)
+  File "E:\NEWSCAT\backend\models\base_classifier.py", line 94, in _create_response
+    'category_name': self.categories.get(category, category),
+AttributeError: 'list' object has no attribute 'get'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\NEWSCAT\backend\app.py", line 379, in classify
+    result = classifier.classify(text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 588, in classify
+    return self._advanced_rule_based_classify(text)
+  File "E:\NEWSCAT\backend\models\optimized_classifier.py", line 643, in _advanced_rule_based_classify
+    result = self._create_response(best_category, confidence, features)
+  File "E:\NEWSCAT\backend\models\base_classifier.py", line 94, in _create_response
+    'category_name': self.categories.get(category, category),
+AttributeError: 'list' object has no attribute 'get'
+2026-02-22 20:05:40,379 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:05:40] "[35m[1mPOST /api/classify HTTP/1.1[0m" 500 -
+2026-02-22 20:05:40,389 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:05:40] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 20:24:16,820 - backend.models.model_manager - INFO - ModelManager initialized
+2026-02-22 20:24:16,850 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2026-02-22 20:24:16,850 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-22 20:24:19,092 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:24:19] "GET / HTTP/1.1" 200 -
+2026-02-22 20:24:19,112 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:24:19] "[36mGET /css/style.css HTTP/1.1[0m" 304 -
+2026-02-22 20:24:19,117 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:24:19] "[36mGET /js/main.js HTTP/1.1[0m" 304 -
+2026-02-22 20:24:19,148 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:24:19] "GET /api/categories HTTP/1.1" 200 -
+2026-02-22 20:24:19,150 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:24:19] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 20:24:19,150 - backend.models.model_manager - INFO - Loading model: optimized
+2026-02-22 20:24:19,161 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:24:19] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 20:24:27,110 - backend.app - INFO - Classification request: 292 chars, enhanced=True
+2026-02-22 20:24:32,462 - backend.models.optimized_classifier - INFO - Pre-trained model loaded successfully
+2026-02-22 20:24:32,462 - backend.models.optimized_classifier - INFO - OptimizedEnsembleClassifier v3.5.0 initialized with 20 categories
+2026-02-22 20:24:32,462 - backend.models.model_manager - INFO - Model 'optimized' loaded in 13.31s
+2026-02-22 20:24:32,462 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:24:32] "GET /api/model/info HTTP/1.1" 200 -
+2026-02-22 20:24:32,602 - backend.app - INFO - Classification: sports (105.11%) in 5492.75ms
+2026-02-22 20:24:32,607 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:24:32] "POST /api/classify HTTP/1.1" 200 -
+2026-02-22 20:24:32,643 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:24:32] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 20:24:52,914 - backend.models.model_manager - INFO - Loading model: image_processor
+2026-02-22 20:24:52,916 - backend.models.model_manager - INFO - Model 'image_processor' loaded in 0.00s
+2026-02-22 20:25:00,796 - backend.models.image_processor - INFO - EasyOCR initialized successfully
+2026-02-22 20:26:41,620 - backend.app - INFO - Image classification: 5488 chars extracted
+2026-02-22 20:26:41,752 - backend.app - INFO - Image classification: sports (115.28%)
+2026-02-22 20:26:41,765 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:26:41] "POST /api/classify/image HTTP/1.1" 200 -
+2026-02-22 20:26:41,791 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:26:41] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 20:26:49,905 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:26:49] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 20:26:54,397 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:26:54] "GET /api/model/info HTTP/1.1" 200 -
+2026-02-22 20:53:22,916 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:53:22] "GET / HTTP/1.1" 200 -
+2026-02-22 20:53:22,942 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:53:22] "GET /css/style.css HTTP/1.1" 200 -
+2026-02-22 20:53:22,946 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:53:22] "GET /js/main.js HTTP/1.1" 200 -
+2026-02-22 20:53:23,017 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:53:23] "GET /api/categories HTTP/1.1" 200 -
+2026-02-22 20:53:23,017 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:53:23] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 20:53:23,019 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:53:23] "GET /api/model/info HTTP/1.1" 200 -
+2026-02-22 20:53:23,075 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:53:23] "[36mGET / HTTP/1.1[0m" 304 -
+2026-02-22 20:53:23,101 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:53:23] "[36mGET /css/style.css HTTP/1.1[0m" 304 -
+2026-02-22 20:53:23,104 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:53:23] "[36mGET /js/main.js HTTP/1.1[0m" 304 -
+2026-02-22 20:53:23,148 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:53:23] "GET /api/categories HTTP/1.1" 200 -
+2026-02-22 20:53:23,149 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:53:23] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 20:53:23,153 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:53:23] "GET /api/model/info HTTP/1.1" 200 -
+2026-02-22 20:53:40,964 - backend.app - INFO - Classification request: 292 chars, enhanced=True
+2026-02-22 20:53:41,079 - backend.app - INFO - Classification: sports (105.11%) in 115.08ms
+2026-02-22 20:53:41,081 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 20:53:41] "POST /api/classify HTTP/1.1" 200 -
+2026-02-22 21:06:54,991 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 21:06:54] "GET / HTTP/1.1" 200 -
+2026-02-22 21:06:55,019 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 21:06:55] "GET /css/style.css HTTP/1.1" 200 -
+2026-02-22 21:06:55,027 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 21:06:55] "GET /js/main.js HTTP/1.1" 200 -
+2026-02-22 21:06:55,082 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 21:06:55] "GET /api/categories HTTP/1.1" 200 -
+2026-02-22 21:06:55,094 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 21:06:55] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 21:06:55,102 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 21:06:55] "GET /api/model/info HTTP/1.1" 200 -
+2026-02-22 21:07:07,540 - backend.app - INFO - Classification request: 282 chars, enhanced=True
+2026-02-22 21:07:07,641 - backend.app - INFO - Classification: politics (87.60%) in 100.91ms
+2026-02-22 21:07:07,646 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 21:07:07] "POST /api/classify HTTP/1.1" 200 -
+2026-02-22 21:13:07,910 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 21:13:07] "[36mGET / HTTP/1.1[0m" 304 -
+2026-02-22 21:13:07,935 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 21:13:07] "GET /css/style.css HTTP/1.1" 200 -
+2026-02-22 21:13:07,943 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 21:13:07] "[36mGET /js/main.js HTTP/1.1[0m" 304 -
+2026-02-22 21:13:07,980 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 21:13:07] "GET /api/categories HTTP/1.1" 200 -
+2026-02-22 21:13:07,984 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 21:13:07] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 21:13:07,986 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 21:13:07] "GET /api/model/info HTTP/1.1" 200 -
+2026-02-22 21:14:20,933 - backend.app - INFO - Image classification: 1449 chars extracted
+2026-02-22 21:14:21,036 - backend.app - INFO - Image classification: business (55.32%)
+2026-02-22 21:14:21,040 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 21:14:21] "POST /api/classify/image HTTP/1.1" 200 -
+2026-02-22 21:26:22,694 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 21:26:22] "[36mGET / HTTP/1.1[0m" 304 -
+2026-02-22 21:26:22,714 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 21:26:22] "[36mGET /css/style.css HTTP/1.1[0m" 304 -
+2026-02-22 21:26:22,716 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 21:26:22] "GET /js/main.js HTTP/1.1" 200 -
+2026-02-22 21:26:22,764 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 21:26:22] "GET /api/categories HTTP/1.1" 200 -
+2026-02-22 21:26:22,765 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 21:26:22] "GET /api/health HTTP/1.1" 200 -
+2026-02-22 21:26:22,767 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 21:26:22] "GET /api/model/info HTTP/1.1" 200 -
+2026-02-22 21:26:30,043 - backend.app - INFO - Classification request: 222 chars, enhanced=True
+2026-02-22 21:26:30,142 - backend.app - INFO - Classification: health (82.81%) in 99.57ms
+2026-02-22 21:26:30,144 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 21:26:30] "POST /api/classify HTTP/1.1" 200 -
+2026-02-22 21:29:52,902 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 21:29:52] "GET /api/model/info HTTP/1.1" 200 -
+2026-02-22 22:14:56,991 - backend.app - INFO - Classification request: 92 chars, enhanced=True
+2026-02-22 22:14:57,087 - backend.app - INFO - Classification: technology (54.15%) in 95.86ms
+2026-02-22 22:14:57,087 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 22:14:57] "POST /api/classify HTTP/1.1" 200 -
+2026-02-22 22:15:28,261 - backend.app - INFO - Classification request: 67 chars, enhanced=True
+2026-02-22 22:15:28,366 - backend.app - INFO - Classification: business (62.75%) in 113.02ms
+2026-02-22 22:15:28,368 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 22:15:28] "POST /api/classify HTTP/1.1" 200 -
+2026-02-22 22:15:56,323 - backend.app - INFO - Classification request: 154 chars, enhanced=True
+2026-02-22 22:15:56,400 - backend.app - INFO - Classification: health (73.44%) in 76.86ms
+2026-02-22 22:15:56,404 - werkzeug - INFO - 127.0.0.1 - - [22/Feb/2026 22:15:56] "POST /api/classify HTTP/1.1" 200 -

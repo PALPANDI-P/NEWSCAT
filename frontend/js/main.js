@@ -18,7 +18,6 @@ let selectedFiles = { image: null, audio: null, video: null };
 let isAnalyzing = false;
 let classificationHistory = [];
 let modelInfo = null;
-let cacheStats = null;
 
 // Sample articles for all categories
 const sampleArticles = {
@@ -126,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initializeApp() {
-    await Promise.all([loadCategories(), loadModelStatus(), loadModelInfo(), loadCacheStats()]);
+    await Promise.all([loadCategories(), loadModelStatus(), loadModelInfo()]);
     setupEventListeners();
     updateAnalyzeButton();
 }
@@ -445,9 +444,6 @@ async function analyzeContent() {
         isAnalyzing = false;
         btn.classList.remove('loading');
         updateAnalyzeButton();
-
-        // Refresh cache stats
-        loadCacheStats();
     }
 }
 
@@ -534,7 +530,13 @@ function displayResults(data) {
     const section = document.getElementById('results-section');
     if (!section) return;
 
+    // Reset and show section with animation
     section.style.display = 'block';
+    section.style.opacity = '0';
+
+    // Trigger reflow for animation
+    void section.offsetWidth;
+    section.style.opacity = '1';
 
     setTimeout(() => {
         section.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -542,31 +544,31 @@ function displayResults(data) {
 
     const category = data.category || 'unknown';
     const confidence = (data.confidence || 0) * 100;
-
-    document.getElementById('result-category').textContent = capitalizeFirst(category);
-    document.getElementById('result-confidence').textContent = `${confidence.toFixed(1)}%`;
-
-    const mainResult = document.getElementById('main-result');
     const style = categoryStyles[category] || categoryStyles['technology'];
-    if (mainResult) {
-        mainResult.style.borderColor = style.color + '80';
-        mainResult.style.background = style.gradient.replace(')', ', 0.15)').replace('linear-gradient', 'linear-gradient');
+
+    // Update category badge
+    const categoryBadge = document.getElementById('result-category-badge');
+    const categoryText = document.getElementById('result-category');
+    const categoryIcon = document.getElementById('result-icon');
+
+    if (categoryText) {
+        categoryText.textContent = capitalizeFirst(category);
     }
 
-    const confidenceFill = document.getElementById('confidence-fill');
-    if (confidenceFill) {
-        confidenceFill.style.width = '0%';
-        confidenceFill.style.background = style.gradient;
-        setTimeout(() => {
-            confidenceFill.style.width = `${confidence}%`;
-        }, 100);
+    if (categoryIcon) {
+        categoryIcon.className = `fas ${style.icon}`;
+        categoryIcon.style.color = style.color;
     }
 
-    const resultIcon = mainResult?.querySelector('.result-icon i');
-    if (resultIcon) {
-        resultIcon.className = `fas ${style.icon}`;
+    if (categoryBadge) {
+        categoryBadge.style.borderColor = style.color + '60';
+        categoryBadge.style.background = style.gradient.replace(')', ', 0.2)').replace('linear-gradient', 'linear-gradient');
     }
 
+    // Update confidence circle with animation
+    updateConfidenceCircle(confidence, style);
+
+    // Update stats
     const timeEl = document.getElementById('result-time');
     if (timeEl) {
         const time = data.processing_time_ms || 0;
@@ -575,22 +577,18 @@ function displayResults(data) {
 
     const modelEl = document.getElementById('result-model');
     if (modelEl) {
-        modelEl.textContent = data.model || 'Unknown';
+        modelEl.textContent = data.model || 'Ensemble';
     }
 
-    const cacheEl = document.getElementById('result-cache');
-    if (cacheEl) {
-        cacheEl.textContent = data.cached ? 'Hit' : 'Miss';
-        cacheEl.style.color = data.cached ? '#4ade80' : '#fbbf24';
+    const inputTypeEl = document.getElementById('result-input-type');
+    if (inputTypeEl) {
+        inputTypeEl.textContent = capitalizeFirst(data.input_type || currentInputType);
     }
 
-    const metaEl = document.getElementById('result-meta');
-    if (metaEl) {
-        metaEl.textContent = `Input: ${data.input_type || 'text'}`;
-    }
-
+    // Display predictions
     displayPredictions(data.top_predictions || [{ category, confidence: data.confidence }]);
 
+    // Display keywords
     if (data.keywords && data.keywords.length > 0) {
         displayKeywords(data.keywords);
     } else {
@@ -598,7 +596,66 @@ function displayResults(data) {
         if (keywordsSection) keywordsSection.style.display = 'none';
     }
 
+    // Generate and display summary
+    displaySummary(category, confidence, data);
+
+    // Display content summary
+    let inputTextForSummary = '';
+    if (currentInputType === 'text') {
+        const textarea = document.getElementById('news-text');
+        inputTextForSummary = textarea ? textarea.value : '';
+    } else {
+        inputTextForSummary = selectedFiles[currentInputType]?.name || '';
+    }
+    displayContentSummary(inputTextForSummary, category, data.input_type || currentInputType);
+
     showNotification(`Classified as ${capitalizeFirst(category)} with ${confidence.toFixed(1)}% confidence!`, 'success');
+}
+
+function updateConfidenceCircle(confidence, style) {
+    const progressEl = document.getElementById('confidence-progress');
+    const textEl = document.getElementById('result-confidence');
+
+    if (progressEl) {
+        // Calculate stroke-dashoffset based on confidence
+        const circumference = 283; // 2 * PI * 45
+        const offset = circumference - (confidence / 100) * circumference;
+
+        // Reset animation
+        progressEl.style.strokeDashoffset = '283';
+        progressEl.style.stroke = style.color;
+
+        // Animate after a small delay
+        setTimeout(() => {
+            progressEl.style.strokeDashoffset = offset.toString();
+        }, 100);
+    }
+
+    if (textEl) {
+        // Animate confidence text
+        animateValue(textEl, 0, confidence, 1000);
+    }
+}
+
+function animateValue(element, start, end, duration) {
+    const startTime = performance.now();
+
+    function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // Easing function
+        const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+        const current = start + (end - start) * easeOutQuart;
+
+        element.textContent = `${current.toFixed(1)}%`;
+
+        if (progress < 1) {
+            requestAnimationFrame(update);
+        }
+    }
+
+    requestAnimationFrame(update);
 }
 
 function displayPredictions(predictions) {
@@ -610,21 +667,27 @@ function displayPredictions(predictions) {
         const confidence = (pred.confidence || 0) * 100;
 
         return `
-            <div class="prediction-item" style="animation-delay: ${index * 0.1}s">
-                <span class="prediction-rank">${index + 1}</span>
-                <div class="prediction-info">
-                    <span class="prediction-category">
-                        <i class="fas ${style.icon}" style="color: ${style.color}; margin-right: 10px;"></i>
+            <div class="prediction-card" style="animation-delay: ${index * 0.1}s">
+                <div class="prediction-card-header">
+                    <span class="prediction-card-category">
+                        <i class="fas ${style.icon}" style="color: ${style.color}"></i>
                         ${capitalizeFirst(pred.category)}
                     </span>
-                    <span class="prediction-confidence">${confidence.toFixed(1)}%</span>
+                    <span class="prediction-card-confidence">${confidence.toFixed(1)}%</span>
                 </div>
-                <div class="prediction-bar">
-                    <div class="prediction-bar-fill" style="width: ${confidence}%; background: ${style.gradient};"></div>
+                <div class="prediction-card-bar">
+                    <div class="prediction-card-bar-fill" style="width: 0%; background: ${style.gradient};" data-width="${confidence}%"></div>
                 </div>
             </div>
         `;
     }).join('');
+
+    // Animate bars after render
+    setTimeout(() => {
+        container.querySelectorAll('.prediction-card-bar-fill').forEach(bar => {
+            bar.style.width = bar.dataset.width;
+        });
+    }, 200);
 }
 
 function displayKeywords(keywords) {
@@ -639,10 +702,97 @@ function displayKeywords(keywords) {
     ).join('');
 }
 
+function displaySummary(category, confidence, data) {
+    const section = document.getElementById('analysis-summary');
+    const content = document.getElementById('summary-content');
+
+    if (!section || !content) return;
+
+    const style = categoryStyles[category] || categoryStyles['technology'];
+    const time = data.processing_time_ms || 0;
+    const timeStr = time < 1000 ? `${time.toFixed(0)}ms` : `${(time / 1000).toFixed(2)}s`;
+
+    let confidenceLevel = 'high';
+    if (confidence < 50) confidenceLevel = 'low';
+    else if (confidence < 75) confidenceLevel = 'moderate';
+
+    const summaryHtml = `
+        <p>
+            <strong>${capitalizeFirst(category)}</strong> category detected with 
+            <strong>${confidence.toFixed(1)}%</strong> confidence (${confidenceLevel} certainty).
+        </p>
+        <p>
+            Analysis completed in <strong>${timeStr}</strong> using the <strong>${data.model || 'Ensemble'}</strong> AI model.
+        </p>
+        ${data.keywords && data.keywords.length > 0 ?
+            `<p>Key terms identified: <strong>${data.keywords.slice(0, 5).map(k => typeof k === 'string' ? k : k.word || k).join(', ')}</strong></p>`
+            : ''}
+    `;
+
+    content.innerHTML = summaryHtml;
+}
+
+// ===== CONTENT SUMMARY =====
+function displayContentSummary(inputText, category, inputType) {
+    const section = document.getElementById('content-summary-section');
+    const textEl = document.getElementById('content-summary-text');
+
+    if (!section || !textEl) return;
+
+    // Generate short summary from input text
+    const summary = generateContentSummary(inputText, category, inputType);
+
+    if (summary) {
+        textEl.textContent = summary;
+        section.style.display = 'block';
+    } else {
+        section.style.display = 'none';
+    }
+}
+
+function generateContentSummary(inputText, category, inputType) {
+    if (!inputText || inputText.trim().length === 0) {
+        return null;
+    }
+
+    const text = inputText.trim();
+    const categoryLabel = capitalizeFirst(category || 'content');
+    const inputLabel = capitalizeFirst(inputType || 'text');
+
+    // For file inputs (image, audio, video), show file info
+    if (inputType !== 'text') {
+        if (text.length <= 100) {
+            return `${inputLabel} file "${text}" classified as ${categoryLabel} content.`;
+        }
+    }
+
+    // For text input, generate a brief summary
+    // Clean and truncate text
+    const cleanText = text.replace(/\s+/g, ' ').trim();
+
+    // Extract first meaningful portion (up to ~120 chars)
+    let summaryText = '';
+    if (cleanText.length <= 120) {
+        summaryText = cleanText;
+    } else {
+        // Find a good break point
+        const truncated = cleanText.substring(0, 120);
+        const lastSpace = truncated.lastIndexOf(' ');
+        summaryText = truncated.substring(0, lastSpace > 0 ? lastSpace : 120) + '...';
+    }
+
+    return `${categoryLabel} content: "${summaryText}"`;
+}
+
 function hideResults() {
     const section = document.getElementById('results-section');
     if (section) {
         section.style.display = 'none';
+    }
+    // Hide content summary section
+    const contentSummarySection = document.getElementById('content-summary-section');
+    if (contentSummarySection) {
+        contentSummarySection.style.display = 'none';
     }
 }
 
@@ -811,65 +961,6 @@ function toggleModelInfo() {
     }
 }
 
-// ===== CACHE STATS =====
-async function loadCacheStats() {
-    try {
-        const response = await fetch(`${API_BASE}/health`);
-        if (response.ok) {
-            const data = await response.json();
-            cacheStats = data.cache;
-            updateCacheStatsDisplay();
-        }
-    } catch (e) {
-        console.error('Failed to load cache stats:', e);
-    }
-}
-
-function updateCacheStatsDisplay() {
-    if (!cacheStats) return;
-
-    document.getElementById('cache-size').textContent = cacheStats.size || 0;
-
-    // Try to get detailed stats from model info
-    if (modelInfo?.cache_stats) {
-        document.getElementById('cache-hits').textContent = modelInfo.cache_stats.hits || 0;
-        document.getElementById('cache-misses').textContent = modelInfo.cache_stats.misses || 0;
-        document.getElementById('cache-hit-rate').textContent = modelInfo.cache_stats.hit_rate || '0%';
-    }
-}
-
-function refreshCacheStats() {
-    loadCacheStats();
-    loadModelInfo();
-    showNotification('Cache stats refreshed', 'info');
-}
-
-async function clearCache() {
-    try {
-        const response = await fetch(`${API_BASE}/cache/clear`, { method: 'POST' });
-        if (response.ok) {
-            showNotification('Cache cleared successfully', 'success');
-            loadCacheStats();
-        }
-    } catch (e) {
-        showNotification('Failed to clear cache', 'error');
-    }
-}
-
-function toggleCacheInfo() {
-    const panel = document.getElementById('cache-info-panel');
-    const modelPanel = document.getElementById('model-info-panel');
-
-    if (modelPanel) modelPanel.style.display = 'none';
-
-    if (panel) {
-        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-        if (panel.style.display === 'block') {
-            loadCacheStats();
-        }
-    }
-}
-
 // ===== API CALLS =====
 async function loadCategories() {
     try {
@@ -982,11 +1073,9 @@ document.addEventListener('keydown', (e) => {
 
         // Close panels
         const modelPanel = document.getElementById('model-info-panel');
-        const cachePanel = document.getElementById('cache-info-panel');
         const historySidebar = document.getElementById('history-sidebar');
 
         if (modelPanel) modelPanel.style.display = 'none';
-        if (cachePanel) cachePanel.style.display = 'none';
         if (historySidebar) historySidebar.classList.remove('open');
     }
 

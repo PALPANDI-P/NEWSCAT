@@ -50,7 +50,7 @@ class Config:
     TRAINING_DATA_PATH = Path(os.getenv('TRAINING_DATA_PATH', 
                                        TRAINING_DATA_DIR / 'news_samples.json'))
     
-    # Categories - Extended to 20 categories
+    # Categories - Extended to 35 categories
     CATEGORIES = {
         # Core Categories
         'technology': 'Tech innovations, AI, software, gadgets',
@@ -78,7 +78,30 @@ class Config:
         'legal': 'Lawsuits, court cases, legal proceedings',
         'religion': 'Faith, spirituality, religious news',
         'lifestyle': 'Wellness, relationships, personal growth',
-        'opinion': 'Editorials, commentary, analysis'
+        'opinion': 'Editorials, commentary, analysis',
+        
+        # Real Incident Categories
+        'accidents': 'Traffic accidents, industrial incidents, crashes, derailments',
+        'crime': 'Criminal activities, investigations, arrests, theft, assault',
+        'disasters': 'Natural disasters, earthquakes, floods, hurricanes, wildfires',
+        'protests': 'Demonstrations, rallies, civil unrest, activism, strikes',
+        
+        # Human-Centric Categories
+        'career': 'Jobs, employment, workplace, hiring, layoffs, professional development',
+        'relationships': 'Dating, marriage, family dynamics, divorce, parenting',
+        'mentalhealth': 'Mental health awareness, psychology, therapy, depression, anxiety',
+        
+        # Specialized News Types
+        'investigative': 'In-depth reporting, exposés, whistleblower stories, deep dives',
+        'breaking': 'Breaking news, urgent alerts, developing stories, live updates',
+        'weather': 'Weather forecasts, storms, meteorological news, climate patterns',
+        
+        # Additional Categories
+        'infrastructure': 'Construction, public works, utilities, transportation systems',
+        'socialmedia': 'Social media trends, platform news, viral content, influencers',
+        'gaming': 'Video games, esports, gaming industry, console news',
+        'space': 'Space exploration, satellites, rockets, space missions, astronomy',
+        'agriculture': 'Farming, crops, livestock, agricultural policy, food production'
     }
     
     # Performance
