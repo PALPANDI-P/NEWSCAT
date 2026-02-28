@@ -659,6 +659,9 @@ class OptimizedEnsembleClassifier(BaseNewsClassifier):
             'low': 1.0
         }
         
+        # Category-specific detail extraction patterns
+        self._detail_patterns = self._init_detail_patterns()
+        
         # Note: self.categories is inherited from BaseNewsClassifier as a dict
         # Do NOT overwrite it with a list, as _create_response() depends on it being a dict
         
@@ -667,6 +670,552 @@ class OptimizedEnsembleClassifier(BaseNewsClassifier):
         
         logger.info(f"OptimizedEnsembleClassifier v{self.version} initialized with {len(self.categories)} categories")
     
+    def _init_detail_patterns(self) -> Dict[str, Dict]:
+        """Initialize category-specific detail extraction patterns"""
+        return {
+            'environment': {
+                'incident_types': [
+                    r'\b(forest fire|wildfire|bushfire)\b',
+                    r'\b(oil spill|chemical spill|toxic spill)\b',
+                    r'\b(flood|flooding|flash flood)\b',
+                    r'\b(earthquake|tremor|seismic)\b',
+                    r'\b(hurricane|typhoon|cyclone|tornado)\b',
+                    r'\b(drought|water shortage)\b',
+                    r'\b(landslide|mudslide|avalanche)\b',
+                    r'\b(tsunami|tidal wave)\b',
+                    r'\b(volcanic eruption|volcano)\b',
+                    r'\b(air pollution|water pollution|soil contamination)\b',
+                    r'\b(deforestation|logging|clearcutting)\b',
+                    r'\b(coral bleaching|ocean acidification)\b',
+                    r'\b(species extinction|endangered species)\b',
+                    r'\b(glacier melting|ice cap melting)\b',
+                    r'\b(heat wave|cold snap|extreme weather)\b'
+                ],
+                'locations': [
+                    r'\b(?:in|at|near)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)*\b(?:\s*(?:River|Forest|Park|Reserve|Coast|Ocean|Sea|Lake|Mountain|Valley|Island|Peninsula|Gulf|Bay))?)',
+                    r'\b(Amazon|Arctic|Antarctica|Gulf of Mexico|Pacific|Atlantic|Indian Ocean|Himalayas|Andes|Sahara)\b',
+                    r'\b([A-Z][a-z]+\sNational\s(?:Park|Forest|Reserve))\b',
+                    r'\b(offshore\s+(?:of\s+)?([A-Z][a-z]+(?:\s[A-Z][a-z]+)*))\b'
+                ],
+                'impact_indicators': [
+                    r'\b(\d+(?:,\d{3})*(?:\.\d+)?)\s*(?:acres|hectares|square miles|km²)\b',
+                    r'\b(\d+(?:,\d{3})*)\s*(?:people|residents|population|homes|buildings)\b',
+                    r'\b(\d+(?:,\d{3})*)\s*(?:species|animals|wildlife|trees)\b',
+                    r'\b(\$\d+(?:\.\d+)?\s*(?:million|billion|trillion)?)\b',
+                    r'\b(\d+(?:\.\d+)?)\s*percent\s+(?:destroyed|damaged|affected|lost)\b',
+                    r'\b(evacuat|displaced|homeless|injured|killed|casualties)\w*\b',
+                    r'\b(contaminated|polluted|destroyed|damaged|devastated)\b'
+                ],
+                'severity_markers': [
+                    r'\b(catastrophic|devastating|severe|major|significant|moderate|minor)\b',
+                    r'\b(state of emergency|disaster zone|evacuation order|red alert)\b',
+                    r'\b(magnitude\s+\d+\.?\d*)\b',
+                    r'\b(category\s+\d+|level\s+\d+)\b'
+                ]
+            },
+            'accidents': {
+                'incident_types': [
+                    r'\b(plane crash|aircraft accident|helicopter crash)\b',
+                    r'\b(train derailment|train collision|rail accident)\b',
+                    r'\b(car accident|vehicle collision|traffic accident|pileup)\b',
+                    r'\b(bus accident|truck accident|commercial vehicle accident)\b',
+                    r'\b(boat sinking|shipwreck|maritime accident)\b',
+                    r'\b(industrial accident|factory explosion|mine collapse)\b',
+                    r'\b(construction accident|crane collapse|building collapse)\b',
+                    r'\b(chemical explosion|gas leak|fire outbreak)\b',
+                    r'\b(pedestrian accident|hit and run|drunk driving accident)\b',
+                    r'\b(motorcycle accident|bike collision)\b'
+                ],
+                'locations': [
+                    r'\b(?:on|at|near|along)\s+(?:the\s+)?([A-Z][a-z]+(?:\s[A-Z][a-z]+)*(?:\s+(?:Highway|Road|Street|Avenue|Boulevard|Bridge|Tunnel|Intersection)))',
+                    r'\b(Highway\s+\d+|Route\s+\d+|Interstate\s+\d+)\b',
+                    r'\b(near|at|in)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+){0,2})\b',
+                    r'\b(airport|seaport|railway station|industrial zone|construction site)\b'
+                ],
+                'impact_indicators': [
+                    r'\b(\d+(?:,\d{3})*)\s*(?:people|passengers|occupants|workers|pedestrians)\b',
+                    r'\b(\d+(?:,\d{3})*)\s*(?:dead|deaths|fatalities|killed|died)\b',
+                    r'\b(\d+(?:,\d{3})*)\s*(?:injured|wounded|hospitalized|critical)\b',
+                    r'\b(\d+(?:,\d{3})*)\s*(?:missing|trapped|rescued|evacuated)\b',
+                    r'\b(fatal|deadly|serious|minor|major)\s+(?:accident|crash|collision|incident)\b'
+                ],
+                'vehicles_involved': [
+                    r'\b(Boeing\s+\d+|Airbus\s+[A-Z]\d+|jet|airplane|helicopter)\b',
+                    r'\b(passenger train|freight train|subway|metro|tram)\b',
+                    r'\b(cargo ship|tanker|ferry|cruise ship|container vessel)\b',
+                    r'\b(SUV|sedan|truck|bus|motorcycle|tractor trailer)\b'
+                ]
+            },
+            'disasters': {
+                'incident_types': [
+                    r'\b(earthquake|tremor|aftershock)\b',
+                    r'\b(tsunami|tidal wave|storm surge)\b',
+                    r'\b(hurricane|typhoon|cyclone|tropical storm)\b',
+                    r'\b(tornado|twister|funnel cloud)\b',
+                    r'\b(flood|flash flood|river overflow)\b',
+                    r'\b(wildfire|forest fire|bushfire)\b',
+                    r'\b(volcanic eruption|lava flow|ash cloud)\b',
+                    r'\b(landslide|mudslide|rockslide|avalanche)\b',
+                    r'\b(drought|famine|water crisis)\b',
+                    r'\b(blizzard|snowstorm|ice storm)\b',
+                    r'\b(heat wave|cold wave)\b'
+                ],
+                'magnitude': [
+                    r'\b(magnitude\s+(\d+\.?\d*))\b',
+                    r'\b(category\s+(\d+))\b',
+                    r'\b(sustained winds? of (\d+)\s*mph)\b',
+                    r'\b(\d+)\s*mph winds?\b',
+                    r'\b(richter scale)\b'
+                ],
+                'locations': [
+                    r'\b(?:in|near|offshore|along)\s+(?:the\s+)?(?:coast of\s+)?([A-Z][a-z]+(?:\s[A-Z][a-z]+){0,3})\b',
+                    r'\b(Indo-Pacific|Ring of Fire|Caribbean|Mediterranean|Pacific Rim)\b'
+                ],
+                'impact_indicators': [
+                    r'\b(\d+(?:,\d{3})*)\s*(?:fatalities|deaths|casualties|victims)\b',
+                    r'\b(\d+(?:,\d{3})*)\s*(?:people\s+(?:affected|displaced|evacuated|homeless))\b',
+                    r'\b(\$\d+(?:\.\d+)?\s*(?:million|billion))\s*(?:in\s+damages)?\b',
+                    r'\b(\d+(?:,\d{3})*)\s*(?:homes|buildings|structures)\s+(?:destroyed|damaged)\b',
+                    r'\b(widespread|extensive|severe)\s+(?:damage|destruction|devastation)\b'
+                ]
+            },
+            'crime': {
+                'crime_types': [
+                    r'\b(murder|homicide|manslaughter|assassination)\b',
+                    r'\b(robbery|armed robbery|bank robbery)\b',
+                    r'\b(burglary|breaking and entering|theft|larceny)\b',
+                    r'\b(assault|battery|domestic violence|aggravated assault)\b',
+                    r'\b(kidnapping|abduction|hostage)\b',
+                    r'\b(fraud|scam|embezzlement|money laundering)\b',
+                    r'\b(drug trafficking|narcotics|smuggling)\b',
+                    r'\b(cybercrime|hacking|data breach|identity theft)\b',
+                    r'\b(arson|vandalism|property damage)\b',
+                    r'\b(sexual assault|rape|molestation)\b',
+                    r'\b(organized crime|gang|cartel|mafia)\b',
+                    r'\b(white.?collar crime|corporate fraud|insider trading)\b',
+                    r'\b(mass shooting|active shooter|gun violence)\b'
+                ],
+                'legal_status': [
+                    r'\b(arrested|apprehended|detained|in custody)\b',
+                    r'\b(charged with|indicted|formally charged)\b',
+                    r'\b(warrant issued|search warrant|arrest warrant)\b',
+                    r'\b(on the run|fugitive|at large|manhunt)\b',
+                    r'\b(convicted|sentenced|pleaded guilty|acquitted)\b',
+                    r'\b(suspect|person of interest|witness|victim)\b'
+                ],
+                'locations': [
+                    r'\b(?:in|at|near)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+){0,2}(?:\s+(?:District|County|City|Town))?)\b',
+                    r'\b([A-Z][a-z]+\s+(?:Police Department|Sheriff|Court|Prison|Jail))\b'
+                ],
+                'victims_suspects': [
+                    r'\b(\d+(?:,\d{3})*)\s*(?:victims?|casualties?)\b',
+                    r'\b(victim identified as|suspect named)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)*)\b',
+                    r'\b(?:suspect|perpetrator|alleged|accused)\w*\b'
+                ]
+            },
+            'protests': {
+                'protest_types': [
+                    r'\b(protest|demonstration|rally|march)\b',
+                    r'\b(strike|walkout|sit-in|occupation)\b',
+                    r'\b(riot|civil unrest|uprising|revolt)\b',
+                    r'\b(boycott|blockade|picketing)\b',
+                    r'\b(peaceful protest|violent clash|confrontation)\b'
+                ],
+                'causes': [
+                    r'\b(anti-?government|anti-?war|pro-?democracy|pro-?choice|pro-?life)\b',
+                    r'\b(climate protest|environmental activism|labor rights)\b',
+                    r'\b(human rights|civil rights|social justice|racial justice)\b',
+                    r'\b(wage dispute|working conditions|pension reform)\b',
+                    r'\b(police brutality|systemic racism|corruption)\b'
+                ],
+                'locations': [
+                    r'\b(?:in|at|outside|near)\s+(?:the\s+)?([A-Z][a-z]+(?:\s[A-Z][a-z]+){0,2}(?:\s+(?:Square|Street|Avenue|Building|Embassy|Capitol|Parliament)))',
+                    r'\b(downtown|city center|central square|financial district)\b'
+                ],
+                'scale': [
+                    r'\b(\d+(?:,\d{3})*)\s*(?:people|protesters|demonstrators|marchers)\b',
+                    r'\b(thousands|hundreds|millions)\s+(?:of\s+)?(?:people|protesters)\b',
+                    r'\b(mass|large|small)\s+(?:crowd|gathering|rally)\b'
+                ]
+            },
+            'business': {
+                'business_events': [
+                    r'\b(merger|acquisition|takeover|buyout)\b',
+                    r'\b(ipo|initial public offering|going public)\b',
+                    r'\b(earnings report|quarterly results|annual report)\b',
+                    r'\b(bankruptcy|chapter 11|insolvency|restructuring)\b',
+                    r'\b(layoff|workforce reduction|hiring freeze|expansion)\b',
+                    r'\b(new product launch|product recall|service launch)\b',
+                    r'\b(partnership|alliance|joint venture|collaboration)\b',
+                    r'\b(executive appointment|ceo resignation|leadership change)\b'
+                ],
+                'financial_metrics': [
+                    r'\b(revenue of \$?(\d+(?:\.\d+)?)\s*(?:billion|million|trillion))\b',
+                    r'\b(profit|loss|earnings)\s+(?:of\s+)?\$?(\d+(?:\.\d+)?)\s*(?:billion|million)\b',
+                    r'\b(stock price|share value)\s+(?:rose|fell|up|down)\s+(?:by\s+)?(\d+(?:\.\d+)?%)\b',
+                    r'\b(market cap|valuation)\s+(?:of\s+)?\$?(\d+(?:\.\d+)?)\s*(?:billion|trillion)\b',
+                    r'\b(\d+(?:,\d{3})*)\s+employees\b'
+                ],
+                'companies': [
+                    r'\b(Apple|Microsoft|Google|Amazon|Meta| Tesla|Netflix|Intel|AMD|Nvidia)\b',
+                    r'\b([A-Z][a-z]+\s+(?:Inc|Corp|Corporation|Ltd|LLC|Group|Company))\b',
+                    r'\b(Fortune 500|S&P 500|Nasdaq|NYSE)\b'
+                ]
+            },
+            'technology': {
+                'tech_topics': [
+                    r'\b(artificial intelligence|machine learning|deep learning|neural network)\b',
+                    r'\b(large language model|chatbot|generative AI|GPT|LLM)\b',
+                    r'\b(cybersecurity|data breach|hacking|ransomware|malware)\b',
+                    r'\b(cloud computing|blockchain|cryptocurrency|NFT|Web3)\b',
+                    r'\b(5G|6G|quantum computing|edge computing|IoT)\b',
+                    r'\b(smartphone|laptop|tablet|wearable|gadget)\b',
+                    r'\b(software update|app launch|platform|algorithm)\b',
+                    r'\b(semiconductor|chip shortage|processor|GPU|CPU)\b',
+                    r'\b(virtual reality|augmented reality|VR|AR|metaverse)\b',
+                    r'\b(autonomous vehicle|self-driving|electric vehicle|drone|robot)\b'
+                ],
+                'companies_products': [
+                    r'\b((?:iPhone|iPad|MacBook|Apple Watch|AirPods)\s+\d*)\b',
+                    r'\b(Galaxy\s+[A-Z]\d+|Pixel\s+\d+|Surface\s+(?:Pro|Book|Laptop))\b',
+                    r'\b(ChatGPT|Claude|Gemini|Copilot|Midjourney|DALL-E)\b',
+                    r'\b(Tesla|SpaceX|OpenAI|Anthropic|Meta|Alphabet)\b'
+                ],
+                'announcements': [
+                    r'\b(announced|unveiled|launched|released|introduced)\b',
+                    r'\b(partnership|collaboration|integration with)\b',
+                    r'\b(breakthrough|innovation|revolutionary|cutting-edge)\b'
+                ]
+            },
+            'politics': {
+                'political_events': [
+                    r'\b(election|vote|ballot|poll|referendum)\b',
+                    r'\b(legislation|bill passed|law enacted|policy change)\b',
+                    r'\b(summit|diplomatic meeting|bilateral talks|G\d+)\b',
+                    r'\b(impeachment|vote of confidence|no-confidence)\b',
+                    r'\b(executive order|presidential decree|veto)\b',
+                    r'\b(cabinet reshuffle|ministerial appointment|resignation)\b'
+                ],
+                'political_actors': [
+                    r'\b(President|Prime Minister|Chancellor|Speaker)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)*)\b',
+                    r'\b(Senator|Congressman|Congresswoman|MP|Representative)\s+([A-Z][a-z]+)\b',
+                    r'\b(Democrat|Republican|Conservative|Labour|Liberal)\b',
+                    r'\b(Parliament|Congress|Senate|House of Representatives)\b'
+                ],
+                'policy_areas': [
+                    r'\b(healthcare|education|immigration|tax|defense|foreign policy)\b',
+                    r'\b(climate policy|energy policy|trade agreement|sanctions)\b',
+                    r'\b(civil rights|voting rights|abortion|gun control)\b'
+                ]
+            },
+            'health': {
+                'health_topics': [
+                    r'\b(disease outbreak|epidemic|pandemic|public health emergency)\b',
+                    r'\b(vaccine|vaccination|immunization|booster shot)\b',
+                    r'\b(clinical trial|fda approval|drug approval|medical study)\b',
+                    r'\b(cancer treatment|heart disease|diabetes|mental health)\b',
+                    r'\b(hospital|healthcare system|medical facility|clinic)\b',
+                    r'\b(surgery|transplant|medical procedure|treatment)\b',
+                    r'\b(virus|infection|bacteria|pathogen|variant|strain)\b'
+                ],
+                'medical_data': [
+                    r'\b(\d+(?:\.\d+)?)\s*(?:percent|%)\s+(?:efficacy|effective|success rate)\b',
+                    r'\b(\d+(?:,\d{3})*)\s*(?:cases|infections|deaths|hospitalizations)\b',
+                    r'\b(phase\s+(?:I|II|III|IV))\b',
+                    r'\b(fda\s+(?:approved|authorized|cleared))\b'
+                ],
+                'organizations': [
+                    r'\b(WHO|CDC|NIH|FDA|World Health Organization)\b',
+                    r'\b([A-Z][a-z]+\s+(?:Hospital|Medical Center|Health System|Clinic))\b'
+                ]
+            },
+            'sports': {
+                'sports_types': [
+                    r'\b(football|soccer|basketball|baseball|tennis|golf|cricket|hockey)\b',
+                    r'\b(olympics|world cup|grand slam|championship|tournament)\b',
+                    r'\b(race|match|game|bout|fight|competition)\b',
+                    r'\b(victory|defeat|win|loss|draw|tie|championship)\b'
+                ],
+                'scores_results': [
+                    r'\b(won|defeated|beat)\s+(?:by\s+)?(\d+)-(\d+)\b',
+                    r'\b(score|result|final score):?\s+(\d+)-(\d+)\b',
+                    r'\b(\d+)\s*-\s*(\d+)\s+(?:win|victory|score)\b',
+                    r'\b(champion|winner|medalist|finalist)\b'
+                ],
+                'athletes_teams': [
+                    r'\b([A-Z][a-z]+\s+(?:FC|United|City|Rovers|Athletic))\b',
+                    r'\b(player|athlete|coach|manager|captain)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)*)\b'
+                ]
+            },
+            'entertainment': {
+                'entertainment_types': [
+                    r'\b(movie|film|documentary|series|show|season|episode)\b',
+                    r'\b(album|single|concert|tour|performance|music video)\b',
+                    r'\b(awards?\s+(?:show|ceremony)|premiere|release|debut)\b',
+                    r'\b(streaming|Netflix|Amazon Prime|Disney\+|Hulu|HBO)\b',
+                    r'\b(box office|ratings|reviews|critics|audience)\b'
+                ],
+                'celebrities': [
+                    r'\b(actor|actress|singer|musician|director|producer)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)*)\b',
+                    r'\b(starring|featuring|directed by|produced by)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)*)\b'
+                ],
+                'releases': [
+                    r'\b(released|premiered|dropped|debuted)\s+(?:on\s+)?([A-Z][a-z]+\s+\d{1,2})\b',
+                    r'\b(hitting|coming to)\s+(?:theaters|streaming)\s+(?:on\s+)?([A-Z][a-z]+\s+\d{1,2})\b'
+                ]
+            },
+            'science': {
+                'science_fields': [
+                    r'\b(astronomy|physics|chemistry|biology|geology|oceanography)\b',
+                    r'\b(genetics|genomics|DNA|RNA|gene editing|CRISPR)\b',
+                    r'\b(climate science|paleontology|archaeology|anthropology)\b',
+                    r'\b(space exploration|mars mission|lunar|satellite|telescope)\b',
+                    r'\b(study|research|experiment|discovery|breakthrough|finding)\b'
+                ],
+                'discoveries': [
+                    r'\b(new species|exoplanet|black hole|dark matter|dark energy)\b',
+                    r'\b(discovered|detected|observed|measured|calculated)\b',
+                    r'\b(published in|journal|Nature|Science|research paper)\b'
+                ],
+                'institutions': [
+                    r'\b(NASA|ESA|CERN|MIT|Stanford|Harvard|Oxford|Cambridge)\b',
+                    r'\b([A-Z][a-z]+\s+(?:University|Institute|Observatory|Laboratory))\b'
+                ]
+            },
+            'finance': {
+                'financial_events': [
+                    r'\b(stock market|market rally|market crash|correction|bear market|bull market)\b',
+                    r'\b(interest rate|federal reserve|inflation|deflation|recession)\b',
+                    r'\b(cryptocurrency|bitcoin|ethereum|crypto market|blockchain)\b',
+                    r'\b(forex|currency|exchange rate|dollar|euro|yen)\b',
+                    r'\b(commodities|gold|oil|gas|trading|futures)\b'
+                ],
+                'market_data': [
+                    r'\b(Dow Jones|S&P 500|Nasdaq|FTSE|Nikkei)\b',
+                    r'\b(up|down|gained|lost)\s+(?:by\s+)?(\d+(?:\.\d+)?)\s*(?:points|%|percent)\b',
+                    r'\b(\d+(?:,\d{3})*\.?\d*)\s+(?:trading volume|market cap)\b'
+                ]
+            },
+            'world': {
+                'world_events': [
+                    r'\b(war|conflict|invasion|ceasefire|peace talks|treaty)\b',
+                    r'\b(diplomatic relations|embassy|consulate|ambassador|envoy)\b',
+                    r'\b(sanctions|trade war|tariff|embargo|boycott)\b',
+                    r'\b(refugee crisis|humanitarian aid|peacekeeping|UN resolution)\b',
+                    r'\b(border dispute|territorial|annexation|independence)\b'
+                ],
+                'countries_regions': [
+                    r'\b(United States|China|Russia|India|Brazil|UK|Germany|France|Japan)\b',
+                    r'\b(Middle East|Africa|Europe|Asia|Latin America|Southeast Asia)\b',
+                    r'\b(NATO|EU|ASEAN|African Union|United Nations)\b'
+                ]
+            }
+        }
+    
+    def _extract_incident_details(self, text: str, category: str) -> Dict[str, Any]:
+        """
+        Extract content-specific details from text based on category.
+        Returns structured information about the incident/content.
+        """
+        text_lower = text.lower()
+        details = {
+            'category_type': category,
+            'incident_type': None,
+            'location': None,
+            'impact': None,
+            'severity': None,
+            'key_entities': [],
+            'specifics': {}
+        }
+        
+        patterns = self._detail_patterns.get(category, {})
+        if not patterns:
+            return details
+        
+        # Extract incident type
+        if 'incident_types' in patterns:
+            for pattern in patterns['incident_types']:
+                match = re.search(pattern, text_lower, re.IGNORECASE)
+                if match:
+                    details['incident_type'] = match.group(0).title()
+                    break
+        
+        # Extract crime type (for crime category)
+        if 'crime_types' in patterns:
+            for pattern in patterns['crime_types']:
+                match = re.search(pattern, text_lower, re.IGNORECASE)
+                if match:
+                    details['incident_type'] = match.group(0).title()
+                    break
+        
+        # Extract protest type (for protests category)
+        if 'protest_types' in patterns:
+            for pattern in patterns['protest_types']:
+                match = re.search(pattern, text_lower, re.IGNORECASE)
+                if match:
+                    details['incident_type'] = match.group(0).title()
+                    break
+        
+        # Extract location
+        if 'locations' in patterns:
+            for pattern in patterns['locations']:
+                match = re.search(pattern, text, re.IGNORECASE)
+                if match:
+                    # Get the first group that has content
+                    for group in match.groups():
+                        if group and len(group) > 2:
+                            details['location'] = group.strip()
+                            break
+                    if details['location']:
+                        break
+        
+        # Extract impact indicators
+        impacts = []
+        if 'impact_indicators' in patterns:
+            for pattern in patterns['impact_indicators']:
+                matches = re.finditer(pattern, text, re.IGNORECASE)
+                for match in matches:
+                    impact_text = match.group(0)
+                    if impact_text not in impacts:
+                        impacts.append(impact_text)
+        
+        if impacts:
+            details['impact'] = impacts[:3]  # Keep top 3 impacts
+        
+        # Extract severity markers
+        if 'severity_markers' in patterns:
+            for pattern in patterns['severity_markers']:
+                match = re.search(pattern, text_lower, re.IGNORECASE)
+                if match:
+                    details['severity'] = match.group(0).title()
+                    break
+        
+        # Extract magnitude (for disasters)
+        if 'magnitude' in patterns:
+            for pattern in patterns['magnitude']:
+                match = re.search(pattern, text, re.IGNORECASE)
+                if match:
+                    details['specifics']['magnitude'] = match.group(0)
+                    break
+        
+        # Extract business event specifics
+        if 'business_events' in patterns:
+            for pattern in patterns['business_events']:
+                match = re.search(pattern, text_lower, re.IGNORECASE)
+                if match:
+                    details['incident_type'] = match.group(0).title()
+                    break
+        
+        # Extract financial metrics
+        if 'financial_metrics' in patterns:
+            financial_data = []
+            for pattern in patterns['financial_metrics']:
+                matches = re.finditer(pattern, text, re.IGNORECASE)
+                for match in matches:
+                    financial_data.append(match.group(0))
+            if financial_data:
+                details['specifics']['financial_data'] = financial_data[:2]
+        
+        # Extract tech topics
+        if 'tech_topics' in patterns:
+            tech_found = []
+            for pattern in patterns['tech_topics']:
+                match = re.search(pattern, text_lower, re.IGNORECASE)
+                if match:
+                    tech_found.append(match.group(0).title())
+            if tech_found:
+                details['specifics']['technologies'] = tech_found[:2]
+        
+        # Extract companies/organizations
+        org_patterns = ['companies', 'organizations', 'institutions', 'companies_products']
+        for org_key in org_patterns:
+            if org_key in patterns:
+                orgs = []
+                for pattern in patterns[org_key]:
+                    matches = re.finditer(pattern, text, re.IGNORECASE)
+                    for match in matches:
+                        org = match.group(0)
+                        if org not in orgs:
+                            orgs.append(org)
+                if orgs:
+                    details['key_entities'] = orgs[:3]
+                    break
+        
+        # Extract scores/results for sports
+        if 'scores_results' in patterns:
+            for pattern in patterns['scores_results']:
+                match = re.search(pattern, text, re.IGNORECASE)
+                if match:
+                    details['specifics']['result'] = match.group(0)
+                    break
+        
+        # Generate description
+        details['description'] = self._generate_detail_description(details, category)
+        
+        return details
+    
+    def _generate_detail_description(self, details: Dict[str, Any], category: str) -> str:
+        """Generate a human-readable description from extracted details"""
+        parts = []
+        
+        # Incident/Crime/Protest type
+        if details.get('incident_type'):
+            if category == 'crime':
+                parts.append(f"{details['incident_type']} incident")
+            elif category == 'protests':
+                parts.append(f"{details['incident_type']}")
+            elif category in ['business', 'finance', 'technology']:
+                parts.append(f"{details['incident_type']}")
+            else:
+                parts.append(f"{details['incident_type']}")
+        
+        # Location
+        if details.get('location'):
+            parts.append(f"in {details['location']}")
+        
+        # Severity/Magnitude
+        if details.get('severity'):
+            parts.append(f"- {details['severity']} severity")
+        elif details.get('specifics', {}).get('magnitude'):
+            parts.append(f"- {details['specifics']['magnitude']}")
+        
+        # Impact
+        if details.get('impact'):
+            if category in ['environment', 'disasters', 'accidents']:
+                parts.append(f"Impact: {', '.join(details['impact'])}")
+        
+        # Key entities
+        if details.get('key_entities') and category in ['business', 'technology', 'entertainment', 'science', 'crime']:
+            parts.append(f"Involving: {', '.join(details['key_entities'])}")
+        
+        # Financial data
+        if details.get('specifics', {}).get('financial_data'):
+            parts.append(f"Financials: {', '.join(details['specifics']['financial_data'])}")
+        
+        # Join into a coherent description
+        if parts:
+            return ' | '.join(parts)
+        
+        # Fallback to category-specific default
+        default_descriptions = {
+            'environment': 'Environmental incident with specific ecological impact',
+            'accidents': 'Transportation or industrial accident',
+            'disasters': 'Natural disaster event',
+            'crime': 'Criminal incident under investigation',
+            'protests': 'Public demonstration or civil action',
+            'business': 'Corporate or market-related development',
+            'technology': 'Technology innovation or industry development',
+            'politics': 'Political event or policy development',
+            'health': 'Healthcare or medical development',
+            'sports': 'Sports event or competition result',
+            'entertainment': 'Entertainment industry news',
+            'science': 'Scientific discovery or research',
+            'finance': 'Financial market development',
+            'world': 'International event or development'
+        }
+        
+        return default_descriptions.get(category, f'{category.title()} related content')
+
     def _init_classifiers(self):
         """Initialize classifiers with optimized parameters"""
         
@@ -776,6 +1325,11 @@ class OptimizedEnsembleClassifier(BaseNewsClassifier):
                 result = self._create_response(category, confidence, features)
                 result['top_predictions'] = top_predictions
                 result['method'] = 'optimized_ensemble_v3.5'
+                
+                # Extract content-specific incident details
+                incident_details = self._extract_incident_details(text, category)
+                result['incident_details'] = incident_details
+                result['category_description'] = incident_details.get('description', self.categories.get(category, category))
             
             processing_time = (time.time() - start_time) * 1000
             result['processing_time_ms'] = round(processing_time, 2)
@@ -846,6 +1400,11 @@ class OptimizedEnsembleClassifier(BaseNewsClassifier):
         result['method'] = 'advanced_rule_based'
         result['keyword_matches'] = keyword_matches.get(best_category, [])[:5]
         result['top_predictions'] = top_predictions
+        
+        # Extract content-specific incident details
+        incident_details = self._extract_incident_details(text, best_category)
+        result['incident_details'] = incident_details
+        result['category_description'] = incident_details.get('description', self.categories.get(best_category, best_category))
         
         return result
     

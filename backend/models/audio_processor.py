@@ -111,30 +111,42 @@ class AudioProcessor:
     
     def _init_whisper(self):
         """Initialize OpenAI Whisper (most accurate, runs locally)"""
-        import whisper
-        
-        # Use base model for balance of speed/accuracy
-        self.stt_model = whisper.load_model("base")
-        self.stt_engine = 'whisper'
-        logger.info("Whisper STT initialized successfully")
+        try:
+            import whisper
+            
+            # Use base model for balance of speed/accuracy
+            self.stt_model = whisper.load_model("base")
+            self.stt_engine = 'whisper'
+            logger.info("Whisper STT initialized successfully")
+        except ImportError:
+            logger.error("Whisper not installed. Install with: pip install openai-whisper")
+            raise RuntimeError("Whisper not installed. Install with: pip install openai-whisper")
     
     def _init_google(self):
         """Initialize Google Speech Recognition (requires internet)"""
-        import speech_recognition as sr
-        
-        self.stt_model = sr.Recognizer()
-        self.stt_model.energy_threshold = 300
-        self.stt_model.dynamic_energy_threshold = True
-        self.stt_engine = 'google'
-        logger.info("Google Speech Recognition initialized successfully")
+        try:
+            import speech_recognition as sr
+            
+            self.stt_model = sr.Recognizer()
+            self.stt_model.energy_threshold = 300
+            self.stt_model.dynamic_energy_threshold = True
+            self.stt_engine = 'google'
+            logger.info("Google Speech Recognition initialized successfully")
+        except ImportError:
+            logger.error("SpeechRecognition not installed. Install with: pip install SpeechRecognition")
+            raise RuntimeError("SpeechRecognition not installed. Install with: pip install SpeechRecognition")
     
     def _init_sphinx(self):
         """Initialize CMU Sphinx (offline, less accurate)"""
-        import speech_recognition as sr
-        
-        self.stt_model = sr.Recognizer()
-        self.stt_engine = 'sphinx'
-        logger.info("CMU Sphinx STT initialized successfully")
+        try:
+            import speech_recognition as sr
+            
+            self.stt_model = sr.Recognizer()
+            self.stt_engine = 'sphinx'
+            logger.info("CMU Sphinx STT initialized successfully")
+        except ImportError:
+            logger.error("SpeechRecognition not installed. Install with: pip install SpeechRecognition")
+            raise RuntimeError("SpeechRecognition not installed. Install with: pip install SpeechRecognition")
     
     def is_available(self) -> bool:
         """Check if audio processing is available"""

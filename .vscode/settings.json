@@ -23,5 +23,6 @@
     },
     "[python]": {
         "editor.defaultFormatter": "ms-python.python"
-    }
+    },
+    "CodeGPT.apiKey": "Anthropic"
 }

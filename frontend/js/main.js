@@ -68,7 +68,7 @@ const categoryStyles = {
 };
 
 // ===== LOADING STATE MANAGEMENT =====
-function showLoadingOverlay(message = 'Analyzing...', subMessage = 'Please wait while we process your content') {
+function showLoadingOverlay(message = 'Analyzing...', subMessage = 'Processing your content with AI') {
     const overlay = document.getElementById('loading-overlay');
     const loadingText = document.getElementById('loading-text');
     const loadingSubtext = document.getElementById('loading-subtext');
@@ -77,6 +77,7 @@ function showLoadingOverlay(message = 'Analyzing...', subMessage = 'Please wait 
         if (loadingText) loadingText.textContent = message;
         if (loadingSubtext) loadingSubtext.textContent = subMessage;
         overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
     }
 }
 
@@ -84,6 +85,7 @@ function hideLoadingOverlay() {
     const overlay = document.getElementById('loading-overlay');
     if (overlay) {
         overlay.classList.remove('active');
+        document.body.style.overflow = '';
     }
 }
 
@@ -91,8 +93,20 @@ function updateLoadingMessage(message, subMessage = null) {
     const loadingText = document.getElementById('loading-text');
     const loadingSubtext = document.getElementById('loading-subtext');
 
-    if (loadingText) loadingText.textContent = message;
-    if (subMessage && loadingSubtext) loadingSubtext.textContent = subMessage;
+    if (loadingText) {
+        loadingText.style.opacity = '0';
+        setTimeout(() => {
+            loadingText.textContent = message;
+            loadingText.style.opacity = '1';
+        }, 150);
+    }
+    if (subMessage && loadingSubtext) {
+        loadingSubtext.style.opacity = '0';
+        setTimeout(() => {
+            loadingSubtext.textContent = subMessage;
+            loadingSubtext.style.opacity = '1';
+        }, 150);
+    }
 }
 
 // ===== PARTICLE ANIMATION =====
@@ -116,18 +130,112 @@ function createParticles() {
     }
 }
 
+// ===== ERROR HANDLING WRAPPER =====
+function safeExecute(fn, errorMessage = 'An error occurred') {
+    try {
+        return fn();
+    } catch (error) {
+        console.error(errorMessage, error);
+        showNotification(errorMessage, 'error');
+        return null;
+    }
+}
+
+async function safeExecuteAsync(fn, errorMessage = 'An error occurred') {
+    try {
+        return await fn();
+    } catch (error) {
+        console.error(errorMessage, error);
+        showNotification(`${errorMessage}: ${error.message}`, 'error');
+        return null;
+    }
+}
+
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', () => {
-    initializeApp();
-    setupDragAndDrop();
-    createParticles();
-    loadHistory();
+    try {
+        initializeApp();
+        setupDragAndDrop();
+        createParticles();
+        loadHistory();
+        setupScrollEffects();
+        setupAccessibility();
+    } catch (error) {
+        console.error('Failed to initialize app:', error);
+        showNotification('Failed to initialize application. Please refresh the page.', 'error');
+    }
 });
 
+// ===== SCROLL EFFECTS =====
+function setupScrollEffects() {
+    const nav = document.getElementById('main-nav');
+    if (!nav) return;
+
+    let lastScrollY = window.scrollY;
+    let ticking = false;
+
+    window.addEventListener('scroll', () => {
+        if (!ticking) {
+            window.requestAnimationFrame(() => {
+                const currentScrollY = window.scrollY;
+
+                // Add/remove scrolled class
+                if (currentScrollY > 20) {
+                    nav.classList.add('scrolled');
+                } else {
+                    nav.classList.remove('scrolled');
+                }
+
+                lastScrollY = currentScrollY;
+                ticking = false;
+            });
+            ticking = true;
+        }
+    }, { passive: true });
+}
+
+// ===== ACCESSIBILITY =====
+function setupAccessibility() {
+    // Handle focus trap for modals
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Tab') {
+            const modelPanel = document.getElementById('model-info-panel');
+            const historySidebar = document.getElementById('history-sidebar');
+
+            // Check if any modal is open
+            const isModelOpen = modelPanel && modelPanel.classList.contains('active');
+            const isHistoryOpen = historySidebar && historySidebar.classList.contains('open');
+
+            if (isModelOpen || isHistoryOpen) {
+                // Let natural tab flow work, but close on Escape
+            }
+        }
+    });
+
+    // Announce page load to screen readers
+    const announce = document.createElement('div');
+    announce.setAttribute('role', 'status');
+    announce.setAttribute('aria-live', 'polite');
+    announce.className = 'sr-only';
+    announce.textContent = 'NEWSCAT application loaded. Use 1-4 keys to switch input types.';
+    document.body.appendChild(announce);
+
+    setTimeout(() => announce.remove(), 1000);
+}
+
 async function initializeApp() {
-    await Promise.all([loadCategories(), loadModelStatus(), loadModelInfo()]);
-    setupEventListeners();
-    updateAnalyzeButton();
+    try {
+        await Promise.all([
+            loadCategories(),
+            loadModelStatus(),
+            loadModelInfo()
+        ]);
+        setupEventListeners();
+        updateAnalyzeButton();
+    } catch (error) {
+        console.error('Error during app initialization:', error);
+        showNotification('Some features may not be available', 'error');
+    }
 }
 
 function setupEventListeners() {
@@ -157,23 +265,39 @@ function setupEventListeners() {
 function switchInputType(type) {
     currentInputType = type;
 
+    // Update selector buttons
     document.querySelectorAll('.selector-btn').forEach(btn => {
-        if (btn.dataset.type === type) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
+        const isActive = btn.dataset.type === type;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
     });
 
+    // Update panels with animation
     document.querySelectorAll('.input-panel').forEach(panel => {
-        panel.classList.remove('active');
+        if (panel.classList.contains('active')) {
+            panel.style.opacity = '0';
+            panel.style.transform = 'translateY(-10px)';
+            setTimeout(() => {
+                panel.classList.remove('active');
+                panel.style.opacity = '';
+                panel.style.transform = '';
+            }, 200);
+        }
     });
 
     const targetPanel = document.getElementById(`${type}-panel`);
     if (targetPanel) {
         setTimeout(() => {
             targetPanel.classList.add('active');
-        }, 50);
+            // Announce change to screen readers
+            const announce = document.createElement('div');
+            announce.setAttribute('role', 'status');
+            announce.setAttribute('aria-live', 'polite');
+            announce.className = 'sr-only';
+            announce.textContent = `Switched to ${capitalizeFirst(type)} input`;
+            document.body.appendChild(announce);
+            setTimeout(() => announce.remove(), 1000);
+        }, 250);
     }
 
     updateAnalyzeButton();
@@ -213,14 +337,18 @@ function clearText() {
 function updateCharCount() {
     const textarea = document.getElementById('news-text');
     const charCount = document.getElementById('char-count');
+    const charCountWrapper = charCount?.parentElement;
+
     if (textarea && charCount) {
         const count = textarea.value.length;
         charCount.textContent = count;
 
-        if (count >= MIN_CHARS) {
-            charCount.style.color = '#4ade80';
-        } else {
-            charCount.style.color = '';
+        if (charCountWrapper) {
+            if (count >= MIN_CHARS) {
+                charCountWrapper.classList.add('sufficient');
+            } else {
+                charCountWrapper.classList.remove('sufficient');
+            }
         }
     }
 }
@@ -381,8 +509,10 @@ function updateAnalyzeButton() {
 async function analyzeContent() {
     if (isAnalyzing) return;
 
-    isAnalyzing = true;
     const btn = document.getElementById('analyze-btn');
+    if (!btn) return;
+
+    isAnalyzing = true;
     btn.classList.add('loading');
     btn.disabled = true;
 
@@ -401,12 +531,14 @@ async function analyzeContent() {
         let inputText = '';
 
         switch (currentInputType) {
-            case 'text':
+            case 'text': {
                 updateLoadingMessage('Processing text...', 'Running optimized ensemble classification');
                 const textarea = document.getElementById('news-text');
+                if (!textarea) throw new Error('Text input not found');
                 inputText = textarea.value.trim();
                 result = await analyzeText();
                 break;
+            }
             case 'image':
                 updateLoadingMessage('Processing image...', 'Extracting visual features');
                 inputText = selectedFiles.image?.name || 'Image file';
@@ -422,6 +554,8 @@ async function analyzeContent() {
                 inputText = selectedFiles.video?.name || 'Video file';
                 result = await analyzeVideo();
                 break;
+            default:
+                throw new Error(`Unknown input type: ${currentInputType}`);
         }
 
         if (result) {
@@ -435,6 +569,7 @@ async function analyzeContent() {
             }, 200);
         }
     } catch (error) {
+        console.error('Analysis error:', error);
         hideLoadingOverlay();
         showNotification(`Analysis failed: ${error.message}`, 'error');
     } finally {
@@ -449,80 +584,134 @@ async function analyzeContent() {
 
 async function analyzeText() {
     const textarea = document.getElementById('news-text');
+    if (!textarea) throw new Error('Text input not found');
+
     const text = textarea.value.trim();
 
-    const response = await fetch(`${API_BASE}/classify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, enhanced: true })
-    });
+    try {
+        const response = await fetch(`${API_BASE}/classify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, enhanced: true })
+        });
 
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Classification failed');
+        if (!response.ok) {
+            let errorMessage = 'Classification failed';
+            try {
+                const error = await response.json();
+                errorMessage = error.message || errorMessage;
+            } catch (e) {
+                errorMessage = `Server error: ${response.status}`;
+            }
+            throw new Error(errorMessage);
+        }
+
+        return await response.json();
+    } catch (error) {
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            throw new Error('Network error. Please check your connection and try again.');
+        }
+        throw error;
     }
-
-    return await response.json();
 }
 
 async function analyzeImage() {
     const file = selectedFiles.image;
     if (!file) throw new Error('No image selected');
 
-    const formData = new FormData();
-    formData.append('image', file);
+    try {
+        const formData = new FormData();
+        formData.append('image', file);
 
-    const response = await fetch(`${API_BASE}/classify/image`, {
-        method: 'POST',
-        body: formData
-    });
+        const response = await fetch(`${API_BASE}/classify/image`, {
+            method: 'POST',
+            body: formData
+        });
 
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Image classification failed');
+        if (!response.ok) {
+            let errorMessage = 'Image classification failed';
+            try {
+                const error = await response.json();
+                errorMessage = error.message || errorMessage;
+            } catch (e) {
+                errorMessage = `Server error: ${response.status}`;
+            }
+            throw new Error(errorMessage);
+        }
+
+        return await response.json();
+    } catch (error) {
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            throw new Error('Network error. Please check your connection and try again.');
+        }
+        throw error;
     }
-
-    return await response.json();
 }
 
 async function analyzeAudio() {
     const file = selectedFiles.audio;
     if (!file) throw new Error('No audio selected');
 
-    const formData = new FormData();
-    formData.append('audio', file);
+    try {
+        const formData = new FormData();
+        formData.append('audio', file);
 
-    const response = await fetch(`${API_BASE}/classify/audio`, {
-        method: 'POST',
-        body: formData
-    });
+        const response = await fetch(`${API_BASE}/classify/audio`, {
+            method: 'POST',
+            body: formData
+        });
 
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Audio classification failed');
+        if (!response.ok) {
+            let errorMessage = 'Audio classification failed';
+            try {
+                const error = await response.json();
+                errorMessage = error.message || errorMessage;
+            } catch (e) {
+                errorMessage = `Server error: ${response.status}`;
+            }
+            throw new Error(errorMessage);
+        }
+
+        return await response.json();
+    } catch (error) {
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            throw new Error('Network error. Please check your connection and try again.');
+        }
+        throw error;
     }
-
-    return await response.json();
 }
 
 async function analyzeVideo() {
     const file = selectedFiles.video;
     if (!file) throw new Error('No video selected');
 
-    const formData = new FormData();
-    formData.append('video', file);
+    try {
+        const formData = new FormData();
+        formData.append('video', file);
 
-    const response = await fetch(`${API_BASE}/classify/video`, {
-        method: 'POST',
-        body: formData
-    });
+        const response = await fetch(`${API_BASE}/classify/video`, {
+            method: 'POST',
+            body: formData
+        });
 
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Video classification failed');
+        if (!response.ok) {
+            let errorMessage = 'Video classification failed';
+            try {
+                const error = await response.json();
+                errorMessage = error.message || errorMessage;
+            } catch (e) {
+                errorMessage = `Server error: ${response.status}`;
+            }
+            throw new Error(errorMessage);
+        }
+
+        return await response.json();
+    } catch (error) {
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            throw new Error('Network error. Please check your connection and try again.');
+        }
+        throw error;
     }
-
-    return await response.json();
 }
 
 // ===== RESULTS DISPLAY =====
@@ -716,16 +905,67 @@ function displaySummary(category, confidence, data) {
     if (confidence < 50) confidenceLevel = 'low';
     else if (confidence < 75) confidenceLevel = 'moderate';
 
+    // Get the content-specific description from incident_details or category_description
+    let specificDetails = '';
+    if (data.incident_details && data.incident_details.description) {
+        specificDetails = data.incident_details.description;
+    } else if (data.category_description) {
+        specificDetails = data.category_description;
+    }
+
+    // Build incident details section if we have specific details
+    let incidentDetailsHtml = '';
+    if (specificDetails && specificDetails !== `${capitalizeFirst(category)} related content`) {
+        incidentDetailsHtml = `
+            <div class="incident-details" style="margin: 15px 0; padding: 12px; background: ${style.color}15; border-left: 4px solid ${style.color}; border-radius: 6px;">
+                <p style="margin: 0; font-weight: 500; color: ${style.color};">
+                    <i class="fas fa-info-circle"></i> ${specificDetails}
+                </p>
+            </div>
+        `;
+    }
+
+    // Build additional incident details if available
+    let additionalDetailsHtml = '';
+    if (data.incident_details) {
+        const details = data.incident_details;
+        const detailItems = [];
+
+        if (details.location) {
+            detailItems.push(`<span class="detail-tag"><i class="fas fa-map-marker-alt"></i> ${details.location}</span>`);
+        }
+        if (details.severity) {
+            detailItems.push(`<span class="detail-tag"><i class="fas fa-exclamation-triangle"></i> ${details.severity}</span>`);
+        }
+        if (details.impact && details.impact.length > 0) {
+            const impactText = Array.isArray(details.impact) ? details.impact[0] : details.impact;
+            detailItems.push(`<span class="detail-tag"><i class="fas fa-bolt"></i> ${impactText}</span>`);
+        }
+        if (details.key_entities && details.key_entities.length > 0) {
+            detailItems.push(`<span class="detail-tag"><i class="fas fa-building"></i> ${details.key_entities[0]}</span>`);
+        }
+
+        if (detailItems.length > 0) {
+            additionalDetailsHtml = `
+                <div class="detail-tags" style="margin: 10px 0;">
+                    ${detailItems.join('')}
+                </div>
+            `;
+        }
+    }
+
     const summaryHtml = `
         <p>
-            <strong>${capitalizeFirst(category)}</strong> category detected with 
+            <strong>${capitalizeFirst(category)}</strong> category detected with
             <strong>${confidence.toFixed(1)}%</strong> confidence (${confidenceLevel} certainty).
         </p>
-        <p>
+        ${incidentDetailsHtml}
+        ${additionalDetailsHtml}
+        <p style="margin-top: 12px; font-size: 0.9em; opacity: 0.8;">
             Analysis completed in <strong>${timeStr}</strong> using the <strong>${data.model || 'Ensemble'}</strong> AI model.
         </p>
         ${data.keywords && data.keywords.length > 0 ?
-            `<p>Key terms identified: <strong>${data.keywords.slice(0, 5).map(k => typeof k === 'string' ? k : k.word || k).join(', ')}</strong></p>`
+            `<p style="font-size: 0.9em;">Key terms: <strong>${data.keywords.slice(0, 5).map(k => typeof k === 'string' ? k : k.word || k).join(', ')}</strong></p>`
             : ''}
     `;
 
@@ -911,8 +1151,24 @@ function clearHistory() {
 
 function toggleHistory() {
     const sidebar = document.getElementById('history-sidebar');
+    const modelPanel = document.getElementById('model-info-panel');
+
+    // Close model info if open
+    if (modelPanel) {
+        modelPanel.classList.remove('active');
+    }
+
     if (sidebar) {
-        sidebar.classList.toggle('open');
+        const isOpen = sidebar.classList.toggle('open');
+
+        // Announce to screen readers
+        const announce = document.createElement('div');
+        announce.setAttribute('role', 'status');
+        announce.setAttribute('aria-live', 'polite');
+        announce.className = 'sr-only';
+        announce.textContent = isOpen ? 'History panel opened' : 'History panel closed';
+        document.body.appendChild(announce);
+        setTimeout(() => announce.remove(), 1000);
     }
 }
 
@@ -932,31 +1188,70 @@ async function loadModelInfo() {
 function updateModelInfoDisplay() {
     if (!modelInfo) return;
 
-    document.getElementById('info-model-name').textContent = modelInfo.name || '-';
-    document.getElementById('info-model-version').textContent = modelInfo.version || '-';
-    document.getElementById('info-model-status').textContent = modelInfo.is_trained ? 'Ready' : 'Not Trained';
-    document.getElementById('info-categories').textContent = modelInfo.category_count || modelInfo.categories?.length || '-';
-    document.getElementById('info-inference-time').textContent = modelInfo.metrics?.inference_time_ms ? `${modelInfo.metrics.inference_time_ms}ms` : '~5ms';
-    document.getElementById('info-accuracy').textContent = modelInfo.metrics?.accuracy ? `${(modelInfo.metrics.accuracy * 100).toFixed(1)}%` : '98%';
+    // Update basic info with fallbacks
+    const nameEl = document.getElementById('info-model-name');
+    const versionEl = document.getElementById('info-model-version');
+    const statusEl = document.getElementById('info-model-status');
+    const categoriesEl = document.getElementById('info-categories');
+    const inferenceEl = document.getElementById('info-inference-time');
+    const accuracyEl = document.getElementById('info-accuracy');
 
+    if (nameEl) nameEl.textContent = modelInfo.name || 'NEWSCAT AI';
+    if (versionEl) versionEl.textContent = modelInfo.version || 'v5.0';
+
+    if (statusEl) {
+        const isReady = modelInfo.is_trained !== false;
+        statusEl.textContent = isReady ? 'Ready' : 'Loading...';
+        statusEl.className = 'info-value status-badge ' + (isReady ? 'status-ready' : 'status-loading');
+    }
+
+    if (categoriesEl) categoriesEl.textContent = modelInfo.category_count || modelInfo.categories?.length || '20+';
+    if (inferenceEl) inferenceEl.textContent = modelInfo.metrics?.inference_time_ms ? `${modelInfo.metrics.inference_time_ms}ms` : '< 10ms';
+    if (accuracyEl) accuracyEl.textContent = modelInfo.metrics?.accuracy ? `${(modelInfo.metrics.accuracy * 100).toFixed(1)}%` : '98%';
+
+    // Update categories list with enhanced styling
     const categoriesList = document.getElementById('categories-list');
     if (categoriesList && modelInfo.categories) {
-        categoriesList.innerHTML = modelInfo.categories.map(cat =>
-            `<span class="category-tag">${capitalizeFirst(cat)}</span>`
+        categoriesList.innerHTML = modelInfo.categories.map((cat, index) =>
+            `<span class="category-tag" style="animation-delay: ${index * 0.02}s">${capitalizeFirst(cat)}</span>`
         ).join('');
+    }
+
+    // Show model capabilities
+    const capabilitiesSection = document.getElementById('model-capabilities');
+    if (capabilitiesSection) {
+        const capabilities = [
+            { icon: 'fa-font', label: 'Text Analysis' },
+            { icon: 'fa-image', label: 'Image OCR' },
+            { icon: 'fa-microphone', label: 'Audio STT' },
+            { icon: 'fa-video', label: 'Video Processing' }
+        ];
+        capabilitiesSection.innerHTML = capabilities.map(cap => `
+            <div class="capability-item">
+                <i class="fas ${cap.icon}"></i>
+                <span>${cap.label}</span>
+            </div>
+        `).join('');
     }
 }
 
 function toggleModelInfo() {
     const panel = document.getElementById('model-info-panel');
-    const cachePanel = document.getElementById('cache-info-panel');
+    const historySidebar = document.getElementById('history-sidebar');
 
-    if (cachePanel) cachePanel.style.display = 'none';
+    // Close history if open
+    if (historySidebar) {
+        historySidebar.classList.remove('open');
+    }
 
     if (panel) {
-        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-        if (panel.style.display === 'block') {
+        const isActive = panel.classList.contains('active');
+
+        if (isActive) {
+            panel.classList.remove('active');
+        } else {
             loadModelInfo();
+            panel.classList.add('active');
         }
     }
 }
@@ -964,24 +1259,49 @@ function toggleModelInfo() {
 // ===== API CALLS =====
 async function loadCategories() {
     try {
-        const response = await fetch(`${API_BASE}/categories`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        const response = await fetch(`${API_BASE}/categories`, {
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
         if (response.ok) {
             const data = await response.json();
-            console.log(`Loaded ${data.count} categories`);
+            console.log(`Loaded ${data.count || 'unknown'} categories`);
         }
     } catch (error) {
-        console.error('Failed to load categories:', error);
+        if (error.name === 'AbortError') {
+            console.warn('Categories request timed out');
+        } else {
+            console.error('Failed to load categories:', error);
+        }
     }
 }
 
 async function loadModelStatus() {
     try {
-        const response = await fetch(`${API_BASE}/health`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        const response = await fetch(`${API_BASE}/health`, {
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
         if (response.ok) {
             const data = await response.json();
             updateStatusIndicator(data);
+        } else {
+            updateStatusIndicator(null);
         }
     } catch (error) {
+        if (error.name === 'AbortError') {
+            console.warn('Health check timed out');
+        } else {
+            console.error('Failed to load model status:', error);
+        }
         updateStatusIndicator(null);
     }
 }
@@ -998,50 +1318,88 @@ function updateStatusIndicator(data) {
         const categoryCount = data.models?.models?.optimized?.categories?.length || 20;
 
         if (indicator) {
-            indicator.style.background = '#4ade80';
-            indicator.style.boxShadow = '0 0 10px #4ade80';
+            indicator.classList.remove('offline', 'loading');
         }
         if (label) {
-            label.textContent = hasOptimized ? `AI Ready (${categoryCount} categories)` : 'AI Ready';
-            label.style.color = '#4ade80';
+            label.textContent = hasOptimized ? `AI Ready (${categoryCount})` : 'AI Ready';
+            label.classList.add('ready');
         }
     } else {
         if (indicator) {
-            indicator.style.background = '#f87171';
-            indicator.style.boxShadow = '0 0 10px #f87171';
+            indicator.classList.add('offline');
+            indicator.classList.remove('loading');
         }
         if (label) {
             label.textContent = 'AI Offline';
-            label.style.color = '#f87171';
+            label.classList.remove('ready');
         }
     }
 }
 
 // ===== NOTIFICATIONS =====
-function showNotification(message, type = 'info') {
+let notificationId = 0;
+const activeNotifications = new Map();
+
+function showNotification(message, type = 'info', duration = 5000) {
     const container = document.getElementById('notification-container');
     if (!container) return;
 
+    const id = ++notificationId;
     const icons = {
         success: 'fa-check-circle',
         error: 'fa-exclamation-circle',
-        info: 'fa-info-circle'
+        info: 'fa-info-circle',
+        warning: 'fa-exclamation-triangle'
+    };
+
+    const titles = {
+        success: 'Success',
+        error: 'Error',
+        info: 'Information',
+        warning: 'Warning'
     };
 
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
+    notification.setAttribute('role', 'alert');
+    notification.setAttribute('aria-live', 'polite');
     notification.innerHTML = `
         <i class="fas ${icons[type]}"></i>
-        <span class="notification-message">${message}</span>
+        <div class="notification-content">
+            <div class="notification-title">${titles[type]}</div>
+            <div class="notification-message">${message}</div>
+        </div>
+        <button class="notification-close" onclick="closeNotification(${id})" aria-label="Close notification">
+            <i class="fas fa-times"></i>
+        </button>
     `;
 
     container.appendChild(notification);
+    activeNotifications.set(id, notification);
+
+    // Auto-dismiss
+    if (duration > 0) {
+        const timeoutId = setTimeout(() => closeNotification(id), duration);
+        notification.dataset.timeoutId = timeoutId;
+    }
+
+    return id;
+}
+
+function closeNotification(id) {
+    const notification = activeNotifications.get(id);
+    if (!notification) return;
+
+    const timeoutId = notification.dataset.timeoutId;
+    if (timeoutId) clearTimeout(parseInt(timeoutId));
+
+    notification.style.opacity = '0';
+    notification.style.transform = 'translateX(20px)';
 
     setTimeout(() => {
-        notification.style.opacity = '0';
-        notification.style.transform = 'translateX(100px)';
-        setTimeout(() => notification.remove(), 300);
-    }, 4000);
+        notification.remove();
+        activeNotifications.delete(id);
+    }, 300);
 }
 
 // ===== UTILITY FUNCTIONS =====
@@ -1060,39 +1418,55 @@ function showModelInfo() {
 
 // ===== KEYBOARD SHORTCUTS =====
 document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        const btn = document.getElementById('analyze-btn');
-        if (btn && !btn.disabled) {
-            analyzeContent();
+    try {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            const btn = document.getElementById('analyze-btn');
+            if (btn && !btn.disabled) {
+                analyzeContent();
+            }
         }
-    }
 
-    if (e.key === 'Escape') {
-        hideResults();
-        hideLoadingOverlay();
+        if (e.key === 'Escape') {
+            hideResults();
+            hideLoadingOverlay();
 
-        // Close panels
-        const modelPanel = document.getElementById('model-info-panel');
-        const historySidebar = document.getElementById('history-sidebar');
+            // Close panels
+            const modelPanel = document.getElementById('model-info-panel');
+            const historySidebar = document.getElementById('history-sidebar');
 
-        if (modelPanel) modelPanel.style.display = 'none';
-        if (historySidebar) historySidebar.classList.remove('open');
-    }
-
-    if (e.key >= '1' && e.key <= '4' && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        const types = ['text', 'image', 'audio', 'video'];
-        const activeElement = document.activeElement;
-
-        if (activeElement.tagName !== 'TEXTAREA' && activeElement.tagName !== 'INPUT') {
-            switchInputType(types[parseInt(e.key) - 1]);
+            if (modelPanel) modelPanel.style.display = 'none';
+            if (historySidebar) historySidebar.classList.remove('open');
         }
-    }
 
-    // H for history
-    if (e.key === 'h' && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        const activeElement = document.activeElement;
-        if (activeElement.tagName !== 'TEXTAREA' && activeElement.tagName !== 'INPUT') {
-            toggleHistory();
+        if (e.key >= '1' && e.key <= '4' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            const types = ['text', 'image', 'audio', 'video'];
+            const activeElement = document.activeElement;
+
+            if (activeElement && activeElement.tagName !== 'TEXTAREA' && activeElement.tagName !== 'INPUT') {
+                switchInputType(types[parseInt(e.key) - 1]);
+            }
         }
+
+        // H for history
+        if (e.key === 'h' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            const activeElement = document.activeElement;
+            if (activeElement && activeElement.tagName !== 'TEXTAREA' && activeElement.tagName !== 'INPUT') {
+                toggleHistory();
+            }
+        }
+    } catch (error) {
+        console.error('Keyboard shortcut error:', error);
     }
 });
+
+// ===== GLOBAL ERROR HANDLING =====
+window.addEventListener('error', (e) => {
+    console.error('Global error:', e.error);
+    showNotification('An unexpected error occurred. Please refresh the page.', 'error');
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+    console.error('Unhandled promise rejection:', e.reason);
+    showNotification('An async operation failed. Please try again.', 'error');
+});
+
