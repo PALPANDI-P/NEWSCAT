@@ -538,7 +538,7 @@ class ExpertNewsClassifier(BaseNewsClassifier):
         # Build response dictionary compatible with BaseNewsClassifier
         result = self._create_response(
             category=best_category,
-            confidence=round(confidence, 1) / 100.0,  # Convert to 0-1 scale
+            confidence=round(confidence, 1),  # Keep as 0-100 scale
             features={
                 'word_count': len(text.split()),
                 'char_count': len(text),

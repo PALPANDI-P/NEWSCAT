@@ -266,6 +266,94 @@ class EnsembleNewsClassifier(BaseNewsClassifier):
     
     def classify(self, text: str, **kwargs) -> Dict[str, Any]:
         """
+        Classify text using ensemble voting
+        Falls back to rule-based classification if not trained
+
+        Args:
+            text: Input text to classify
+            **kwargs: Additional parameters
+
+        Returns:
+            Classification result
+        """
+        if not text or len(text.strip()) < 10:
+            return {
+                'category': 'unknown',
+                'confidence': 0.0,
+                'error': 'Insufficient text'
+            }
+
+        # If not trained, use rule-based fallback
+        if not self.is_trained:
+            return self._rule_based_classify(text)
+
+        try:
+            # Preprocess text directly (inline)
+            processed_text = self._preprocess_text(text)
+
+            # Vectorize
+            X = self.vectorizer.transform([processed_text])
+
+            # Get predictions and probabilities
+            predictions = self.ensemble.predict(X)[0]
+            probabilities = self.ensemble.predict_proba(X)[0]
+
+            # Get confidence
+            confidence = float(np.max(probabilities)) * 100
+
+            return {
+                'category': predictions,
+                'confidence': round(confidence, 1),
+                'model': self.name,
+                'version': self.version
+            }
+        except Exception as e:
+            logger.warning(f"Ensemble classification failed: {e}, using fallback")
+            return self._rule_based_classify(text)
+
+    def _preprocess_text(self, text: str) -> str:
+        """Simple inline text preprocessing"""
+        import re
+        # Lowercase
+        text = text.lower()
+        # Remove URLs
+        text = re.sub(r'http\S+|www\S+', '', text)
+        # Remove special characters but keep words
+        text = re.sub(r'[^a-zA-Z\s]', ' ', text)
+        # Remove extra whitespace
+        text = ' '.join(text.split())
+        return text
+
+    def _rule_based_classify(self, text: str) -> Dict[str, Any]:
+        """Fallback rule-based classification"""
+        text_lower = text.lower()
+
+        keywords = {
+            'technology': ['technology', 'software', 'hardware', 'ai', 'machine learning', 'app'],
+            'business': ['business', 'company', 'earnings', 'revenue', 'market', 'trade'],
+            'sports': ['sports', 'game', 'team', 'championship', 'player', 'performance'],
+            'health': ['health', 'medical', 'disease', 'vaccine', 'hospital', 'doctor'],
+            'politics': ['politics', 'government', 'election', 'vote', 'policy', 'congress'],
+            'science': ['science', 'research', 'discovery', 'study', 'scientist', 'experiment'],
+            'entertainment': ['movie', 'film', 'music', 'celebrity', 'actor', 'concert'],
+            'world': ['international', 'country', 'nation', 'global', 'world', 'foreign'],
+        }
+
+        scores = {}
+        for category, kws in keywords.items():
+            score = sum(1 for kw in kws if kw in text_lower)
+            scores[category] = score
+
+        best_category = max(scores, key=scores.get) if max(scores.values()) > 0 else 'unknown'
+        confidence = min((scores.get(best_category, 0) / 5.0) * 100, 95.0)
+
+        return {
+            'category': best_category,
+            'confidence': round(confidence, 1),
+            'model': self.name,
+            'version': self.version
+        }
+        """
         Classify a news article
         
         Classification Process:
