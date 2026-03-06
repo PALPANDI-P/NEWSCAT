@@ -1,1472 +1,1627 @@
 /**
- * NEWSCAT v5.0 - Ultra Modern Multi-Modal UI JavaScript
- * Enhanced with History, Model Info & Cache Stats
+ * NEWSCAT v5 Professional - AI News Classification Frontend
+ * Clean, modern, and efficient user interface
+ *
+ * Features:
+ * - Request caching with LRU eviction
+ * - Request deduplication
+ * - Smooth animations
+ * - Accessible design
+ * - Responsive layout
+ * - File upload support (Image, Audio, Video)
  */
 
-// ===== CONFIGURATION =====
-const API_BASE = '/api';
-const MIN_CHARS = 10;
-const MAX_FILE_SIZES = {
-    image: 10 * 1024 * 1024,
-    audio: 50 * 1024 * 1024,
-    video: 100 * 1024 * 1024
+'use strict';
+
+// =============================================================================
+// CONFIGURATION
+// =============================================================================
+const CONFIG = {
+    API_BASE: '/api',
+    MIN_CHARS: 10,
+    DEBOUNCE_DELAY: 50,
+    CACHE_TTL: 10 * 60 * 1000, // 10 minutes
+    MAX_FILE_SIZES: {
+        image: 50 * 1024 * 1024,  // 50MB
+        audio: 100 * 1024 * 1024,  // 100MB
+        video: 200 * 1024 * 1024  // 200MB
+    },
+    ANIMATION_DURATION: 300
 };
 
-// State
-let currentInputType = 'text';
-let selectedFiles = { image: null, audio: null, video: null };
-let isAnalyzing = false;
-let classificationHistory = [];
-let modelInfo = null;
+// =============================================================================
+// CACHE SYSTEM
+// =============================================================================
+class RequestCache {
+    constructor(maxSize = 200) {
+        this.cache = new Map();
+        this.accessTimes = new Map();
+        this.maxSize = maxSize;
+        this.hits = 0;
+        this.misses = 0;
+        this.evictions = 0;
+    }
 
-// Sample articles for all categories
-const sampleArticles = {
-    tech: "OpenAI has unveiled GPT-5, demonstrating unprecedented natural language capabilities. The model features enhanced reasoning and improved contextual awareness, potentially revolutionizing healthcare and education. Early tests show 40% improvement in complex problem-solving tasks compared to previous versions.",
-    sports: "In a stunning Wimbledon upset, unseeded Maria Rodriguez defeated reigning champion Novak Djokovic in straight sets 6-4, 7-5. The 21-year-old Spanish player showcased exceptional athleticism and strategic play, marking the first time in 15 years that a qualifier has reached the quarterfinals.",
-    politics: "The Senate passed a landmark $500 billion climate change bill today with bipartisan support, allocating funds for renewable energy initiatives and carbon capture technology. The legislation includes tax incentives for electric vehicles and funding for green infrastructure projects.",
-    business: "Apple reported record quarterly earnings of $120 billion driven by strong iPhone sales and growing Services revenue. The company announced a $90 billion stock buyback program and increased its dividend by 10%.",
-    entertainment: "The 96th Academy Awards ceremony celebrated a diverse range of films, with Oppenheimer taking home Best Picture. The event featured moving tributes and surprise appearances, drawing 18.7 million viewers worldwide.",
-    health: "A groundbreaking clinical trial has shown promising results for a new Alzheimer's treatment, with patients demonstrating significant cognitive improvement. The FDA has granted breakthrough therapy designation for the drug.",
-    science: "NASA's James Webb Space Telescope has captured unprecedented images of distant galaxies, revealing new insights into the early universe. The discoveries challenge existing theories about galaxy formation.",
-    world: "The G20 summit concluded with a historic agreement on climate finance, with developed nations pledging $100 billion annually to support developing countries' transition to clean energy.",
-    education: "Harvard University announced a revolutionary online learning platform that will make 500 courses freely available worldwide, marking a major shift in accessible higher education.",
-    environment: "The Amazon rainforest has shown signs of recovery following aggressive conservation efforts, with deforestation rates dropping 45% compared to last year.",
-    finance: "Bitcoin surged past $100,000 as institutional investors increased their cryptocurrency holdings, signaling growing mainstream acceptance of digital assets.",
-    automotive: "Tesla unveiled its next-generation electric vehicle with a 600-mile range, setting a new benchmark for the automotive industry.",
-    travel: "International tourism has rebounded to pre-pandemic levels, with over 1 billion travelers recorded in the first half of the year.",
-    food: "A new study reveals the health benefits of the Mediterranean diet, linking it to reduced risk of heart disease and improved longevity.",
-    fashion: "Paris Fashion Week showcased sustainable fashion trends, with major designers committing to carbon-neutral production methods.",
-    realestate: "The housing market shows signs of cooling as mortgage rates reach 7%, with home sales declining for the fifth consecutive month.",
-    legal: "The Supreme Court ruled on a landmark privacy case, establishing new protections for digital communications in the modern era.",
-    religion: "The Vatican announced an interfaith initiative to address climate change, bringing together leaders from major world religions.",
-    lifestyle: "The wellness industry continues to boom as consumers prioritize mental health, with meditation apps seeing 200% growth in users.",
-    opinion: "The future of work demands a fundamental rethinking of our education system. We must prepare students for jobs that don't yet exist."
+    generateKey(endpoint, data) {
+        const str = `${endpoint}:${JSON.stringify(data || {})}`;
+        return this.hashString(str);
+    }
+
+    hashString(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return hash.toString(36);
+    }
+
+    get(key) {
+        const item = this.cache.get(key);
+        if (!item) {
+            this.misses++;
+            return null;
+        }
+
+        // Check TTL
+        if (Date.now() - item.timestamp > CONFIG.CACHE_TTL) {
+            this.cache.delete(key);
+            this.accessTimes.delete(key);
+            this.misses++;
+            return null;
+        }
+
+        // Update access time (LRU)
+        this.accessTimes.set(key, Date.now());
+        this.hits++;
+        return item.data;
+    }
+
+    set(key, data) {
+        // Evict oldest if at capacity
+        if (this.cache.size >= this.maxSize) {
+            const oldestKey = this.getOldestKey();
+            if (oldestKey) {
+                this.cache.delete(oldestKey);
+                this.accessTimes.delete(oldestKey);
+                this.evictions++;
+            }
+        }
+
+        this.cache.set(key, {
+            data,
+            timestamp: Date.now()
+        });
+        this.accessTimes.set(key, Date.now());
+    }
+
+    getOldestKey() {
+        let oldestKey = null;
+        let oldestTime = Infinity;
+
+        for (const [key, time] of this.accessTimes) {
+            if (time < oldestTime) {
+                oldestTime = time;
+                oldestKey = key;
+            }
+        }
+        return oldestKey;
+    }
+
+    clear() {
+        this.cache.clear();
+        this.accessTimes.clear();
+    }
+
+    getStats() {
+        const total = this.hits + this.misses;
+        return {
+            size: this.cache.size,
+            maxSize: this.maxSize,
+            hitRate: total > 0 ? ((this.hits / total) * 100).toFixed(1) + '%' : '0%',
+            efficiency: this.cache.size > 0 ? 'active' : 'empty',
+            evictions: this.evictions
+        };
+    }
+}
+
+const requestCache = new RequestCache();
+
+// =============================================================================
+// STATE MANAGEMENT
+// =============================================================================
+const state = {
+    currentInputType: 'text',
+    selectedFiles: { image: null, audio: null, video: null },
+    isAnalyzing: false,
+    classificationHistory: [],
+    modelInfo: null,
+    abortController: null,
+    pendingRequests: new Map(),
+    domElements: {}
 };
 
-// Category styles with vibrant colors - Extended to 20 categories
-const categoryStyles = {
-    'technology': { icon: 'fa-microchip', color: '#818cf8', gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)' },
-    'sports': { icon: 'fa-futbol', color: '#4ade80', gradient: 'linear-gradient(135deg, #22c55e, #06b6d4)' },
-    'politics': { icon: 'fa-landmark', color: '#c4b5fd', gradient: 'linear-gradient(135deg, #8b5cf6, #a855f7)' },
-    'business': { icon: 'fa-chart-line', color: '#fbbf24', gradient: 'linear-gradient(135deg, #f59e0b, #f97316)' },
-    'entertainment': { icon: 'fa-film', color: '#f472b6', gradient: 'linear-gradient(135deg, #ec4899, #f472b6)' },
-    'health': { icon: 'fa-heartbeat', color: '#f87171', gradient: 'linear-gradient(135deg, #ef4444, #f87171)' },
-    'science': { icon: 'fa-flask', color: '#22d3ee', gradient: 'linear-gradient(135deg, #06b6d4, #22d3ee)' },
-    'world': { icon: 'fa-globe', color: '#60a5fa', gradient: 'linear-gradient(135deg, #3b82f6, #60a5fa)' },
-    'education': { icon: 'fa-graduation-cap', color: '#a78bfa', gradient: 'linear-gradient(135deg, #8b5cf6, #a78bfa)' },
-    'environment': { icon: 'fa-leaf', color: '#34d399', gradient: 'linear-gradient(135deg, #10b981, #34d399)' },
-    'finance': { icon: 'fa-coins', color: '#fcd34d', gradient: 'linear-gradient(135deg, #f59e0b, #fcd34d)' },
-    'automotive': { icon: 'fa-car', color: '#38bdf8', gradient: 'linear-gradient(135deg, #0ea5e9, #38bdf8)' },
-    'travel': { icon: 'fa-plane', color: '#2dd4bf', gradient: 'linear-gradient(135deg, #14b8a6, #2dd4bf)' },
-    'food': { icon: 'fa-utensils', color: '#fb923c', gradient: 'linear-gradient(135deg, #f97316, #fb923c)' },
-    'fashion': { icon: 'fa-tshirt', color: '#e879f9', gradient: 'linear-gradient(135deg, #d946ef, #e879f9)' },
-    'realestate': { icon: 'fa-home', color: '#f97316', gradient: 'linear-gradient(135deg, #ea580c, #f97316)' },
-    'legal': { icon: 'fa-gavel', color: '#94a3b8', gradient: 'linear-gradient(135deg, #64748b, #94a3b8)' },
-    'religion': { icon: 'fa-place-of-worship', color: '#c4b5fd', gradient: 'linear-gradient(135deg, #a855f7, #c4b5fd)' },
-    'lifestyle': { icon: 'fa-heart', color: '#fb7185', gradient: 'linear-gradient(135deg, #f43f5e, #fb7185)' },
-    'opinion': { icon: 'fa-comment-dots', color: '#a3a3a3', gradient: 'linear-gradient(135deg, #737373, #a3a3a3)' }
-};
+// =============================================================================
+// UTILITY FUNCTIONS
+// =============================================================================
+const utils = {
+    debounce(fn, delay = CONFIG.DEBOUNCE_DELAY) {
+        let timeoutId;
+        return (...args) => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => fn.apply(this, args), delay);
+        };
+    },
 
-// ===== LOADING STATE MANAGEMENT =====
-function showLoadingOverlay(message = 'Analyzing...', subMessage = 'Processing your content with AI') {
-    const overlay = document.getElementById('loading-overlay');
-    const loadingText = document.getElementById('loading-text');
-    const loadingSubtext = document.getElementById('loading-subtext');
-
-    if (overlay) {
-        if (loadingText) loadingText.textContent = message;
-        if (loadingSubtext) loadingSubtext.textContent = subMessage;
-        overlay.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    }
-}
-
-function hideLoadingOverlay() {
-    const overlay = document.getElementById('loading-overlay');
-    if (overlay) {
-        overlay.classList.remove('active');
-        document.body.style.overflow = '';
-    }
-}
-
-function updateLoadingMessage(message, subMessage = null) {
-    const loadingText = document.getElementById('loading-text');
-    const loadingSubtext = document.getElementById('loading-subtext');
-
-    if (loadingText) {
-        loadingText.style.opacity = '0';
-        setTimeout(() => {
-            loadingText.textContent = message;
-            loadingText.style.opacity = '1';
-        }, 150);
-    }
-    if (subMessage && loadingSubtext) {
-        loadingSubtext.style.opacity = '0';
-        setTimeout(() => {
-            loadingSubtext.textContent = subMessage;
-            loadingSubtext.style.opacity = '1';
-        }, 150);
-    }
-}
-
-// ===== PARTICLE ANIMATION =====
-function createParticles() {
-    const container = document.getElementById('particles');
-    if (!container) return;
-
-    const colors = ['#818cf8', '#a78bfa', '#f472b6', '#22d3ee', '#4ade80', '#fbbf24', '#fb923c'];
-
-    for (let i = 0; i < 40; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'particle';
-        particle.style.left = Math.random() * 100 + '%';
-        particle.style.animationDelay = Math.random() * 15 + 's';
-        particle.style.animationDuration = (15 + Math.random() * 15) + 's';
-        particle.style.background = colors[Math.floor(Math.random() * colors.length)];
-        particle.style.width = (2 + Math.random() * 5) + 'px';
-        particle.style.height = particle.style.width;
-        particle.style.boxShadow = `0 0 10px ${particle.style.background}`;
-        container.appendChild(particle);
-    }
-}
-
-// ===== ERROR HANDLING WRAPPER =====
-function safeExecute(fn, errorMessage = 'An error occurred') {
-    try {
-        return fn();
-    } catch (error) {
-        console.error(errorMessage, error);
-        showNotification(errorMessage, 'error');
-        return null;
-    }
-}
-
-async function safeExecuteAsync(fn, errorMessage = 'An error occurred') {
-    try {
-        return await fn();
-    } catch (error) {
-        console.error(errorMessage, error);
-        showNotification(`${errorMessage}: ${error.message}`, 'error');
-        return null;
-    }
-}
-
-// ===== INITIALIZATION =====
-document.addEventListener('DOMContentLoaded', () => {
-    try {
-        initializeApp();
-        setupDragAndDrop();
-        createParticles();
-        loadHistory();
-        setupScrollEffects();
-        setupAccessibility();
-    } catch (error) {
-        console.error('Failed to initialize app:', error);
-        showNotification('Failed to initialize application. Please refresh the page.', 'error');
-    }
-});
-
-// ===== SCROLL EFFECTS =====
-function setupScrollEffects() {
-    const nav = document.getElementById('main-nav');
-    if (!nav) return;
-
-    let lastScrollY = window.scrollY;
-    let ticking = false;
-
-    window.addEventListener('scroll', () => {
-        if (!ticking) {
-            window.requestAnimationFrame(() => {
-                const currentScrollY = window.scrollY;
-
-                // Add/remove scrolled class
-                if (currentScrollY > 20) {
-                    nav.classList.add('scrolled');
-                } else {
-                    nav.classList.remove('scrolled');
-                }
-
-                lastScrollY = currentScrollY;
-                ticking = false;
-            });
-            ticking = true;
-        }
-    }, { passive: true });
-}
-
-// ===== ACCESSIBILITY =====
-function setupAccessibility() {
-    // Handle focus trap for modals
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Tab') {
-            const modelPanel = document.getElementById('model-info-panel');
-            const historySidebar = document.getElementById('history-sidebar');
-
-            // Check if any modal is open
-            const isModelOpen = modelPanel && modelPanel.classList.contains('active');
-            const isHistoryOpen = historySidebar && historySidebar.classList.contains('open');
-
-            if (isModelOpen || isHistoryOpen) {
-                // Let natural tab flow work, but close on Escape
-            }
-        }
-    });
-
-    // Announce page load to screen readers
-    const announce = document.createElement('div');
-    announce.setAttribute('role', 'status');
-    announce.setAttribute('aria-live', 'polite');
-    announce.className = 'sr-only';
-    announce.textContent = 'NEWSCAT application loaded. Use 1-4 keys to switch input types.';
-    document.body.appendChild(announce);
-
-    setTimeout(() => announce.remove(), 1000);
-}
-
-async function initializeApp() {
-    try {
-        await Promise.all([
-            loadCategories(),
-            loadModelStatus(),
-            loadModelInfo()
-        ]);
-        setupEventListeners();
-        updateAnalyzeButton();
-    } catch (error) {
-        console.error('Error during app initialization:', error);
-        showNotification('Some features may not be available', 'error');
-    }
-}
-
-function setupEventListeners() {
-    const textarea = document.getElementById('news-text');
-    if (textarea) {
-        textarea.addEventListener('input', () => {
-            updateCharCount();
-            updateAnalyzeButton();
-        });
-    }
-
-    ['image', 'audio', 'video'].forEach(type => {
-        const dropZone = document.getElementById(`${type}-drop-zone`);
-        const uploadContent = document.getElementById(`${type}-upload-content`);
-
-        if (dropZone && uploadContent) {
-            uploadContent.addEventListener('click', (e) => {
-                if (!e.target.closest('.browse-btn')) {
-                    document.getElementById(`${type}-input`).click();
-                }
-            });
-        }
-    });
-}
-
-// ===== INPUT TYPE SWITCHING =====
-function switchInputType(type) {
-    currentInputType = type;
-
-    // Update selector buttons
-    document.querySelectorAll('.selector-btn').forEach(btn => {
-        const isActive = btn.dataset.type === type;
-        btn.classList.toggle('active', isActive);
-        btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
-    });
-
-    // Update panels with animation
-    document.querySelectorAll('.input-panel').forEach(panel => {
-        if (panel.classList.contains('active')) {
-            panel.style.opacity = '0';
-            panel.style.transform = 'translateY(-10px)';
-            setTimeout(() => {
-                panel.classList.remove('active');
-                panel.style.opacity = '';
-                panel.style.transform = '';
-            }, 200);
-        }
-    });
-
-    const targetPanel = document.getElementById(`${type}-panel`);
-    if (targetPanel) {
-        setTimeout(() => {
-            targetPanel.classList.add('active');
-            // Announce change to screen readers
-            const announce = document.createElement('div');
-            announce.setAttribute('role', 'status');
-            announce.setAttribute('aria-live', 'polite');
-            announce.className = 'sr-only';
-            announce.textContent = `Switched to ${capitalizeFirst(type)} input`;
-            document.body.appendChild(announce);
-            setTimeout(() => announce.remove(), 1000);
-        }, 250);
-    }
-
-    updateAnalyzeButton();
-}
-
-// ===== TEXT FUNCTIONS =====
-function loadSample(type) {
-    const textarea = document.getElementById('news-text');
-    if (textarea && sampleArticles[type]) {
-        textarea.value = '';
-        const text = sampleArticles[type];
-        let index = 0;
-
-        const typeInterval = setInterval(() => {
-            if (index < text.length) {
-                textarea.value += text.charAt(index);
-                index++;
-                updateCharCount();
-            } else {
-                clearInterval(typeInterval);
-                updateAnalyzeButton();
-            }
-        }, 8);
-    }
-}
-
-function clearText() {
-    const textarea = document.getElementById('news-text');
-    if (textarea) {
-        textarea.value = '';
-        updateCharCount();
-        updateAnalyzeButton();
-        hideResults();
-    }
-}
-
-function updateCharCount() {
-    const textarea = document.getElementById('news-text');
-    const charCount = document.getElementById('char-count');
-    const charCountWrapper = charCount?.parentElement;
-
-    if (textarea && charCount) {
-        const count = textarea.value.length;
-        charCount.textContent = count;
-
-        if (charCountWrapper) {
-            if (count >= MIN_CHARS) {
-                charCountWrapper.classList.add('sufficient');
-            } else {
-                charCountWrapper.classList.remove('sufficient');
-            }
-        }
-    }
-}
-
-// ===== FILE HANDLING =====
-function setupDragAndDrop() {
-    ['image', 'audio', 'video'].forEach(type => {
-        const dropZone = document.getElementById(`${type}-drop-zone`);
-        if (!dropZone) return;
-
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dropZone.classList.add('dragover');
-        });
-
-        dropZone.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dropZone.classList.remove('dragover');
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dropZone.classList.remove('dragover');
-
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                handleFile(files[0], type);
-            }
-        });
-    });
-}
-
-function handleFileSelect(event, type) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const file = event.target.files[0];
-    if (file) {
-        handleFile(file, type);
-    }
-}
-
-function handleFile(file, type) {
-    const maxSize = MAX_FILE_SIZES[type];
-    if (file.size > maxSize) {
-        const maxMB = Math.round(maxSize / 1024 / 1024);
-        showNotification(`File too large. Maximum ${maxMB}MB allowed.`, 'error');
-        return;
-    }
-
-    const validTypes = {
-        image: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'],
-        audio: ['audio/mpeg', 'audio/wav', 'audio/mp4', 'audio/ogg', 'audio/x-m4a', 'audio/aac'],
-        video: ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm', 'video/x-matroska']
-    };
-
-    if (validTypes[type] && !validTypes[type].includes(file.type) && !file.type.startsWith(type + '/')) {
-        showNotification(`Invalid file type. Please select a valid ${type} file.`, 'error');
-        return;
-    }
-
-    selectedFiles[type] = file;
-
-    if (type === 'image') {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const preview = document.getElementById('image-preview');
-            const previewImg = document.getElementById('image-preview-img');
-            const uploadContent = document.getElementById('image-upload-content');
-            const filenameDisplay = document.getElementById('image-filename-display');
-
-            if (preview && previewImg && uploadContent) {
-                previewImg.src = e.target.result;
-                preview.style.display = 'flex';
-                uploadContent.style.display = 'none';
-                if (filenameDisplay) {
-                    filenameDisplay.textContent = file.name;
-                }
+    throttle(fn, limit) {
+        let inThrottle;
+        return (...args) => {
+            if (!inThrottle) {
+                fn.apply(this, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
             }
         };
-        reader.readAsDataURL(file);
-    } else {
-        const infoEl = document.getElementById(`${type}-info`);
-        const filenameEl = document.getElementById(`${type}-filename`);
-        const filesizeEl = document.getElementById(`${type}-filesize`);
-        const uploadContent = document.getElementById(`${type}-upload-content`);
+    },
 
-        if (infoEl && uploadContent) {
-            if (filenameEl) filenameEl.textContent = file.name;
-            if (filesizeEl) filesizeEl.textContent = formatFileSize(file.size);
-            infoEl.style.display = 'flex';
-            uploadContent.style.display = 'none';
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    },
+
+    capitalizeFirst(str) {
+        if (!str || typeof str !== 'string') return '';
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    },
+
+    sanitizeText(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    },
+
+    // Generate random number in range
+    random(min, max) {
+        return Math.random() * (max - min) + min;
+    }
+};
+
+// =============================================================================
+// CATEGORY STYLES - NEON PALETTE
+// =============================================================================
+const categoryStyles = {
+    artificial_intelligence: {
+        icon: 'fa-brain',
+        color: '#00f5ff',
+        gradient: 'linear-gradient(135deg, #00f5ff, #bf00ff)',
+        glow: '0 0 20px rgba(0, 245, 255, 0.5)'
+    },
+    technology: {
+        icon: 'fa-microchip',
+        color: '#00f5ff',
+        gradient: 'linear-gradient(135deg, #00f5ff, #6366f1)',
+        glow: '0 0 20px rgba(0, 245, 255, 0.5)'
+    },
+    cybersecurity: {
+        icon: 'fa-shield-alt',
+        color: '#00ff88',
+        gradient: 'linear-gradient(135deg, #00ff88, #00f5ff)',
+        glow: '0 0 20px rgba(0, 255, 136, 0.5)'
+    },
+    cryptocurrency: {
+        icon: 'fa-bitcoin',
+        color: '#ff6b00',
+        gradient: 'linear-gradient(135deg, #ff6b00, #ff00ff)',
+        glow: '0 0 20px rgba(255, 107, 0, 0.5)'
+    },
+    business: {
+        icon: 'fa-chart-line',
+        color: '#fbbf24',
+        gradient: 'linear-gradient(135deg, #fbbf24, #ff6b00)',
+        glow: '0 0 20px rgba(251, 191, 36, 0.5)'
+    },
+    finance: {
+        icon: 'fa-coins',
+        color: '#fbbf24',
+        gradient: 'linear-gradient(135deg, #fbbf24, #fcd34d)',
+        glow: '0 0 20px rgba(251, 191, 36, 0.5)'
+    },
+    science: {
+        icon: 'fa-flask',
+        color: '#bf00ff',
+        gradient: 'linear-gradient(135deg, #bf00ff, #00f5ff)',
+        glow: '0 0 20px rgba(191, 0, 255, 0.5)'
+    },
+    space: {
+        icon: 'fa-rocket',
+        color: '#3b82f6',
+        gradient: 'linear-gradient(135deg, #3b82f6, #bf00ff)',
+        glow: '0 0 20px rgba(59, 130, 246, 0.5)'
+    },
+    health: {
+        icon: 'fa-heartbeat',
+        color: '#ff0040',
+        gradient: 'linear-gradient(135deg, #ff0040, #ff00ff)',
+        glow: '0 0 20px rgba(255, 0, 64, 0.5)'
+    },
+    politics: {
+        icon: 'fa-landmark',
+        color: '#bf00ff',
+        gradient: 'linear-gradient(135deg, #bf00ff, #6366f1)',
+        glow: '0 0 20px rgba(191, 0, 255, 0.5)'
+    },
+    world: {
+        icon: 'fa-globe',
+        color: '#60a5fa',
+        gradient: 'linear-gradient(135deg, #60a5fa, #00f5ff)',
+        glow: '0 0 20px rgba(96, 165, 250, 0.5)'
+    },
+    sports: {
+        icon: 'fa-futbol',
+        color: '#4ade80',
+        gradient: 'linear-gradient(135deg, #4ade80, #00ff88)',
+        glow: '0 0 20px rgba(74, 222, 128, 0.5)'
+    },
+    entertainment: {
+        icon: 'fa-film',
+        color: '#ff00ff',
+        gradient: 'linear-gradient(135deg, #ff00ff, #ff0040)',
+        glow: '0 0 20px rgba(255, 0, 255, 0.5)'
+    },
+    gaming: {
+        icon: 'fa-gamepad',
+        color: '#a855f7',
+        gradient: 'linear-gradient(135deg, #a855f7, #bf00ff)',
+        glow: '0 0 20px rgba(168, 85, 247, 0.5)'
+    },
+    environment: {
+        icon: 'fa-leaf',
+        color: '#34d399',
+        gradient: 'linear-gradient(135deg, #34d399, #00ff88)',
+        glow: '0 0 20px rgba(52, 211, 153, 0.5)'
+    },
+    education: {
+        icon: 'fa-graduation-cap',
+        color: '#818cf8',
+        gradient: 'linear-gradient(135deg, #818cf8, #bf00ff)',
+        glow: '0 0 20px rgba(129, 140, 248, 0.5)'
+    },
+    travel: {
+        icon: 'fa-plane',
+        color: '#2dd4bf',
+        gradient: 'linear-gradient(135deg, #2dd4bf, #00f5ff)',
+        glow: '0 0 20px rgba(45, 212, 191, 0.5)'
+    },
+    food: {
+        icon: 'fa-utensils',
+        color: '#fb923c',
+        gradient: 'linear-gradient(135deg, #fb923c, #ff6b00)',
+        glow: '0 0 20px rgba(251, 146, 60, 0.5)'
+    },
+    crime: {
+        icon: 'fa-user-secret',
+        color: '#ff0040',
+        gradient: 'linear-gradient(135deg, #ff0040, #ff00ff)',
+        glow: '0 0 20px rgba(255, 0, 64, 0.5)'
+    },
+    // Finance & Economy
+    stock_market: {
+        icon: 'fa-chart-line',
+        color: '#fbbf24',
+        gradient: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+        glow: '0 0 20px rgba(251, 191, 36, 0.5)'
+    },
+    economy: {
+        icon: 'fa-chart-pie',
+        color: '#fbbf24',
+        gradient: 'linear-gradient(135deg, #fbbf24, #fcd34d)',
+        glow: '0 0 20px rgba(251, 191, 36, 0.5)'
+    },
+    real_estate: {
+        icon: 'fa-building',
+        color: '#60a5fa',
+        gradient: 'linear-gradient(135deg, #60a5fa, #3b82f6)',
+        glow: '0 0 20px rgba(96, 165, 250, 0.5)'
+    },
+    banking: {
+        icon: 'fa-university',
+        color: '#fbbf24',
+        gradient: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+        glow: '0 0 20px rgba(251, 191, 36, 0.5)'
+    },
+    insurance: {
+        icon: 'fa-shield-alt',
+        color: '#34d399',
+        gradient: 'linear-gradient(135deg, #34d399, #10b981)',
+        glow: '0 0 20px rgba(52, 211, 153, 0.5)'
+    },
+    taxation: {
+        icon: 'fa-file-invoice-dollar',
+        color: '#fbbf24',
+        gradient: 'linear-gradient(135deg, #fbbf24, #fcd34d)',
+        glow: '0 0 20px rgba(251, 191, 36, 0.5)'
+    },
+    retail: {
+        icon: 'fa-shopping-cart',
+        color: '#f472b6',
+        gradient: 'linear-gradient(135deg, #f472b6, #ec4899)',
+        glow: '0 0 20px rgba(244, 114, 182, 0.5)'
+    },
+    ecommerce: {
+        icon: 'fa-shopping-bag',
+        color: '#f472b6',
+        gradient: 'linear-gradient(135deg, #f472b6, #db2777)',
+        glow: '0 0 20px rgba(244, 114, 182, 0.5)'
+    },
+    // Technology Deep Dive
+    blockchain: {
+        icon: 'fa-link',
+        color: '#8b5cf6',
+        gradient: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+        glow: '0 0 20px rgba(139, 92, 246, 0.5)'
+    },
+    iot: {
+        icon: 'fa-network-wired',
+        color: '#00f5ff',
+        gradient: 'linear-gradient(135deg, #00f5ff, #06b6d4)',
+        glow: '0 0 20px rgba(0, 245, 255, 0.5)'
+    },
+    cloud_computing: {
+        icon: 'fa-cloud',
+        color: '#60a5fa',
+        gradient: 'linear-gradient(135deg, #60a5fa, #3b82f6)',
+        glow: '0 0 20px rgba(96, 165, 250, 0.5)'
+    },
+    software_dev: {
+        icon: 'fa-code',
+        color: '#00f5ff',
+        gradient: 'linear-gradient(135deg, #00f5ff, #6366f1)',
+        glow: '0 0 20px rgba(0, 245, 255, 0.5)'
+    },
+    hardware: {
+        icon: 'fa-microchip',
+        color: '#818cf8',
+        gradient: 'linear-gradient(135deg, #818cf8, #6366f1)',
+        glow: '0 0 20px rgba(129, 140, 248, 0.5)'
+    },
+    social_media: {
+        icon: 'fa-hashtag',
+        color: '#f472b6',
+        gradient: 'linear-gradient(135deg, #f472b6, #ec4899)',
+        glow: '0 0 20px rgba(244, 114, 182, 0.5)'
+    },
+    startups: {
+        icon: 'fa-rocket',
+        color: '#fbbf24',
+        gradient: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+        glow: '0 0 20px rgba(251, 191, 36, 0.5)'
+    },
+    // Science & Research
+    physics: {
+        icon: 'fa-atom',
+        color: '#bf00ff',
+        gradient: 'linear-gradient(135deg, #bf00ff, #8b5cf6)',
+        glow: '0 0 20px rgba(191, 0, 255, 0.5)'
+    },
+    biology: {
+        icon: 'fa-dna',
+        color: '#34d399',
+        gradient: 'linear-gradient(135deg, #34d399, #10b981)',
+        glow: '0 0 20px rgba(52, 211, 153, 0.5)'
+    },
+    chemistry: {
+        icon: 'fa-flask',
+        color: '#22c55e',
+        gradient: 'linear-gradient(135deg, #22c55e, #10b981)',
+        glow: '0 0 20px rgba(34, 197, 94, 0.5)'
+    },
+    medicine: {
+        icon: 'fa-heartbeat',
+        color: '#ff0040',
+        gradient: 'linear-gradient(135deg, #ff0040, #f43f5e)',
+        glow: '0 0 20px rgba(255, 0, 64, 0.5)'
+    },
+    neuroscience: {
+        icon: 'fa-brain',
+        color: '#fbbf24',
+        gradient: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+        glow: '0 0 20px rgba(251, 191, 36, 0.5)'
+    },
+    climate_science: {
+        icon: 'fa-cloud-sun',
+        color: '#34d399',
+        gradient: 'linear-gradient(135deg, #34d399, #06b6d4)',
+        glow: '0 0 20px rgba(52, 211, 153, 0.5)'
+    },
+    genetics: {
+        icon: 'fa-dna',
+        color: '#a855f7',
+        gradient: 'linear-gradient(135deg, #a855f7, #8b5cf6)',
+        glow: '0 0 20px rgba(168, 85, 247, 0.5)'
+    },
+    astronomy: {
+        icon: 'fa-star',
+        color: '#3b82f6',
+        gradient: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+        glow: '0 0 20px rgba(59, 130, 246, 0.5)'
+    },
+    oceanography: {
+        icon: 'fa-water',
+        color: '#06b6d4',
+        gradient: 'linear-gradient(135deg, #06b6d4, #0ea5e9)',
+        glow: '0 0 20px rgba(6, 182, 212, 0.5)'
+    },
+    // Society & Culture
+    fashion: {
+        icon: 'fa-tshirt',
+        color: '#f472b6',
+        gradient: 'linear-gradient(135deg, #f472b6, #ec4899)',
+        glow: '0 0 20px rgba(244, 114, 182, 0.5)'
+    },
+    art: {
+        icon: 'fa-palette',
+        color: '#a855f7',
+        gradient: 'linear-gradient(135deg, #a855f7, #ec4899)',
+        glow: '0 0 20px rgba(168, 85, 247, 0.5)'
+    },
+    music: {
+        icon: 'fa-music',
+        color: '#f472b6',
+        gradient: 'linear-gradient(135deg, #f472b6, #a855f7)',
+        glow: '0 0 20px rgba(244, 114, 182, 0.5)'
+    },
+    film: {
+        icon: 'fa-film',
+        color: '#bf00ff',
+        gradient: 'linear-gradient(135deg, #bf00ff, #a855f7)',
+        glow: '0 0 20px rgba(191, 0, 255, 0.5)'
+    },
+    literature: {
+        icon: 'fa-book',
+        color: '#60a5fa',
+        gradient: 'linear-gradient(135deg, #60a5fa, #3b82f6)',
+        glow: '0 0 20px rgba(96, 165, 250, 0.5)'
+    },
+    photography: {
+        icon: 'fa-camera',
+        color: '#818cf8',
+        gradient: 'linear-gradient(135deg, #818cf8, #6366f1)',
+        glow: '0 0 20px rgba(129, 140, 248, 0.5)'
+    },
+    dance: {
+        icon: 'fa-music',
+        color: '#f472b6',
+        gradient: 'linear-gradient(135deg, #f472b6, #ec4899)',
+        glow: '0 0 20px rgba(244, 114, 182, 0.5)'
+    },
+    theater: {
+        icon: 'fa-masks-theater',
+        color: '#a855f7',
+        gradient: 'linear-gradient(135deg, #a855f7, #bf00ff)',
+        glow: '0 0 20px rgba(168, 85, 247, 0.5)'
+    },
+    // Crime & Security
+    law_enforcement: {
+        icon: 'fa-shield-alt',
+        color: '#ff0040',
+        gradient: 'linear-gradient(135deg, #ff0040, #f43f5e)',
+        glow: '0 0 20px rgba(255, 0, 64, 0.5)'
+    },
+    national_security: {
+        icon: 'fa-flag-usa',
+        color: '#ef4444',
+        gradient: 'linear-gradient(135deg, #ef4444, #dc2626)',
+        glow: '0 0 20px rgba(239, 68, 68, 0.5)'
+    },
+    intelligence: {
+        icon: 'fa-eye',
+        color: '#6b7280',
+        gradient: 'linear-gradient(135deg, #6b7280, #4b5563)',
+        glow: '0 0 20px rgba(107, 114, 128, 0.5)'
+    },
+    cybercrime: {
+        icon: 'fa-user-secret',
+        color: '#00ff88',
+        gradient: 'linear-gradient(135deg, #00ff88, #00f5ff)',
+        glow: '0 0 20px rgba(0, 255, 136, 0.5)'
+    },
+    fraud: {
+        icon: 'fa-user-secret',
+        color: '#f59e0b',
+        gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)',
+        glow: '0 0 20px rgba(245, 158, 11, 0.5)'
+    },
+    corruption: {
+        icon: 'fa-gavel',
+        color: '#ef4444',
+        gradient: 'linear-gradient(135deg, #ef4444, #dc2626)',
+        glow: '0 0 20px rgba(239, 68, 68, 0.5)'
+    },
+    terrorism: {
+        icon: 'fa-bomb',
+        color: '#dc2626',
+        gradient: 'linear-gradient(135deg, #dc2626, #991b1b)',
+        glow: '0 0 20px rgba(220, 38, 38, 0.5)'
+    },
+    border_security: {
+        icon: 'fa-fence',
+        color: '#ef4444',
+        gradient: 'linear-gradient(135deg, #ef4444, #f97316)',
+        glow: '0 0 20px rgba(239, 68, 68, 0.5)'
+    },
+    emergency_services: {
+        icon: 'fa-ambulance',
+        color: '#ef4444',
+        gradient: 'linear-gradient(135deg, #ef4444, #f59e0b)',
+        glow: '0 0 20px rgba(239, 68, 68, 0.5)'
+    },
+    // Lifestyle & Wellness
+    fitness: {
+        icon: 'fa-dumbbell',
+        color: '#4ade80',
+        gradient: 'linear-gradient(135deg, #4ade80, #22c55e)',
+        glow: '0 0 20px rgba(74, 222, 128, 0.5)'
+    },
+    nutrition: {
+        icon: 'fa-apple-alt',
+        color: '#34d399',
+        gradient: 'linear-gradient(135deg, #34d399, #10b981)',
+        glow: '0 0 20px rgba(52, 211, 153, 0.5)'
+    },
+    mental_health: {
+        icon: 'fa-brain',
+        color: '#a855f7',
+        gradient: 'linear-gradient(135deg, #a855f7, #8b5cf6)',
+        glow: '0 0 20px rgba(168, 85, 247, 0.5)'
+    },
+    relationships: {
+        icon: 'fa-heart',
+        color: '#f472b6',
+        gradient: 'linear-gradient(135deg, #f472b6, #ec4899)',
+        glow: '0 0 20px rgba(244, 114, 182, 0.5)'
+    },
+    parenting: {
+        icon: 'fa-baby',
+        color: '#fbbf24',
+        gradient: 'linear-gradient(135deg, #fbbf24, #fcd34d)',
+        glow: '0 0 20px rgba(251, 191, 36, 0.5)'
+    },
+    home_living: {
+        icon: 'fa-home',
+        color: '#60a5fa',
+        gradient: 'linear-gradient(135deg, #60a5fa, #3b82f6)',
+        glow: '0 0 20px rgba(96, 165, 250, 0.5)'
+    },
+    pets: {
+        icon: 'fa-paw',
+        color: '#f59e0b',
+        gradient: 'linear-gradient(135deg, #f59e0b, #fbbf24)',
+        glow: '0 0 20px rgba(245, 158, 11, 0.5)'
+    },
+    hobbies: {
+        icon: 'fa-puzzle-piece',
+        color: '#818cf8',
+        gradient: 'linear-gradient(135deg, #818cf8, #6366f1)',
+        glow: '0 0 20px rgba(129, 140, 248, 0.5)'
+    },
+    spirituality: {
+        icon: 'fa-pray',
+        color: '#a855f7',
+        gradient: 'linear-gradient(135deg, #a855f7, #8b5cf6)',
+        glow: '0 0 20px rgba(168, 85, 247, 0.5)'
+    },
+    self_improvement: {
+        icon: 'fa-chart-line',
+        color: '#4ade80',
+        gradient: 'linear-gradient(135deg, #4ade80, #22c55e)',
+        glow: '0 0 20px rgba(74, 222, 128, 0.5)'
+    },
+    unknown: {
+        icon: 'fa-question',
+        color: '#94a3b8',
+        gradient: 'linear-gradient(135deg, #94a3b8, #64748b)',
+        glow: 'none'
+    }
+};
+
+// Sample articles
+const sampleArticles = {
+    tech: "OpenAI has unveiled GPT-5, demonstrating unprecedented natural language capabilities. The model features enhanced reasoning and improved contextual awareness, potentially revolutionizing healthcare and education.",
+    sports: "In a stunning Wimbledon upset, unseeded Maria Rodriguez defeated reigning champion Novak Djokovic in straight sets 6-4, 7-5. The 21-year-old Spanish player showcased exceptional athleticism.",
+    politics: "The Senate passed a landmark $500 billion climate change bill today with bipartisan support, allocating funds for renewable energy initiatives and carbon capture technology.",
+    business: "Apple reported record quarterly earnings of $120 billion driven by strong iPhone sales and growing Services revenue. The company announced a $90 billion stock buyback program.",
+    entertainment: "The 96th Academy Awards ceremony celebrated a diverse range of films, with Oppenheimer taking home Best Picture. The event featured moving tributes and surprise appearances.",
+    health: "A groundbreaking clinical trial has shown promising results for a new Alzheimer's treatment, with patients demonstrating significant cognitive improvement.",
+    science: "NASA's James Webb Space Telescope has captured unprecedented images of distant galaxies, revealing new insights into the early universe.",
+    world: "The G20 summit concluded with a historic agreement on climate finance, with developed nations pledging $100 billion annually to support developing countries.",
+    education: "Harvard University announced a new tuition-free program for families earning under $85,000 annually, expanding access to higher education for millions of students.",
+    environment: "Scientists report record-breaking renewable energy adoption, with solar and wind power now comprising 30% of global electricity generation.",
+    finance: "The Federal Reserve announced interest rate adjustments to combat inflation while maintaining economic growth and employment stability.",
+    cryptocurrency: "Bitcoin reached new highs as institutional investors embrace digital assets, with major banks launching cryptocurrency trading platforms.",
+    travel: "International tourism rebounds as countries ease travel restrictions, with airlines adding new routes to meet surging demand for vacation destinations.",
+    food: "Michelin-starred chefs are revolutionizing plant-based cuisine, creating sustainable dining experiences that rival traditional fine dining establishments.",
+    gaming: "The highly anticipated video game release broke sales records, with millions of players engaging in the new multiplayer online battle arena experience.",
+    crime: "Federal investigators announced arrests in a major cybercrime operation, dismantling a criminal network responsible for millions in financial fraud.",
+    artificial_intelligence: "DeepMind's latest artificial intelligence breakthrough demonstrates human-level reasoning in complex scientific problem-solving tasks.",
+    space: "SpaceX successfully launched its Starship rocket, marking a milestone in reusable spacecraft technology and Mars exploration missions.",
+    cybersecurity: "A major data breach exposed millions of user records, prompting calls for stronger encryption and enhanced security protocols across the tech industry."
+};
+
+// =============================================================================
+// PARTICLE SYSTEM
+// Particle system and cursor glow removed for cleaner professional design
+
+// Scroll animations simplified for professional design
+
+// =============================================================================
+// API FUNCTIONS
+// =============================================================================
+const api = {
+    async request(endpoint, options = {}) {
+        const cacheKey = requestCache.generateKey(endpoint, options.body);
+
+        // Check cache
+        const cached = requestCache.get(cacheKey);
+        if (cached && !options.skipCache) {
+            return { ...cached, fromCache: true };
+        }
+
+        // Cancel previous request if exists (only for text classification requests)
+        if (state.abortController) {
+            state.abortController.abort();
+        }
+        state.abortController = new AbortController();
+
+        try {
+            // Build headers - don't set Content-Type for FormData (let browser set it with boundary)
+            const headers = { ...options.headers };
+            const isFormData = options.body instanceof FormData;
+            if (!isFormData) {
+                headers['Content-Type'] = 'application/json';
+            }
+
+            const response = await fetch(`${CONFIG.API_BASE}${endpoint}`, {
+                ...options,
+                signal: state.abortController.signal,
+                headers
+            });
+
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({ message: 'Unknown error' }));
+                throw new Error(error.message || `HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // Cache successful responses
+            if (data.status === 'success') {
+                requestCache.set(cacheKey, data);
+            }
+
+            return data;
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                return null;
+            }
+            throw error;
+        }
+    },
+
+    async classifyText(text, enhanced = true) {
+        return this.request('/classify', {
+            method: 'POST',
+            body: JSON.stringify({ text: text.trim(), enhanced })
+        });
+    },
+
+    async classifyFile(file, type) {
+        console.log(`[API classifyFile] Starting upload - type: ${type}, file:`, file?.name, 'size:', file?.size);
+
+        if (!file) {
+            console.error('[API classifyFile] No file provided');
+            throw new Error('No file selected');
+        }
+
+        const formData = new FormData();
+        // Backend expects 'file' as the field name for all upload types
+        formData.append('file', file);
+
+        // Verify FormData contents
+        console.log(`[API classifyFile] FormData created, checking entries:`);
+        for (let pair of formData.entries()) {
+            console.log(`  - ${pair[0]}:`, pair[1] instanceof File ? `File(${pair[1].name})` : pair[1]);
+        }
+
+        // Use a separate AbortController for file uploads with longer timeout
+        const fileAbortController = new AbortController();
+
+        // Set a longer timeout for file uploads (10 minutes for large files/video processing)
+        const timeoutId = setTimeout(() => {
+            console.log(`[API classifyFile] Timeout reached, aborting upload`);
+            fileAbortController.abort();
+        }, 600000); // 10 minutes
+
+        try {
+            const url = `${CONFIG.API_BASE}/classify/${type}`;
+            console.log(`[API classifyFile] Sending POST to: ${url}`);
+            console.log(`[API classifyFile] File details: name=${file.name}, size=${file.size}, type=${file.type}`);
+
+            const response = await fetch(url, {
+                method: 'POST',
+                body: formData,
+                signal: fileAbortController.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            console.log(`[API classifyFile] Response received - status: ${response.status}, ok: ${response.ok}`);
+
+            if (!response.ok) {
+                // Handle 499 Client Closed Request specifically
+                if (response.status === 499) {
+                    throw new Error('Upload was cancelled or connection was lost. Please try again.');
+                }
+
+                // Try to get error details from response
+                let errorData;
+                try {
+                    errorData = await response.json();
+                    console.error(`[API classifyFile] Error response:`, errorData);
+                } catch (e) {
+                    errorData = { message: `Server error (${response.status})` };
+                }
+
+                throw new Error(errorData.message || errorData.error || `${type} classification failed`);
+            }
+
+            const result = await response.json();
+            console.log(`[API classifyFile] Success result:`, result);
+            return result;
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                console.log(`[API classifyFile] Upload aborted`);
+                return null;
+            }
+            // Enhance network error messages
+            if (error.message?.includes('NetworkError') || error.message?.includes('Failed to fetch')) {
+                throw new Error('Network connection failed. Please check your connection and try again.');
+            }
+            console.error(`[API classifyFile] Upload error:`, error);
+            throw error;
+        }
+    },
+
+    async getHealth() {
+        return this.request('/health', { skipCache: true });
+    },
+
+    async getModelInfo() {
+        return this.request('/model/info');
+    }
+};
+
+// =============================================================================
+// LOADING MANAGER
+// =============================================================================
+const loadingManager = {
+    overlay: null,
+    text: null,
+    subtext: null,
+
+    init() {
+        this.overlay = document.getElementById('loading-overlay');
+        this.text = document.getElementById('loading-text');
+        this.subtext = document.getElementById('loading-subtext');
+    },
+
+    show(message = 'Analyzing...', subMessage = 'Processing your content') {
+        if (!this.overlay) this.init();
+
+        if (this.text) this.text.textContent = message;
+        if (this.subtext) this.subtext.textContent = subMessage;
+
+        this.overlay?.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    },
+
+    hide() {
+        this.overlay?.classList.remove('active');
+        document.body.style.overflow = '';
+    },
+
+    update(message, subMessage = null) {
+        if (message && this.text) {
+            this.animateTextChange(this.text, message);
+        }
+        if (subMessage && this.subtext) {
+            this.animateTextChange(this.subtext, subMessage);
+        }
+    },
+
+    animateTextChange(element, newText) {
+        element.style.opacity = '0';
+        setTimeout(() => {
+            element.textContent = newText;
+            element.style.opacity = '1';
+        }, 150);
+    }
+};
+
+// =============================================================================
+// NOTIFICATION MANAGER
+// =============================================================================
+const notificationManager = {
+    container: null,
+
+    init() {
+        this.container = document.createElement('div');
+        this.container.className = 'notification-container';
+        document.body.appendChild(this.container);
+    },
+
+    show(message, type = 'info', duration = 4000) {
+        if (!this.container) this.init();
+
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+
+        const icons = {
+            success: 'check-circle',
+            error: 'exclamation-circle',
+            info: 'info-circle',
+            warning: 'exclamation-triangle'
+        };
+
+        notification.innerHTML = `
+            <i class="fas fa-${icons[type] || icons.info}"></i>
+            <span>${utils.sanitizeText(message)}</span>
+        `;
+
+        this.container.appendChild(notification);
+
+        // Animate in
+        requestAnimationFrame(() => {
+            notification.classList.add('show');
+        });
+
+        // Auto remove
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, duration);
+    }
+};
+
+// =============================================================================
+// RESULTS MANAGER - Clean v3/v4 Style Display
+// =============================================================================
+const resultsManager = {
+    display(data) {
+        const section = document.getElementById('results-section');
+        if (!section) return;
+
+        section.style.display = 'block';
+        section.classList.remove('hidden');
+        section.classList.add('animate-fade-in');
+
+        setTimeout(() => {
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+
+        const category = data.category || 'unknown';
+        const confidence = Math.min((data.confidence || 0), 100);
+        const style = categoryStyles[category] || categoryStyles.unknown;
+
+        // Update main result card
+        this.updateResultCard(data, style);
+
+        // Update summary
+        this.updateSummary(data);
+
+        // Update key metrics
+        this.updateMetrics(data);
+
+        // Display topics grid (v3/v4 style)
+        this.displayTopicsGrid(data);
+
+        // Display extracted text/media info if available
+        this.displayExtractedInfo(data);
+
+        // Display model info
+        this.displayModelInfo(data);
+
+        notificationManager.show(
+            `Analysis complete! ${utils.capitalizeFirst(category)} (${confidence.toFixed(1)}% confidence)`,
+            'success'
+        );
+    },
+
+    updateResultCard(data, style) {
+        // Update category display
+        const categoryEl = document.getElementById('result-category');
+        if (categoryEl) {
+            categoryEl.innerHTML = `
+                <div class="result-category-main" style="color: ${style.color}">
+                    ${utils.capitalizeFirst(data.category_display || data.category)}
+                </div>
+            `;
+        }
+
+        // Update confidence badge
+        const badge = document.getElementById('result-confidence-badge');
+        if (badge) {
+            badge.style.background = `linear-gradient(135deg, ${style.color}30, ${style.color}10)`;
+            badge.style.borderColor = style.color;
+            badge.style.color = style.color;
+            const badgeText = badge.querySelector('span');
+            if (badgeText) badgeText.textContent = `${(data.confidence || 0).toFixed(1)}%`;
+        }
+
+        // Update confidence level indicator
+        const confidenceLevel = document.getElementById('result-confidence-level');
+        if (confidenceLevel) {
+            const level = data.confidence_level || this.getConfidenceLevel(data.confidence);
+            const levelText = this.formatConfidenceLevel(level);
+            confidenceLevel.textContent = levelText;
+            confidenceLevel.style.color = this.getConfidenceColor(data.confidence);
+        }
+    },
+
+    updateSummary(data) {
+        const summaryEl = document.getElementById('result-summary');
+        if (!summaryEl) return;
+
+        // Use provided summary or generate one
+        let summary = data.summary || '';
+        if (!summary) {
+            summary = this.generateSummary(data);
+        }
+
+        summaryEl.textContent = summary;
+    },
+
+    generateSummary(data) {
+        const category = utils.capitalizeFirst(data.category_display || data.category || 'Unknown');
+        const confidence = (data.confidence || 0).toFixed(1);
+        const wordCount = data.word_count || (data.original_text?.split(/\s+/).length || 0);
+
+        let summary = `Classified as ${category} with ${confidence}% confidence. `;
+        summary += `Processed ${wordCount} words.`;
+
+        // Add secondary topics if available
+        if (data.topics && data.topics.length > 0) {
+            const secondary = data.topics.slice(0, 3).map(t => utils.capitalizeFirst(t.category_display || t.category)).join(', ');
+            if (secondary) {
+                summary += ` Related topics: ${secondary}.`;
+            }
+        }
+
+        return summary;
+    },
+
+    updateMetrics(data) {
+        // Word count
+        const wordCountEl = document.getElementById('metric-word-count');
+        if (wordCountEl) {
+            wordCountEl.textContent = data.word_count || 0;
+        }
+
+        // Processing time
+        const timeEl = document.getElementById('metric-processing-time');
+        if (timeEl) {
+            const timeMs = data.processing_time_ms || 0;
+            timeEl.textContent = timeMs > 0 ? `${timeMs.toFixed(0)}ms` : 'N/A';
+        }
+
+        // Keywords count
+        const keywordsEl = document.getElementById('metric-keywords');
+        if (keywordsEl) {
+            const count = data.keywords ? data.keywords.length : 0;
+            keywordsEl.textContent = count;
+        }
+
+        // Entities count
+        const entitiesEl = document.getElementById('metric-entities');
+        if (entitiesEl) {
+            const count = data.entities ? data.entities.length : 0;
+            entitiesEl.textContent = count;
+        }
+    },
+
+    displayKeywords(data) {
+        // For now, we'll keep the topics grid but make it cleaner
+        // This method can be expanded later if we want a separate keyword list
+        return;
+    },
+
+    displayTopicsGrid(data) {
+        const container = document.getElementById('topics-grid');
+        if (!container) return;
+
+        const predictions = data.topics || data.top_predictions || [];
+        if (predictions.length === 0) {
+            container.innerHTML = '<div class="topic-chip">No additional topics detected</div>';
+            return;
+        }
+
+        // Show only top 5-8 predictions for cleaner display (v3/v4 style)
+        const displayPredictions = predictions.slice(0, 6);
+        let topicsHtml = '';
+
+        displayPredictions.forEach((pred, index) => {
+            const confidence = Math.min(pred.confidence || 0, 100);
+            const category = pred.category_display || pred.category;
+            const style = categoryStyles[pred.category] || categoryStyles.unknown;
+            const icon = this.getCategoryIcon(pred.category);
+
+            topicsHtml += `
+                <div class="topic-chip" style="animation-delay: ${index * 0.05}s">
+                    <i class="fas ${icon}" style="color: ${style.color}"></i>
+                    <span>${utils.capitalizeFirst(category)}</span>
+                    <span class="topic-confidence">${confidence.toFixed(1)}%</span>
+                </div>
+            `;
+        });
+
+        container.innerHTML = topicsHtml;
+    },
+
+    getConfidenceLevel(confidence) {
+        if (confidence >= 90) return 'very_high';
+        if (confidence >= 75) return 'high';
+        if (confidence >= 60) return 'moderate';
+        if (confidence >= 40) return 'low';
+        return 'very_low';
+    },
+
+    formatConfidenceLevel(level) {
+        const labels = {
+            'very_high': 'Very High Confidence',
+            'high': 'High Confidence',
+            'moderate': 'Moderate Confidence',
+            'low': 'Low Confidence',
+            'very_low': 'Very Low Confidence'
+        };
+        return labels[level] || level;
+    },
+
+    getConfidenceColor(confidence) {
+        if (confidence >= 90) return '#10b981'; // green
+        if (confidence >= 75) return '#3b82f6'; // blue
+        if (confidence >= 60) return '#f59e0b'; // amber
+        if (confidence >= 40) return '#f97316'; // orange
+        return '#ef4444'; // red
+    },
+
+    getCategoryIcon(category) {
+        const style = categoryStyles[category] || categoryStyles.unknown;
+        return style.icon;
+    },
+
+    displayExtractedInfo(data) {
+        const container = document.getElementById('extracted-info-container');
+        if (!container) return;
+
+        let html = '';
+
+        // Show extracted text for image/audio/video
+        if (data.extracted_text) {
+            const inputType = data.input_type || 'content';
+            const sourceLabel = {
+                'image': 'OCR Extracted Text',
+                'audio': 'Transcribed Audio',
+                'video': 'Extracted Video Content'
+            }[inputType] || 'Extracted Text';
+
+            html += `
+                <div class="extracted-info-card">
+                    <h4><i class="fas fa-file-alt"></i> ${sourceLabel}</h4>
+                    <div class="extracted-text-content">
+                        ${utils.sanitizeText(data.extracted_text)}
+                        ${data.extracted_text.length >= 500 ? '<span class="text-truncated">... (truncated)</span>' : ''}
+                    </div>
+                    ${data.ocr_confidence ? `<div class="extraction-confidence">OCR Confidence: ${(data.ocr_confidence * 100).toFixed(1)}%</div>` : ''}
+                    ${data.transcription_confidence ? `<div class="extraction-confidence">Transcription Confidence: ${(data.transcription_confidence * 100).toFixed(1)}%</div>` : ''}
+                </div>
+            `;
+        }
+
+        // Show video/audio specific info
+        if (data.duration) {
+            html += `
+                <div class="media-info-item">
+                    <i class="fas fa-clock"></i>
+                    <span>Duration: ${data.duration.toFixed(1)}s</span>
+                </div>
+            `;
+        }
+
+        if (data.frames_processed) {
+            html += `
+                <div class="media-info-item">
+                    <i class="fas fa-images"></i>
+                    <span>Frames Processed: ${data.frames_processed}</span>
+                </div>
+            `;
+        }
+
+        container.innerHTML = html || '';
+        container.classList.toggle('hidden', !html);
+    },
+
+    displayModelInfo(data) {
+        const container = document.getElementById('model-info-container');
+        if (!container) return;
+
+        const modelName = data.model || 'Unknown Model';
+        const processingTime = data.processing_time_ms ? `${data.processing_time_ms.toFixed(0)}ms` : 'N/A';
+        const inputType = data.input_type || 'text';
+
+        container.innerHTML = `
+            <div class="model-info-grid">
+                <div class="model-info-item">
+                    <i class="fas fa-robot"></i>
+                    <span>Model: ${utils.sanitizeText(modelName)}</span>
+                </div>
+                <div class="model-info-item">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Processing Time: ${processingTime}</span>
+                </div>
+                <div class="model-info-item">
+                    <i class="fas fa-keyboard"></i>
+                    <span>Input Type: ${utils.capitalizeFirst(inputType)}</span>
+                </div>
+            </div>
+        `;
+    },
+
+    // Topics grid and summary methods implemented above
+};
+
+// =============================================================================
+// UI MANAGER
+// =============================================================================
+const uiManager = {
+    switchInputType(type) {
+        state.currentInputType = type;
+
+        // Update tab buttons
+        document.querySelectorAll('.input-type-btn').forEach(btn => {
+            const isActive = btn.dataset.type === type;
+            btn.classList.toggle('active', isActive);
+        });
+
+        // Update panels
+        document.querySelectorAll('.input-panel').forEach(panel => {
+            panel.classList.toggle('active', panel.dataset.type === type);
+        });
+
+        this.updateAnalyzeButton();
+    },
+
+    updateFilePreview(type, file) {
+        const infoEl = document.getElementById(`${type}-info`);
+        const nameEl = document.getElementById(`${type}-filename`);
+        const sizeEl = document.getElementById(`${type}-filesize`);
+
+        if (nameEl) nameEl.textContent = file.name;
+        if (sizeEl) sizeEl.textContent = utils.formatFileSize(file.size);
+        if (infoEl) infoEl.classList.remove('hidden');
+
+        // Hide upload zone
+        const uploadZone = document.getElementById(`${type}-upload-zone`);
+        if (uploadZone) uploadZone.classList.add('hidden');
+    },
+
+    removeFile(type) {
+        state.selectedFiles[type] = null;
+
+        const infoEl = document.getElementById(`${type}-info`);
+        const uploadZone = document.getElementById(`${type}-upload-zone`);
+        const input = document.getElementById(`${type}-input`);
+
+        if (infoEl) infoEl.classList.add('hidden');
+        if (uploadZone) uploadZone.classList.remove('hidden');
+        if (input) input.value = '';
+
+        this.updateAnalyzeButton();
+    },
+
+    updateAnalyzeButton() {
+        const btn = document.getElementById('analyze-btn');
+        if (!btn) return;
+
+        let isValid = false;
+        let debugLength = 0;
+
+        switch (state.currentInputType) {
+            case 'text':
+                const textarea = document.getElementById('news-text');
+                if (textarea) {
+                    debugLength = textarea.value.trim().length;
+                    isValid = debugLength >= CONFIG.MIN_CHARS;
+                }
+                console.log(`[Debug] Text length: ${debugLength}, MIN: ${CONFIG.MIN_CHARS}, Valid: ${isValid}`);
+                break;
+            case 'image':
+            case 'audio':
+            case 'video':
+                isValid = state.selectedFiles[state.currentInputType] !== null;
+                console.log(`[Debug] File selected: ${isValid}`);
+                break;
+        }
+
+        btn.disabled = !isValid || state.isAnalyzing;
+        btn.classList.toggle('disabled', !isValid);
+        console.log(`[Debug] Button disabled: ${btn.disabled}, isAnalyzing: ${state.isAnalyzing}`);
+    },
+
+    updateCharCount() {
+        const textarea = document.getElementById('news-text');
+        const countEl = document.getElementById('char-count');
+
+        if (textarea && countEl) {
+            countEl.textContent = textarea.value.length;
+        }
+
+        this.updateAnalyzeButton();
+    }
+};
+
+// =============================================================================
+// EVENT HANDLERS
+// =============================================================================
+const eventHandlers = {
+    handleFileSelect(e, type) {
+        console.log(`[FileSelect] Event triggered for ${type}`, e.target);
+
+        const file = e.target.files?.[0];
+        if (!file) {
+            console.warn(`[FileSelect] No file selected for ${type}`);
+            return;
+        }
+
+        console.log(`[FileSelect] File selected: ${file.name}, size: ${file.size}, type: ${file.type} `);
+
+        const maxSize = CONFIG.MAX_FILE_SIZES[type];
+        if (file.size > maxSize) {
+            const maxMB = Math.round(maxSize / 1024 / 1024);
+            notificationManager.show(`File too large.Maximum ${maxMB}MB allowed.`, 'error');
+            console.warn(`[FileSelect] File too large: ${file.size} > ${maxSize} `);
+            return;
+        }
+
+        state.selectedFiles[type] = file;
+        console.log(`[FileSelect] File stored in state.selectedFiles[${type}]`);
+
+        uiManager.updateFilePreview(type, file);
+        uiManager.updateAnalyzeButton();
+
+        notificationManager.show(`${utils.capitalizeFirst(type)} selected: ${file.name} `, 'success');
+    },
+
+    handleDrop(e, type) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const dropZone = document.getElementById(`${type}-upload - zone`);
+        dropZone?.classList.remove('drag-over');
+
+        const files = e.dataTransfer.files;
+        console.log(`[Drop] Files dropped: ${files.length} files`);
+
+        if (files.length > 0) {
+            const file = files[0];
+            const input = document.getElementById(`${type}-input`);
+
+            // Create a DataTransfer to simulate file input
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            input.files = dt.files;
+
+            console.log(`[Drop] File set on input: ${file.name} `);
+            this.handleFileSelect({ target: input }, type);
+        }
+    },
+
+    handleUploadZoneClick(type) {
+        console.log(`[UploadZone] Click triggered for ${type}`);
+        const input = document.getElementById(`${type}-input`);
+        if (input) {
+            console.log(`[UploadZone] Triggering click on file input`);
+            input.click();
+        } else {
+            console.error(`[UploadZone] Input element not found for ${type}`);
         }
     }
+};
 
-    updateAnalyzeButton();
-    showNotification(`${capitalizeFirst(type)} file selected: ${file.name}`, 'success');
-}
-
-function removeFile(type) {
-    selectedFiles[type] = null;
-
-    if (type === 'image') {
-        const preview = document.getElementById('image-preview');
-        const uploadContent = document.getElementById('image-upload-content');
-        const fileInput = document.getElementById('image-input');
-
-        if (preview) preview.style.display = 'none';
-        if (uploadContent) uploadContent.style.display = 'flex';
-        if (fileInput) fileInput.value = '';
-    } else {
-        const infoEl = document.getElementById(`${type}-info`);
-        const uploadContent = document.getElementById(`${type}-upload-content`);
-        const fileInput = document.getElementById(`${type}-input`);
-
-        if (infoEl) infoEl.style.display = 'none';
-        if (uploadContent) uploadContent.style.display = 'flex';
-        if (fileInput) fileInput.value = '';
-    }
-
-    updateAnalyzeButton();
-}
-
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
-// ===== ANALYZE BUTTON =====
-function updateAnalyzeButton() {
-    const btn = document.getElementById('analyze-btn');
-    if (!btn) return;
-
-    let isValid = false;
-
-    switch (currentInputType) {
-        case 'text':
-            const textarea = document.getElementById('news-text');
-            isValid = textarea && textarea.value.trim().length >= MIN_CHARS;
-            break;
-        case 'image':
-        case 'audio':
-        case 'video':
-            isValid = selectedFiles[currentInputType] !== null;
-            break;
-    }
-
-    btn.disabled = !isValid || isAnalyzing;
-}
-
-// ===== ANALYSIS =====
+// =============================================================================
+// ANALYSIS FUNCTION
+// =============================================================================
 async function analyzeContent() {
-    if (isAnalyzing) return;
+    if (state.isAnalyzing) {
+        console.log('[Analyze] Already analyzing, skipping');
+        return;
+    }
 
-    const btn = document.getElementById('analyze-btn');
-    if (!btn) return;
+    console.log(`[Analyze] Starting analysis for type: ${state.currentInputType} `);
+    state.isAnalyzing = true;
+    uiManager.updateAnalyzeButton();
 
-    isAnalyzing = true;
-    btn.classList.add('loading');
-    btn.disabled = true;
-
-    const loadingMessages = {
-        'text': { main: 'Analyzing Text...', sub: 'Processing with 20-category AI classifier' },
-        'image': { main: 'Analyzing Image...', sub: 'Extracting text and classifying content' },
-        'audio': { main: 'Analyzing Audio...', sub: 'Transcribing and classifying content' },
-        'video': { main: 'Analyzing Video...', sub: 'Extracting frames and classifying content' }
+    const messages = {
+        text: { main: 'Analyzing...', sub: 'Processing text content' },
+        image: { main: 'Analyzing...', sub: 'Processing image content' },
+        audio: { main: 'Audio Analysis...', sub: 'Transcribing with Whisper' },
+        video: { main: 'Video Analysis...', sub: 'Scene detection in progress' }
     };
 
-    const messages = loadingMessages[currentInputType] || loadingMessages['text'];
-    showLoadingOverlay(messages.main, messages.sub);
+    const msg = messages[state.currentInputType];
+    loadingManager.show(msg.main, msg.sub);
 
     try {
         let result;
         let inputText = '';
 
-        switch (currentInputType) {
-            case 'text': {
-                updateLoadingMessage('Processing text...', 'Running optimized ensemble classification');
+        switch (state.currentInputType) {
+            case 'text':
                 const textarea = document.getElementById('news-text');
-                if (!textarea) throw new Error('Text input not found');
-                inputText = textarea.value.trim();
-                result = await analyzeText();
+                inputText = textarea?.value.trim() || '';
+                console.log(`[Analyze] Text length: ${inputText.length}, content: "${inputText.substring(0, 50)}..."`);
+                loadingManager.update('Processing...', 'Analyzing text content');
+                result = await api.classifyText(inputText);
+                console.log('[Analyze] API response received:', result);
                 break;
-            }
+
             case 'image':
-                updateLoadingMessage('Processing image...', 'Extracting visual features');
-                inputText = selectedFiles.image?.name || 'Image file';
-                result = await analyzeImage();
-                break;
             case 'audio':
-                updateLoadingMessage('Processing audio...', 'Transcribing speech to text');
-                inputText = selectedFiles.audio?.name || 'Audio file';
-                result = await analyzeAudio();
-                break;
             case 'video':
-                updateLoadingMessage('Processing video...', 'Analyzing video frames');
-                inputText = selectedFiles.video?.name || 'Video file';
-                result = await analyzeVideo();
+                const file = state.selectedFiles[state.currentInputType];
+                console.log(`[Analyze] Selected file for ${state.currentInputType}: `, file);
+
+                if (!file) {
+                    throw new Error(`No ${state.currentInputType} file selected`);
+                }
+
+                loadingManager.update('Processing...', 'AI models analyzing content');
+                result = await api.classifyFile(file, state.currentInputType);
+                inputText = file?.name || 'File';
                 break;
-            default:
-                throw new Error(`Unknown input type: ${currentInputType}`);
         }
 
-        if (result) {
-            updateLoadingMessage('Finalizing results...', 'Almost done!');
+        // Handle result - check for null (aborted), error status, or success
+        if (result === null) {
+            // Request was aborted - don't show error, just stop
+            loadingManager.hide();
+            return;
+        }
 
-            // Add to history
-            addToHistory(result, inputText, currentInputType);
+        if (result?.status === 'success') {
+            loadingManager.update('Finalizing...', 'Preparing results display');
+            addToHistory(result.data || result, inputText, state.currentInputType);
 
             setTimeout(() => {
-                displayResults(result);
-            }, 200);
+                resultsManager.display(result.data || result);
+                loadingManager.hide();
+            }, 300);
+        } else if (result?.status === 'error') {
+            // API returned an error status
+            throw new Error(result.message || 'Server returned an error');
+        } else {
+            // Unexpected response format
+            throw new Error('Invalid response from server');
         }
     } catch (error) {
+        loadingManager.hide();
+
+        // Provide user-friendly error messages based on error type
+        let errorMessage = error.message || 'Unknown error occurred';
+
+        if (error.name === 'AbortError') {
+            // Request was cancelled - no need to show error
+            console.log('Request was cancelled');
+            return;
+        } else if (error.message?.includes('NetworkError') ||
+            error.message?.includes('Failed to fetch') ||
+            error.message?.includes('network')) {
+            errorMessage = 'Network connection failed. Please check your connection and try again.';
+        } else if (error.message?.includes('499') || error.message?.includes('cancelled')) {
+            errorMessage = 'Upload was cancelled or connection was lost. Please try again.';
+        } else if (error.message?.includes('HTTP')) {
+            errorMessage = `Server error: ${error.message} `;
+        }
+
+        notificationManager.show(`Analysis failed: ${errorMessage} `, 'error');
         console.error('Analysis error:', error);
-        hideLoadingOverlay();
-        showNotification(`Analysis failed: ${error.message}`, 'error');
     } finally {
-        setTimeout(() => {
-            hideLoadingOverlay();
-        }, 400);
-        isAnalyzing = false;
-        btn.classList.remove('loading');
-        updateAnalyzeButton();
+        state.isAnalyzing = false;
+        uiManager.updateAnalyzeButton();
     }
 }
 
-async function analyzeText() {
-    const textarea = document.getElementById('news-text');
-    if (!textarea) throw new Error('Text input not found');
+// =============================================================================
+// HISTORY MANAGEMENT
+// =============================================================================
+function addToHistory(result, inputText, inputType) {
+    const entry = {
+        timestamp: new Date().toISOString(),
+        category: result.category,
+        confidence: result.confidence,
+        inputType,
+        inputPreview: inputType === 'text' ? inputText.substring(0, 100) + '...' : inputText
+    };
 
-    const text = textarea.value.trim();
+    state.classificationHistory.unshift(entry);
+    if (state.classificationHistory.length > 50) {
+        state.classificationHistory.pop();
+    }
 
     try {
-        const response = await fetch(`${API_BASE}/classify`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text, enhanced: true })
-        });
-
-        if (!response.ok) {
-            let errorMessage = 'Classification failed';
-            try {
-                const error = await response.json();
-                errorMessage = error.message || errorMessage;
-            } catch (e) {
-                errorMessage = `Server error: ${response.status}`;
-            }
-            throw new Error(errorMessage);
-        }
-
-        return await response.json();
-    } catch (error) {
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            throw new Error('Network error. Please check your connection and try again.');
-        }
-        throw error;
+        localStorage.setItem('newscat_history', JSON.stringify(state.classificationHistory));
+    } catch (e) {
+        console.warn('Failed to save history:', e);
     }
 }
 
-async function analyzeImage() {
-    const file = selectedFiles.image;
-    if (!file) throw new Error('No image selected');
-
-    try {
-        const formData = new FormData();
-        formData.append('image', file);
-
-        const response = await fetch(`${API_BASE}/classify/image`, {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) {
-            let errorMessage = 'Image classification failed';
-            try {
-                const error = await response.json();
-                errorMessage = error.message || errorMessage;
-            } catch (e) {
-                errorMessage = `Server error: ${response.status}`;
-            }
-            throw new Error(errorMessage);
-        }
-
-        return await response.json();
-    } catch (error) {
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            throw new Error('Network error. Please check your connection and try again.');
-        }
-        throw error;
-    }
-}
-
-async function analyzeAudio() {
-    const file = selectedFiles.audio;
-    if (!file) throw new Error('No audio selected');
-
-    try {
-        const formData = new FormData();
-        formData.append('audio', file);
-
-        const response = await fetch(`${API_BASE}/classify/audio`, {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) {
-            let errorMessage = 'Audio classification failed';
-            try {
-                const error = await response.json();
-                errorMessage = error.message || errorMessage;
-            } catch (e) {
-                errorMessage = `Server error: ${response.status}`;
-            }
-            throw new Error(errorMessage);
-        }
-
-        return await response.json();
-    } catch (error) {
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            throw new Error('Network error. Please check your connection and try again.');
-        }
-        throw error;
-    }
-}
-
-async function analyzeVideo() {
-    const file = selectedFiles.video;
-    if (!file) throw new Error('No video selected');
-
-    try {
-        const formData = new FormData();
-        formData.append('video', file);
-
-        const response = await fetch(`${API_BASE}/classify/video`, {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) {
-            let errorMessage = 'Video classification failed';
-            try {
-                const error = await response.json();
-                errorMessage = error.message || errorMessage;
-            } catch (e) {
-                errorMessage = `Server error: ${response.status}`;
-            }
-            throw new Error(errorMessage);
-        }
-
-        return await response.json();
-    } catch (error) {
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            throw new Error('Network error. Please check your connection and try again.');
-        }
-        throw error;
-    }
-}
-
-// ===== RESULTS DISPLAY =====
-function displayResults(data) {
-    const section = document.getElementById('results-section');
-    if (!section) return;
-
-    // Reset and show section with animation
-    section.style.display = 'block';
-    section.style.opacity = '0';
-
-    // Trigger reflow for animation
-    void section.offsetWidth;
-    section.style.opacity = '1';
-
-    setTimeout(() => {
-        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
-
-    const category = data.category || 'unknown';
-    const confidence = (data.confidence || 0) * 100;
-    const style = categoryStyles[category] || categoryStyles['technology'];
-
-    // Update category badge
-    const categoryBadge = document.getElementById('result-category-badge');
-    const categoryText = document.getElementById('result-category');
-    const categoryIcon = document.getElementById('result-icon');
-
-    if (categoryText) {
-        categoryText.textContent = capitalizeFirst(category);
-    }
-
-    if (categoryIcon) {
-        categoryIcon.className = `fas ${style.icon}`;
-        categoryIcon.style.color = style.color;
-    }
-
-    if (categoryBadge) {
-        categoryBadge.style.borderColor = style.color + '60';
-        categoryBadge.style.background = style.gradient.replace(')', ', 0.2)').replace('linear-gradient', 'linear-gradient');
-    }
-
-    // Update confidence circle with animation
-    updateConfidenceCircle(confidence, style);
-
-    // Update stats
-    const timeEl = document.getElementById('result-time');
-    if (timeEl) {
-        const time = data.processing_time_ms || 0;
-        timeEl.textContent = time < 1000 ? `${time.toFixed(0)}ms` : `${(time / 1000).toFixed(2)}s`;
-    }
-
-    const modelEl = document.getElementById('result-model');
-    if (modelEl) {
-        modelEl.textContent = data.model || 'Ensemble';
-    }
-
-    const inputTypeEl = document.getElementById('result-input-type');
-    if (inputTypeEl) {
-        inputTypeEl.textContent = capitalizeFirst(data.input_type || currentInputType);
-    }
-
-    // Display predictions
-    displayPredictions(data.top_predictions || [{ category, confidence: data.confidence }]);
-
-    // Display keywords
-    if (data.keywords && data.keywords.length > 0) {
-        displayKeywords(data.keywords);
-    } else {
-        const keywordsSection = document.getElementById('keywords-section');
-        if (keywordsSection) keywordsSection.style.display = 'none';
-    }
-
-    // Generate and display summary
-    displaySummary(category, confidence, data);
-
-    // Display content summary
-    let inputTextForSummary = '';
-    if (currentInputType === 'text') {
-        const textarea = document.getElementById('news-text');
-        inputTextForSummary = textarea ? textarea.value : '';
-    } else {
-        inputTextForSummary = selectedFiles[currentInputType]?.name || '';
-    }
-    displayContentSummary(inputTextForSummary, category, data.input_type || currentInputType);
-
-    showNotification(`Classified as ${capitalizeFirst(category)} with ${confidence.toFixed(1)}% confidence!`, 'success');
-}
-
-function updateConfidenceCircle(confidence, style) {
-    const progressEl = document.getElementById('confidence-progress');
-    const textEl = document.getElementById('result-confidence');
-
-    if (progressEl) {
-        // Calculate stroke-dashoffset based on confidence
-        const circumference = 283; // 2 * PI * 45
-        const offset = circumference - (confidence / 100) * circumference;
-
-        // Reset animation
-        progressEl.style.strokeDashoffset = '283';
-        progressEl.style.stroke = style.color;
-
-        // Animate after a small delay
-        setTimeout(() => {
-            progressEl.style.strokeDashoffset = offset.toString();
-        }, 100);
-    }
-
-    if (textEl) {
-        // Animate confidence text
-        animateValue(textEl, 0, confidence, 1000);
-    }
-}
-
-function animateValue(element, start, end, duration) {
-    const startTime = performance.now();
-
-    function update(currentTime) {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-
-        // Easing function
-        const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-        const current = start + (end - start) * easeOutQuart;
-
-        element.textContent = `${current.toFixed(1)}%`;
-
-        if (progress < 1) {
-            requestAnimationFrame(update);
-        }
-    }
-
-    requestAnimationFrame(update);
-}
-
-function displayPredictions(predictions) {
-    const container = document.getElementById('predictions-list');
-    if (!container) return;
-
-    container.innerHTML = predictions.map((pred, index) => {
-        const style = categoryStyles[pred.category] || { icon: 'fa-tag', color: '#818cf8', gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)' };
-        const confidence = (pred.confidence || 0) * 100;
-
-        return `
-            <div class="prediction-card" style="animation-delay: ${index * 0.1}s">
-                <div class="prediction-card-header">
-                    <span class="prediction-card-category">
-                        <i class="fas ${style.icon}" style="color: ${style.color}"></i>
-                        ${capitalizeFirst(pred.category)}
-                    </span>
-                    <span class="prediction-card-confidence">${confidence.toFixed(1)}%</span>
-                </div>
-                <div class="prediction-card-bar">
-                    <div class="prediction-card-bar-fill" style="width: 0%; background: ${style.gradient};" data-width="${confidence}%"></div>
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    // Animate bars after render
-    setTimeout(() => {
-        container.querySelectorAll('.prediction-card-bar-fill').forEach(bar => {
-            bar.style.width = bar.dataset.width;
-        });
-    }, 200);
-}
-
-function displayKeywords(keywords) {
-    const section = document.getElementById('keywords-section');
-    const container = document.getElementById('keywords-list');
-
-    if (!section || !container) return;
-
-    section.style.display = 'block';
-    container.innerHTML = keywords.map((kw, index) =>
-        `<span class="keyword-tag" style="animation-delay: ${index * 0.05}s">${typeof kw === 'string' ? kw : kw.word || kw}</span>`
-    ).join('');
-}
-
-function displaySummary(category, confidence, data) {
-    const section = document.getElementById('analysis-summary');
-    const content = document.getElementById('summary-content');
-
-    if (!section || !content) return;
-
-    const style = categoryStyles[category] || categoryStyles['technology'];
-    const time = data.processing_time_ms || 0;
-    const timeStr = time < 1000 ? `${time.toFixed(0)}ms` : `${(time / 1000).toFixed(2)}s`;
-
-    let confidenceLevel = 'high';
-    if (confidence < 50) confidenceLevel = 'low';
-    else if (confidence < 75) confidenceLevel = 'moderate';
-
-    // Get the content-specific description from incident_details or category_description
-    let specificDetails = '';
-    if (data.incident_details && data.incident_details.description) {
-        specificDetails = data.incident_details.description;
-    } else if (data.category_description) {
-        specificDetails = data.category_description;
-    }
-
-    // Build incident details section if we have specific details
-    let incidentDetailsHtml = '';
-    if (specificDetails && specificDetails !== `${capitalizeFirst(category)} related content`) {
-        incidentDetailsHtml = `
-            <div class="incident-details" style="margin: 15px 0; padding: 12px; background: ${style.color}15; border-left: 4px solid ${style.color}; border-radius: 6px;">
-                <p style="margin: 0; font-weight: 500; color: ${style.color};">
-                    <i class="fas fa-info-circle"></i> ${specificDetails}
-                </p>
-            </div>
-        `;
-    }
-
-    // Build additional incident details if available
-    let additionalDetailsHtml = '';
-    if (data.incident_details) {
-        const details = data.incident_details;
-        const detailItems = [];
-
-        if (details.location) {
-            detailItems.push(`<span class="detail-tag"><i class="fas fa-map-marker-alt"></i> ${details.location}</span>`);
-        }
-        if (details.severity) {
-            detailItems.push(`<span class="detail-tag"><i class="fas fa-exclamation-triangle"></i> ${details.severity}</span>`);
-        }
-        if (details.impact && details.impact.length > 0) {
-            const impactText = Array.isArray(details.impact) ? details.impact[0] : details.impact;
-            detailItems.push(`<span class="detail-tag"><i class="fas fa-bolt"></i> ${impactText}</span>`);
-        }
-        if (details.key_entities && details.key_entities.length > 0) {
-            detailItems.push(`<span class="detail-tag"><i class="fas fa-building"></i> ${details.key_entities[0]}</span>`);
-        }
-
-        if (detailItems.length > 0) {
-            additionalDetailsHtml = `
-                <div class="detail-tags" style="margin: 10px 0;">
-                    ${detailItems.join('')}
-                </div>
-            `;
-        }
-    }
-
-    const summaryHtml = `
-        <p>
-            <strong>${capitalizeFirst(category)}</strong> category detected with
-            <strong>${confidence.toFixed(1)}%</strong> confidence (${confidenceLevel} certainty).
-        </p>
-        ${incidentDetailsHtml}
-        ${additionalDetailsHtml}
-        <p style="margin-top: 12px; font-size: 0.9em; opacity: 0.8;">
-            Analysis completed in <strong>${timeStr}</strong> using the <strong>${data.model || 'Ensemble'}</strong> AI model.
-        </p>
-        ${data.keywords && data.keywords.length > 0 ?
-            `<p style="font-size: 0.9em;">Key terms: <strong>${data.keywords.slice(0, 5).map(k => typeof k === 'string' ? k : k.word || k).join(', ')}</strong></p>`
-            : ''}
-    `;
-
-    content.innerHTML = summaryHtml;
-}
-
-// ===== CONTENT SUMMARY =====
-function displayContentSummary(inputText, category, inputType) {
-    const section = document.getElementById('content-summary-section');
-    const textEl = document.getElementById('content-summary-text');
-
-    if (!section || !textEl) return;
-
-    // Generate short summary from input text
-    const summary = generateContentSummary(inputText, category, inputType);
-
-    if (summary) {
-        textEl.textContent = summary;
-        section.style.display = 'block';
-    } else {
-        section.style.display = 'none';
-    }
-}
-
-function generateContentSummary(inputText, category, inputType) {
-    if (!inputText || inputText.trim().length === 0) {
-        return null;
-    }
-
-    const text = inputText.trim();
-    const categoryLabel = capitalizeFirst(category || 'content');
-    const inputLabel = capitalizeFirst(inputType || 'text');
-
-    // For file inputs (image, audio, video), show file info
-    if (inputType !== 'text') {
-        if (text.length <= 100) {
-            return `${inputLabel} file "${text}" classified as ${categoryLabel} content.`;
-        }
-    }
-
-    // For text input, generate a brief summary
-    // Clean and truncate text
-    const cleanText = text.replace(/\s+/g, ' ').trim();
-
-    // Extract first meaningful portion (up to ~120 chars)
-    let summaryText = '';
-    if (cleanText.length <= 120) {
-        summaryText = cleanText;
-    } else {
-        // Find a good break point
-        const truncated = cleanText.substring(0, 120);
-        const lastSpace = truncated.lastIndexOf(' ');
-        summaryText = truncated.substring(0, lastSpace > 0 ? lastSpace : 120) + '...';
-    }
-
-    return `${categoryLabel} content: "${summaryText}"`;
-}
-
-function hideResults() {
-    const section = document.getElementById('results-section');
-    if (section) {
-        section.style.display = 'none';
-    }
-    // Hide content summary section
-    const contentSummarySection = document.getElementById('content-summary-section');
-    if (contentSummarySection) {
-        contentSummarySection.style.display = 'none';
-    }
-}
-
-// ===== HISTORY MANAGEMENT =====
 function loadHistory() {
     try {
         const saved = localStorage.getItem('newscat_history');
-        classificationHistory = saved ? JSON.parse(saved) : [];
-        updateHistoryDisplay();
+        if (saved) {
+            state.classificationHistory = JSON.parse(saved);
+        }
     } catch (e) {
-        classificationHistory = [];
+        console.warn('Failed to load history:', e);
     }
 }
 
-function saveHistory() {
-    try {
-        localStorage.setItem('newscat_history', JSON.stringify(classificationHistory.slice(0, 50)));
-    } catch (e) {
-        console.error('Failed to save history:', e);
-    }
+// =============================================================================
+// SAMPLE LOADER
+// =============================================================================
+function loadSample(type) {
+    const textarea = document.getElementById('news-text');
+    if (!textarea || !sampleArticles[type]) return;
+
+    textarea.value = '';
+    uiManager.updateCharCount();
+
+    const text = sampleArticles[type];
+    let index = 0;
+
+    const typeInterval = setInterval(() => {
+        if (index < text.length) {
+            textarea.value += text.charAt(index);
+            index++;
+            uiManager.updateCharCount();
+        } else {
+            clearInterval(typeInterval);
+        }
+    }, 3);
 }
 
-function addToHistory(result, inputText, inputType) {
-    const historyItem = {
-        id: Date.now(),
-        category: result.category,
-        confidence: result.confidence,
-        inputText: inputText.substring(0, 150),
-        inputType: inputType,
-        processingTime: result.processing_time_ms,
-        model: result.model,
-        timestamp: new Date().toISOString(),
-        topPredictions: result.top_predictions
-    };
-
-    classificationHistory.unshift(historyItem);
-    if (classificationHistory.length > 50) {
-        classificationHistory = classificationHistory.slice(0, 50);
+// =============================================================================
+// INITIALIZATION
+// =============================================================================
+function initEventListeners() {
+    // Text input
+    const textarea = document.getElementById('news-text');
+    if (textarea) {
+        textarea.addEventListener('input', () => uiManager.updateCharCount());
     }
 
-    saveHistory();
-    updateHistoryDisplay();
-}
-
-function updateHistoryDisplay() {
-    const historyCount = document.getElementById('history-count');
-    if (historyCount) {
-        historyCount.textContent = classificationHistory.length;
-    }
-
-    const historyContent = document.getElementById('history-content');
-    if (!historyContent) return;
-
-    if (classificationHistory.length === 0) {
-        historyContent.innerHTML = `
-            <div class="history-empty">
-                <i class="fas fa-inbox"></i>
-                <p>No classification history yet</p>
-            </div>
-        `;
-        return;
-    }
-
-    historyContent.innerHTML = classificationHistory.map(item => {
-        const style = categoryStyles[item.category] || { icon: 'fa-tag', color: '#818cf8' };
-        const time = new Date(item.timestamp);
-        const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const dateStr = time.toLocaleDateString([], { month: 'short', day: 'numeric' });
-
-        return `
-            <div class="history-item" onclick="loadHistoryItem(${item.id})">
-                <div class="history-item-header">
-                    <span class="history-item-category">
-                        <i class="fas ${style.icon}" style="color: ${style.color}"></i>
-                        ${capitalizeFirst(item.category)}
-                    </span>
-                    <span class="history-item-time">${dateStr} ${timeStr}</span>
-                </div>
-                <div class="history-item-text">${item.inputText}</div>
-                <div class="history-item-footer">
-                    <span class="history-item-confidence">${(item.confidence * 100).toFixed(1)}% confidence</span>
-                    <span class="history-item-type">${item.inputType}</span>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-function loadHistoryItem(id) {
-    const item = classificationHistory.find(h => h.id === id);
-    if (!item) return;
-
-    // Close history sidebar
-    toggleHistory();
-
-    // Display the result
-    displayResults({
-        category: item.category,
-        confidence: item.confidence,
-        processing_time_ms: item.processingTime,
-        model: item.model,
-        input_type: item.inputType,
-        top_predictions: item.topPredictions,
-        cached: false
+    // Tab switching
+    document.querySelectorAll('.input-type-btn').forEach(btn => {
+        btn.addEventListener('click', () => uiManager.switchInputType(btn.dataset.type));
     });
 
-    showNotification('Loaded from history', 'info');
-}
-
-function clearHistory() {
-    classificationHistory = [];
-    saveHistory();
-    updateHistoryDisplay();
-    showNotification('History cleared', 'success');
-}
-
-function toggleHistory() {
-    const sidebar = document.getElementById('history-sidebar');
-    const modelPanel = document.getElementById('model-info-panel');
-
-    // Close model info if open
-    if (modelPanel) {
-        modelPanel.classList.remove('active');
+    // Analyze button
+    const analyzeBtn = document.getElementById('analyze-btn');
+    if (analyzeBtn) {
+        analyzeBtn.addEventListener('click', analyzeContent);
     }
 
-    if (sidebar) {
-        const isOpen = sidebar.classList.toggle('open');
-
-        // Announce to screen readers
-        const announce = document.createElement('div');
-        announce.setAttribute('role', 'status');
-        announce.setAttribute('aria-live', 'polite');
-        announce.className = 'sr-only';
-        announce.textContent = isOpen ? 'History panel opened' : 'History panel closed';
-        document.body.appendChild(announce);
-        setTimeout(() => announce.remove(), 1000);
-    }
-}
-
-// ===== MODEL INFO =====
-async function loadModelInfo() {
-    try {
-        const response = await fetch(`${API_BASE}/model/info`);
-        if (response.ok) {
-            modelInfo = await response.json();
-            updateModelInfoDisplay();
-        }
-    } catch (e) {
-        console.error('Failed to load model info:', e);
-    }
-}
-
-function updateModelInfoDisplay() {
-    if (!modelInfo) return;
-
-    // Update basic info with fallbacks
-    const nameEl = document.getElementById('info-model-name');
-    const versionEl = document.getElementById('info-model-version');
-    const statusEl = document.getElementById('info-model-status');
-    const categoriesEl = document.getElementById('info-categories');
-    const inferenceEl = document.getElementById('info-inference-time');
-    const accuracyEl = document.getElementById('info-accuracy');
-
-    if (nameEl) nameEl.textContent = modelInfo.name || 'NEWSCAT AI';
-    if (versionEl) versionEl.textContent = modelInfo.version || 'v5.0';
-
-    if (statusEl) {
-        const isReady = modelInfo.is_trained !== false;
-        statusEl.textContent = isReady ? 'Ready' : 'Loading...';
-        statusEl.className = 'info-value status-badge ' + (isReady ? 'status-ready' : 'status-loading');
-    }
-
-    if (categoriesEl) categoriesEl.textContent = modelInfo.category_count || modelInfo.categories?.length || '20+';
-    if (inferenceEl) inferenceEl.textContent = modelInfo.metrics?.inference_time_ms ? `${modelInfo.metrics.inference_time_ms}ms` : '< 10ms';
-    if (accuracyEl) accuracyEl.textContent = modelInfo.metrics?.accuracy ? `${(modelInfo.metrics.accuracy * 100).toFixed(1)}%` : '98%';
-
-    // Update categories list with enhanced styling
-    const categoriesList = document.getElementById('categories-list');
-    if (categoriesList && modelInfo.categories) {
-        categoriesList.innerHTML = modelInfo.categories.map((cat, index) =>
-            `<span class="category-tag" style="animation-delay: ${index * 0.02}s">${capitalizeFirst(cat)}</span>`
-        ).join('');
-    }
-
-    // Show model capabilities
-    const capabilitiesSection = document.getElementById('model-capabilities');
-    if (capabilitiesSection) {
-        const capabilities = [
-            { icon: 'fa-font', label: 'Text Analysis' },
-            { icon: 'fa-image', label: 'Image OCR' },
-            { icon: 'fa-microphone', label: 'Audio STT' },
-            { icon: 'fa-video', label: 'Video Processing' }
-        ];
-        capabilitiesSection.innerHTML = capabilities.map(cap => `
-            <div class="capability-item">
-                <i class="fas ${cap.icon}"></i>
-                <span>${cap.label}</span>
-            </div>
-        `).join('');
-    }
-}
-
-function toggleModelInfo() {
-    const panel = document.getElementById('model-info-panel');
-    const historySidebar = document.getElementById('history-sidebar');
-
-    // Close history if open
-    if (historySidebar) {
-        historySidebar.classList.remove('open');
-    }
-
-    if (panel) {
-        const isActive = panel.classList.contains('active');
-
-        if (isActive) {
-            panel.classList.remove('active');
+    // File inputs
+    ['image', 'audio', 'video'].forEach(type => {
+        const input = document.getElementById(`${type}-input`);
+        if (input) {
+            console.log(`[Init] Attaching change listener to ${type}-input`);
+            input.addEventListener('change', (e) => eventHandlers.handleFileSelect(e, type));
         } else {
-            loadModelInfo();
-            panel.classList.add('active');
+            console.error(`[Init] Input element not found: ${type}-input`);
         }
-    }
-}
 
-// ===== API CALLS =====
-async function loadCategories() {
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        // Drag and drop
+        const dropZone = document.getElementById(`${type}-upload-zone`);
+        if (dropZone) {
+            console.log(`[Init] Setting up dropZone for ${type}`);
 
-        const response = await fetch(`${API_BASE}/categories`, {
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
+            // Click to browse files - use the dedicated handler
+            dropZone.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                eventHandlers.handleUploadZoneClick(type);
+            });
 
-        if (response.ok) {
-            const data = await response.json();
-            console.log(`Loaded ${data.count || 'unknown'} categories`);
-        }
-    } catch (error) {
-        if (error.name === 'AbortError') {
-            console.warn('Categories request timed out');
+            // Keyboard support for accessibility
+            dropZone.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    eventHandlers.handleUploadZoneClick(type);
+                }
+            });
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.classList.add('drag-over');
+                });
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.classList.remove('drag-over');
+                });
+            });
+
+            dropZone.addEventListener('drop', (e) => eventHandlers.handleDrop(e, type));
         } else {
-            console.error('Failed to load categories:', error);
+            console.error(`[Init] DropZone element not found: ${type}-upload - zone`);
         }
-    }
-}
+    });
 
-async function loadModelStatus() {
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-        const response = await fetch(`${API_BASE}/health`, {
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-
-        if (response.ok) {
-            const data = await response.json();
-            updateStatusIndicator(data);
-        } else {
-            updateStatusIndicator(null);
-        }
-    } catch (error) {
-        if (error.name === 'AbortError') {
-            console.warn('Health check timed out');
-        } else {
-            console.error('Failed to load model status:', error);
-        }
-        updateStatusIndicator(null);
-    }
-}
-
-function updateStatusIndicator(data) {
-    const statusPill = document.getElementById('model-status');
-    if (!statusPill) return;
-
-    const indicator = statusPill.querySelector('.status-indicator');
-    const label = statusPill.querySelector('.status-label');
-
-    if (data && data.status === 'healthy') {
-        const hasOptimized = data.classifiers?.optimized;
-        const categoryCount = data.models?.models?.optimized?.categories?.length || 20;
-
-        if (indicator) {
-            indicator.classList.remove('offline', 'loading');
-        }
-        if (label) {
-            label.textContent = hasOptimized ? `AI Ready (${categoryCount})` : 'AI Ready';
-            label.classList.add('ready');
-        }
-    } else {
-        if (indicator) {
-            indicator.classList.add('offline');
-            indicator.classList.remove('loading');
-        }
-        if (label) {
-            label.textContent = 'AI Offline';
-            label.classList.remove('ready');
-        }
-    }
-}
-
-// ===== NOTIFICATIONS =====
-let notificationId = 0;
-const activeNotifications = new Map();
-
-function showNotification(message, type = 'info', duration = 5000) {
-    const container = document.getElementById('notification-container');
-    if (!container) return;
-
-    const id = ++notificationId;
-    const icons = {
-        success: 'fa-check-circle',
-        error: 'fa-exclamation-circle',
-        info: 'fa-info-circle',
-        warning: 'fa-exclamation-triangle'
-    };
-
-    const titles = {
-        success: 'Success',
-        error: 'Error',
-        info: 'Information',
-        warning: 'Warning'
-    };
-
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.setAttribute('role', 'alert');
-    notification.setAttribute('aria-live', 'polite');
-    notification.innerHTML = `
-        <i class="fas ${icons[type]}"></i>
-        <div class="notification-content">
-            <div class="notification-title">${titles[type]}</div>
-            <div class="notification-message">${message}</div>
-        </div>
-        <button class="notification-close" onclick="closeNotification(${id})" aria-label="Close notification">
-            <i class="fas fa-times"></i>
-        </button>
-    `;
-
-    container.appendChild(notification);
-    activeNotifications.set(id, notification);
-
-    // Auto-dismiss
-    if (duration > 0) {
-        const timeoutId = setTimeout(() => closeNotification(id), duration);
-        notification.dataset.timeoutId = timeoutId;
-    }
-
-    return id;
-}
-
-function closeNotification(id) {
-    const notification = activeNotifications.get(id);
-    if (!notification) return;
-
-    const timeoutId = notification.dataset.timeoutId;
-    if (timeoutId) clearTimeout(parseInt(timeoutId));
-
-    notification.style.opacity = '0';
-    notification.style.transform = 'translateX(20px)';
-
-    setTimeout(() => {
-        notification.remove();
-        activeNotifications.delete(id);
-    }, 300);
-}
-
-// ===== UTILITY FUNCTIONS =====
-function capitalizeFirst(str) {
-    if (!str) return '';
-    return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-function showApiInfo() {
-    showNotification('API: /api/classify, /api/classify/image, /api/classify/audio, /api/classify/video', 'info');
-}
-
-function showModelInfo() {
-    toggleModelInfo();
-}
-
-// ===== KEYBOARD SHORTCUTS =====
-document.addEventListener('keydown', (e) => {
-    try {
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
             const btn = document.getElementById('analyze-btn');
             if (btn && !btn.disabled) {
                 analyzeContent();
             }
         }
+    });
+}
 
-        if (e.key === 'Escape') {
-            hideResults();
-            hideLoadingOverlay();
+function initializeApp() {
+    // Initialize systems
+    loadingManager.init();
 
-            // Close panels
-            const modelPanel = document.getElementById('model-info-panel');
-            const historySidebar = document.getElementById('history-sidebar');
+    loadHistory();
+    initEventListeners();
+    uiManager.updateAnalyzeButton();
 
-            if (modelPanel) modelPanel.style.display = 'none';
-            if (historySidebar) historySidebar.classList.remove('open');
-        }
-
-        if (e.key >= '1' && e.key <= '4' && !e.ctrlKey && !e.metaKey && !e.altKey) {
-            const types = ['text', 'image', 'audio', 'video'];
-            const activeElement = document.activeElement;
-
-            if (activeElement && activeElement.tagName !== 'TEXTAREA' && activeElement.tagName !== 'INPUT') {
-                switchInputType(types[parseInt(e.key) - 1]);
-            }
-        }
-
-        // H for history
-        if (e.key === 'h' && !e.ctrlKey && !e.metaKey && !e.altKey) {
-            const activeElement = document.activeElement;
-            if (activeElement && activeElement.tagName !== 'TEXTAREA' && activeElement.tagName !== 'INPUT') {
-                toggleHistory();
-            }
-        }
-    } catch (error) {
-        console.error('Keyboard shortcut error:', error);
+    // Load sample on first visit
+    if (!localStorage.getItem('newscat_visited')) {
+        localStorage.setItem('newscat_visited', 'true');
+        loadSample('tech');
     }
-});
 
-// ===== GLOBAL ERROR HANDLING =====
-window.addEventListener('error', (e) => {
-    console.error('Global error:', e.error);
-    showNotification('An unexpected error occurred. Please refresh the page.', 'error');
-});
+    console.log('%c NEWSCAT v5 Professional ', 'background: linear-gradient(135deg, #6366f1, #a855f7); color: #fff; font-weight: bold; padding: 4px 8px; border-radius: 4px;');
+    console.log('%c AI News Classification System ', 'color: #818cf8;');
+}
 
-window.addEventListener('unhandledrejection', (e) => {
-    console.error('Unhandled promise rejection:', e.reason);
-    showNotification('An async operation failed. Please try again.', 'error');
-});
+// DOM Ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    initializeApp();
+}
 
+// Export for global access
+window.newscat = {
+    loadSample,
+    removeFile: (type) => uiManager.removeFile(type),
+    switchInputType: (type) => uiManager.switchInputType(type),
+    getCacheStats: () => requestCache.getStats(),
+    api,
+    utils
+};

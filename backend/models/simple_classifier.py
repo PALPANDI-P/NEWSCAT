@@ -407,12 +407,7 @@ class SimpleNewsClassifier(BaseNewsClassifier):
             logger.info(f"No pre-trained model found: {e}")
     
     def get_info(self) -> Dict[str, Any]:
-        """Get model information"""
-        return {
-            'name': self.name,
-            'version': self.version,
-            'is_trained': self.is_trained,
-            'accuracy': getattr(self, 'accuracy', None),
-            'training_date': str(self.training_date) if hasattr(self, 'training_date') else None,
-            'categories': self.categories
-        }
+        """Get model information (standardized format)"""
+        info = super().get_info()
+        # Add any SimpleClassifier specific info if needed
+        return info

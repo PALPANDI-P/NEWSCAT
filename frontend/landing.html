@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NEWSCAT - AI-Powered Multi-Modal News Classification Platform">
+    <title>NEWSCAT | AI News Classification</title>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Custom Tailwind Config -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        dark: {
+                            50: '#f7f7f8',
+                            100: '#ececf1',
+                            200: '#d9d9e3',
+                            300: '#b8b8c9',
+                            400: '#8e8ea0',
+                            500: '#6e6e80',
+                            600: '#565869',
+                            700: '#40414f',
+                            800: '#2a2b36',
+                            900: '#1a1b26',
+                            950: '#0a0b10',
+                        },
+                        brand: {
+                            purple: '#7c3aed',
+                            purpleLight: '#8b5cf6',
+                            indigo: '#6366f1',
+                            cyan: '#06b6d4',
+                        }
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                        'mesh-gradient': 'linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, rgba(99, 102, 241, 0.1) 50%, rgba(6, 182, 212, 0.05) 100%)',
+                    },
+                    boxShadow: {
+                        'glow': '0 0 30px rgba(124, 58, 237, 0.4)',
+                        'glow-lg': '0 0 50px rgba(124, 58, 237, 0.5)',
+                        'inner-glow': 'inset 0 0 20px rgba(124, 58, 237, 0.2)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* ============================================
+           CUSTOM STYLES & GLASSMORPHISM
+           ============================================ */
+        :root {
+            --bg-primary: #0a0b10;
+            --bg-secondary: #1a1b26;
+            --bg-card: rgba(26, 27, 38, 0.6);
+            --bg-card-hover: rgba(35, 36, 50, 0.7);
+            --purple: #7c3aed;
+            --purple-light: #8b5cf6;
+            --indigo: #6366f1;
+            --text-primary: #ffffff;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --border-subtle: rgba(255, 255, 255, 0.06);
+            --border-default: rgba(255, 255, 255, 0.1);
+            --border-hover: rgba(124, 58, 237, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Animated Mesh Gradient Background */
+        .mesh-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(124, 58, 237, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 40% 60%, rgba(6, 182, 212, 0.08) 0%, transparent 40%),
+                linear-gradient(180deg, var(--bg-primary) 0%, #0f1019 100%);
+            z-index: -1;
+        }
+
+        /* Animated floating orbs */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--purple);
+            top: -100px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: var(--indigo);
+            bottom: -50px;
+            right: -50px;
+            animation-delay: -5s;
+        }
+
+        .orb-3 {
+            width: 250px;
+            height: 250px;
+            background: #06b6d4;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(30px, -30px) scale(1.1);
+            }
+
+            66% {
+                transform: translate(-20px, 20px) scale(0.9);
+            }
+        }
+
+        /* Glassmorphism Card */
+        .glass-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+            box-shadow: 0 0 30px rgba(124, 58, 237, 0.3);
+            transform: translateY(-4px);
+        }
+
+        /* Gradient Text */
+        .gradient-text {
+            background: linear-gradient(135deg, var(--purple) 0%, var(--indigo) 50%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Glow Button */
+        .btn-glow {
+            background: linear-gradient(135deg, var(--purple) 0%, var(--indigo) 100%);
+            box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .btn-glow:hover {
+            box-shadow: 0 8px 40px rgba(124, 58, 237, 0.6);
+            transform: translateY(-2px);
+        }
+
+        /* Outline Button */
+        .btn-outline {
+            border: 1px solid var(--border-default);
+            background: transparent;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline:hover {
+            border-color: var(--purple);
+            background: rgba(124, 58, 237, 0.1);
+            box-shadow: 0 0 20px rgba(124, 58, 237, 0.2);
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 9999px;
+            color: #10b981;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #10b981;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.6;
+                transform: scale(1.3);
+            }
+        }
+
+        /* Feature Icon */
+        .feature-icon {
+            width: 56px;
+            height: 56px;
+            background: rgba(124, 58, 237, 0.15);
+            border: 1px solid rgba(124, 58, 237, 0.25);
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--purple-light);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover .feature-icon {
+            background: rgba(124, 58, 237, 0.3);
+            box-shadow: 0 0 25px rgba(124, 58, 237, 0.4);
+            transform: scale(1.05);
+        }
+
+        /* Number Counter Animation */
+        .counter {
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Smooth scroll padding for fixed nav */
+        section[id] {
+            scroll-margin-top: 5rem;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem !important;
+            }
+
+            .orb {
+                opacity: 0.2;
+            }
+
+            .orb-1 {
+                width: 250px;
+                height: 250px;
+            }
+
+            .orb-2 {
+                width: 200px;
+                height: 200px;
+            }
+
+            .orb-3 {
+                width: 150px;
+                height: 150px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Animated Background -->
+    <div class="mesh-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-dark-950/80 backdrop-blur-xl border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <a href="#" class="flex items-center gap-3 group">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-br from-brand-purple to-brand-indigo rounded-lg flex items-center justify-center font-bold text-white text-lg shadow-glow group-hover:shadow-glow-lg transition-shadow">
+                        N
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-xl font-bold text-white tracking-tight">NEWSCAT</span>
+                        <span class="text-[10px] text-dark-400 uppercase tracking-widest font-medium">AI Platform</span>
+                    </div>
+                </a>
+
+                <!-- Center: Status Badge -->
+                <div class="status-badge">
+                    <span class="text-xs">System Online</span>
+                </div>
+
+                <!-- Right: Navigation & CTA -->
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features"
+                        class="text-dark-300 hover:text-white transition-colors text-sm font-medium">Features</a>
+                    <a href="#how-it-works"
+                        class="text-dark-300 hover:text-white transition-colors text-sm font-medium">How it Works</a>
+                    <a href="#stats"
+                        class="text-dark-300 hover:text-white transition-colors text-sm font-medium">Stats</a>
+                    <a href="#contact"
+                        class="text-dark-300 hover:text-white transition-colors text-sm font-medium">Contact</a>
+                </div>
+
+                <!-- CTA Button -->
+                <a href="/index.html"
+                    class="btn-glow px-6 py-2.5 rounded-full text-white text-sm font-semibold inline-flex items-center gap-2">
+                    <span>Get Started</span>
+                    <i class="fas fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="pt-32 pb-20 px-4 relative">
+        <div class="max-w-7xl mx-auto text-center">
+            <!-- Badge -->
+            <div
+                class="inline-flex items-center gap-2 px-4 py-2 bg-brand-purple/10 border border-brand-purple/20 rounded-full mb-8">
+                <i class="fas fa-bolt text-yellow-400 text-xs"></i>
+                <span class="text-sm font-semibold text-brand-purpleLight">Powered by Advanced AI</span>
+            </div>
+
+            <!-- Main Heading -->
+            <h1 class="hero-title text-5xl sm:text-6xl lg:text-7xl font-bold leading-tight mb-6">
+                <span class="block text-white">Classify News</span>
+                <span class="block gradient-text">With Precision</span>
+            </h1>
+
+            <!-- Subtitle -->
+            <p class="text-lg sm:text-xl text-dark-300 max-w-3xl mx-auto mb-10 leading-relaxed">
+                Advanced multi-modal AI that accurately categorizes news across text, images, audio, and video.
+                Experience the future of content classification.
+            </p>
+
+            <!-- CTA Buttons -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="#"
+                    class="btn-glow px-8 py-4 rounded-full text-white font-semibold inline-flex items-center gap-2 text-lg shadow-glow">
+                    <i class="fas fa-rocket"></i>
+                    <span>Start Free Trial</span>
+                </a>
+                <a href="#features"
+                    class="btn-outline px-8 py-4 rounded-full text-white font-semibold inline-flex items-center gap-2 text-lg">
+                    <i class="fas fa-play-circle"></i>
+                    <span>Watch Demo</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 px-4">
+        <div class="max-w-7xl mx-auto">
+            <!-- Section Header -->
+            <div class="text-center mb-16">
+                <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">
+                    Powerful Features
+                </h2>
+                <p class="text-dark-300 max-w-2xl mx-auto">
+                    Everything you need to classify and analyze news content with cutting-edge AI technology
+                </p>
+            </div>
+
+            <!-- Features Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+                <!-- Feature 1: Multi-Modal -->
+                <div class="glass-card p-8 group">
+                    <div class="feature-icon mb-6">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Multi-Modal Analysis</h3>
+                    <p class="text-dark-300 leading-relaxed">
+                        Process text, images, audio, and video seamlessly. Our AI understands context across all media
+                        types for comprehensive classification.
+                    </p>
+                </div>
+
+                <!-- Feature 2: Real-Time -->
+                <div class="glass-card p-8 group">
+                    <div class="feature-icon mb-6">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Real-Time Processing</h3>
+                    <p class="text-dark-300 leading-relaxed">
+                        Get instant results with our optimized inference engine. Classify thousands of articles per
+                        minute with sub-second latency.
+                    </p>
+                </div>
+
+                <!-- Feature 3: Accurate -->
+                <div class="glass-card p-8 group">
+                    <div class="feature-icon mb-6">
+                        <i class="fas fa-bullseye"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">High Accuracy</h3>
+                    <p class="text-dark-300 leading-relaxed">
+                        Powered by ensemble models and deep learning. Achieve >95% accuracy with confidence scores and
+                        detailed explanations.
+                    </p>
+                </div>
+
+                <!-- Feature 4: Scalable -->
+                <div class="glass-card p-8 group">
+                    <div class="feature-icon mb-6">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Enterprise Scalable</h3>
+                    <p class="text-dark-300 leading-relaxed">
+                        From startups to Fortune 500. Scale horizontally with cloud-native architecture and auto-scaling
+                        capabilities.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="py-20 px-4">
+        <div class="max-w-7xl mx-auto">
+            <!-- Section Header -->
+            <div class="text-center mb-16">
+                <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">
+                    How It Works
+                </h2>
+                <p class="text-dark-300 max-w-2xl mx-auto">
+                    Three simple steps to integrate AI-powered classification into your workflow
+                </p>
+            </div>
+
+            <!-- Steps Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                <!-- Step 1 -->
+                <div class="glass-card p-8 text-center relative">
+                    <div
+                        class="absolute -top-4 left-1/2 transform -translate-x-1/2 w-8 h-8 bg-gradient-to-br from-brand-purple to-brand-indigo rounded-full flex items-center justify-center text-white font-bold text-sm shadow-glow">
+                        1
+                    </div>
+                    <div class="feature-icon mx-auto mb-6 mt-2">
+                        <i class="fas fa-upload"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-3">Upload Content</h3>
+                    <p class="text-dark-300 text-sm">
+                        Submit your news content in any format - text, image, audio, or video. Our system accepts
+                        multiple file types and sizes.
+                    </p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="glass-card p-8 text-center relative">
+                    <div
+                        class="absolute -top-4 left-1/2 transform -translate-x-1/2 w-8 h-8 bg-gradient-to-br from-brand-purple to-brand-indigo rounded-full flex items-center justify-center text-white font-bold text-sm shadow-glow">
+                        2
+                    </div>
+                    <div class="feature-icon mx-auto mb-6 mt-2">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-3">AI Processing</h3>
+                    <p class="text-dark-300 text-sm">
+                        Our advanced models analyze the content, extract key features, and classify it into the most
+                        relevant categories with confidence scores.
+                    </p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="glass-card p-8 text-center relative">
+                    <div
+                        class="absolute -top-4 left-1/2 transform -translate-x-1/2 w-8 h-8 bg-gradient-to-br from-brand-purple to-brand-indigo rounded-full flex items-center justify-center text-white font-bold text-sm shadow-glow">
+                        3
+                    </div>
+                    <div class="feature-icon mx-auto mb-6 mt-2">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-3">Get Results</h3>
+                    <p class="text-dark-300 text-sm">
+                        Receive structured output with category labels, confidence levels, summaries, and extracted
+                        metadata ready for your applications.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section id="stats" class="py-20 px-4">
+        <div class="max-w-7xl mx-auto">
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-6xl mx-auto">
+                <!-- Stat 1 -->
+                <div class="glass-card p-8 text-center">
+                    <div class="text-4xl lg:text-5xl font-bold gradient-text counter mb-2" data-target="99.7">0</div>
+                    <div class="text-sm text-dark-300 uppercase tracking-wider font-medium">Accuracy %</div>
+                </div>
+
+                <!-- Stat 2 -->
+                <div class="glass-card p-8 text-center">
+                    <div class="text-4xl lg:text-5xl font-bold gradient-text counter mb-2" data-target="50">0</div>
+                    <div class="text-sm text-dark-300 uppercase tracking-wider font-medium">Categories</div>
+                </div>
+
+                <!-- Stat 3 -->
+                <div class="glass-card p-8 text-center">
+                    <div class="text-4xl lg:text-5xl font-bold gradient-text counter mb-2" data-target="10000">0</div>
+                    <div class="text-sm text-dark-300 uppercase tracking-wider font-medium">Articles/Day</div>
+                </div>
+
+                <!-- Stat 4 -->
+                <div class="glass-card p-8 text-center">
+                    <div class="text-4xl lg:text-5xl font-bold gradient-text counter mb-2" data-target="150">0</div>
+                    <div class="text-sm text-dark-300 uppercase tracking-wider font-medium">ms Response</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 px-4">
+        <div class="max-w-4xl mx-auto">
+            <div class="glass-card p-12 text-center relative overflow-hidden">
+                <!-- Decorative glow -->
+                <div
+                    class="absolute top-0 left-1/2 transform -translate-x-1/2 w-96 h-1 bg-gradient-to-r from-transparent via-brand-purple to-transparent opacity-50">
+                </div>
+
+                <h2 class="text-3xl sm:text-4xl font-bold text-white mb-6">
+                    Ready to Transform Your News Classification?
+                </h2>
+                <p class="text-dark-300 text-lg mb-10 max-w-2xl mx-auto">
+                    Join thousands of organizations using NEWSCAT to automate content categorization with
+                    state-of-the-art AI.
+                </p>
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <a href="/index.html"
+                        class="btn-glow px-10 py-4 rounded-full text-white font-semibold inline-flex items-center gap-2 text-lg shadow-glow">
+                        <i class="fas fa-rocket"></i>
+                        <span>Get Started Free</span>
+                    </a>
+                    <a href="#"
+                        class="btn-outline px-10 py-4 rounded-full text-white font-semibold inline-flex items-center gap-2 text-lg">
+                        <i class="fas fa-calendar"></i>
+                        <span>Schedule Demo</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact" class="py-16 px-4 border-t border-white/5">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+                <!-- Column 1: Product -->
+                <div>
+                    <h4 class="text-white font-bold mb-4">Product</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-dark-300 hover:text-white transition-colors text-sm">Features</a>
+                        </li>
+                        <li><a href="#" class="text-dark-300 hover:text-white transition-colors text-sm">Pricing</a>
+                        </li>
+                        <li><a href="#" class="text-dark-300 hover:text-white transition-colors text-sm">API Docs</a>
+                        </li>
+                        <li><a href="#"
+                                class="text-dark-300 hover:text-white transition-colors text-sm">Integrations</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 2: Company -->
+                <div>
+                    <h4 class="text-white font-bold mb-4">Company</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-dark-300 hover:text-white transition-colors text-sm">About</a></li>
+                        <li><a href="#" class="text-dark-300 hover:text-white transition-colors text-sm">Blog</a></li>
+                        <li><a href="#" class="text-dark-300 hover:text-white transition-colors text-sm">Careers</a>
+                        </li>
+                        <li><a href="#" class="text-dark-300 hover:text-white transition-colors text-sm">Press</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 3: Resources -->
+                <div>
+                    <h4 class="text-white font-bold mb-4">Resources</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#"
+                                class="text-dark-300 hover:text-white transition-colors text-sm">Documentation</a></li>
+                        <li><a href="#" class="text-dark-300 hover:text-white transition-colors text-sm">Help Center</a>
+                        </li>
+                        <li><a href="#" class="text-dark-300 hover:text-white transition-colors text-sm">Community</a>
+                        </li>
+                        <li><a href="#" class="text-dark-300 hover:text-white transition-colors text-sm">Status</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 4: Legal -->
+                <div>
+                    <h4 class="text-white font-bold mb-4">Legal</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-dark-300 hover:text-white transition-colors text-sm">Privacy</a>
+                        </li>
+                        <li><a href="#" class="text-dark-300 hover:text-white transition-colors text-sm">Terms</a></li>
+                        <li><a href="#" class="text-dark-300 hover:text-white transition-colors text-sm">Security</a>
+                        </li>
+                        <li><a href="#" class="text-dark-300 hover:text-white transition-colors text-sm">Cookies</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Footer Bottom -->
+            <div class="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-8 h-8 bg-gradient-to-br from-brand-purple to-brand-indigo rounded-lg flex items-center justify-center font-bold text-white text-sm">
+                        N
+                    </div>
+                    <span class="text-white font-semibold">NEWSCAT</span>
+                </div>
+                <p class="text-dark-400 text-sm text-center md:text-right">
+                    © 2024 NEWSCAT. All rights reserved. AI-Powered News Classification.
+                </p>
+                <div class="flex items-center gap-4">
+                    <a href="#" class="text-dark-400 hover:text-white transition-colors">
+                        <i class="fab fa-twitter text-lg"></i>
+                    </a>
+                    <a href="#" class="text-dark-400 hover:text-white transition-colors">
+                        <i class="fab fa-github text-lg"></i>
+                    </a>
+                    <a href="#" class="text-dark-400 hover:text-white transition-colors">
+                        <i class="fab fa-linkedin text-lg"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        // Counter Animation
+        const counters = document.querySelectorAll('.counter');
+        const speed = 200;
+
+        const animateCounter = (counter) => {
+            const target = +counter.getAttribute('data-target');
+            const count = +counter.innerText;
+            const increment = target / speed;
+
+            if (count < target) {
+                counter.innerText = Math.ceil(count + increment);
+                setTimeout(() => animateCounter(counter), 10);
+            } else {
+                counter.innerText = target % 1 === 0 ? target : target.toFixed(1);
+            }
+        };
+
+        // Intersection Observer for counter animation
+        const observerOptions = {
+            threshold: 0.5,
+            rootMargin: '0px'
+        };
+
+        const counterObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    animateCounter(entry.target);
+                    counterObserver.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        counters.forEach(counter => {
+            counterObserver.observe(counter);
+        });
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Navbar scroll effect
+        const navbar = document.querySelector('nav');
+        let lastScroll = 0;
+
+        window.addEventListener('scroll', () => {
+            const currentScroll = window.pageYOffset;
+
+            if (currentScroll > 100) {
+                navbar.classList.add('bg-dark-950/95', 'shadow-lg');
+            } else {
+                navbar.classList.remove('bg-dark-950/95', 'shadow-lg');
+            }
+
+            lastScroll = currentScroll;
+        });
+    </script>
+</body>
+
+</html>

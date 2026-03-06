@@ -250,7 +250,14 @@ def _init_model_manager():
     from backend.models.model_manager import get_model_manager
     manager = get_model_manager()
     
-    # Optimized Classifier (Primary)
+    # Expert Classifier (Primary - New High-Accuracy Model)
+    def load_expert():
+        from backend.models.expert_classifier import ExpertNewsClassifier
+        return ExpertNewsClassifier()
+    
+    manager.register('expert', load_expert, preload=False)
+    
+    # Optimized Classifier (Fallback)
     def load_optimized():
         from backend.models.optimized_classifier import OptimizedEnsembleClassifier
         return OptimizedEnsembleClassifier(config=dict(app.config))
@@ -289,10 +296,14 @@ def _init_model_manager():
     
     manager.register('image_processor', load_image_processor, preload=False)
     
-    # Audio Processor
+    # Audio Processor (Simple version without ffmpeg dependency)
     def load_audio_processor():
-        from backend.models.audio_processor import AudioProcessor
-        return AudioProcessor(lazy_init=True)
+        try:
+            from backend.models.simple_audio_processor import SimpleAudioProcessor
+            return SimpleAudioProcessor(lazy_init=True)
+        except ImportError:
+            from backend.models.audio_processor import AudioProcessor
+            return AudioProcessor(lazy_init=True)
     
     manager.register('audio_processor', load_audio_processor, preload=False)
     
@@ -340,8 +351,8 @@ def get_classifier(use_enhanced: bool = True):
     manager = get_model_manager()
     
     if use_enhanced:
-        # Priority: Optimized > Ensemble > Simple
-        for model_name in ['optimized', 'ensemble', 'simple']:
+        # Priority: Expert > Optimized > Ensemble > Simple
+        for model_name in ['expert', 'optimized', 'ensemble', 'simple']:
             model = manager.get(model_name)
             if model is not None:
                 return model
@@ -363,6 +374,71 @@ def validate_text(text: str) -> tuple:
         return False, f"Text too long. Maximum {MAX_TEXT_LENGTH} characters."
     
     return True, text
+
+
+def _generate_summary(result: Dict, text: str) -> str:
+    """Generate a concise summary of the classification result"""
+    category = result.get('category', 'Unknown')
+    confidence = result.get('confidence', 0)
+    top_predictions = result.get('top_predictions', [])
+    
+    word_count = len(text.split())
+    summary = f"This content has been classified as {category.replace('_', ' ').title()} with {confidence:.1f}% confidence. "
+    summary += f"The analysis processed {word_count} words"
+    
+    if len(top_predictions) > 1:
+        secondary = top_predictions[1:4]  # Get 2nd-4th predictions
+        if secondary:
+            topics = [p['category'].replace('_', ' ').title() for p in secondary]
+            summary += f" and identified additional topics: {', '.join(topics)}."
+        else:
+            summary += "."
+    else:
+        summary += "."
+    
+    return summary
+
+
+def _extract_core_content(result: Dict, text: str) -> Dict:
+    """Extract core content analysis from classification result"""
+    core = {}
+    
+    # Main topic is the primary category
+    core['main_topic'] = result.get('category', 'Unknown').replace('_', ' ').title()
+    
+    # Sentiment based on confidence
+    confidence = result.get('confidence', 0)
+    if confidence >= 80:
+        core['sentiment'] = 'High Confidence'
+    elif confidence >= 60:
+        core['sentiment'] = 'Moderate Confidence'
+    elif confidence >= 40:
+        core['sentiment'] = 'Low Confidence'
+    else:
+        core['sentiment'] = 'Very Low Confidence'
+    
+    # Entity count from keywords
+    keywords = result.get('keywords', [])
+    core['entities_count'] = len(keywords)
+    
+    # Content metrics
+    core['content_length'] = len(text)
+    core['word_count'] = len(text.split())
+    
+    return core
+
+
+def _analyze_sentiment(result: Dict) -> str:
+    """Analyze sentiment from classification result"""
+    confidence = result.get('confidence', 0)
+    if confidence >= 80:
+        return 'High Confidence'
+    elif confidence >= 60:
+        return 'Moderate'
+    elif confidence >= 40:
+        return 'Low Confidence'
+    else:
+        return 'Very Low'
 
 
 def cleanup_temp_file(filepath: str):
@@ -439,7 +515,27 @@ def process_batch_items(items: List[str], classifier, use_cache: bool = True) ->
                     continue
             
             # Classify
-            result = classifier.classify(validated)
+            raw_result = classifier.classify(validated)
+            
+            # Handle both new ExpertClassifier format (object) and old format (dict)
+            if hasattr(raw_result, 'category'):
+                # Expert classifier format - convert to dict
+                result = {
+                    'category': raw_result.category,
+                    'category_display': raw_result.category_display,
+                    'confidence': raw_result.confidence,
+                    'confidence_level': raw_result.confidence_level,
+                    'subcategory': raw_result.subcategory,
+                    'topics': raw_result.topics,
+                    'keywords': raw_result.keywords,
+                    'entities': raw_result.entities,
+                    'summary': raw_result.summary,
+                    'analysis': raw_result.analysis,
+                }
+            else:
+                # Old format - already a dict
+                result = raw_result
+            
             result['index'] = i
             result['cached'] = False
             
@@ -466,6 +562,36 @@ def index():
     except Exception as e:
         logger.error(f"Error serving index.html: {e}")
         return create_error_response('Failed to serve main page', 'STATIC_FILE_ERROR', 500)
+
+
+@app.route('/landing')
+def landing():
+    """Serve the landing page"""
+    try:
+        return send_from_directory(app.static_folder, 'landing.html')
+    except Exception as e:
+        logger.error(f"Error serving landing.html: {e}")
+        return create_error_response('Failed to serve landing page', 'STATIC_FILE_ERROR', 500)
+
+
+@app.route('/index.html')
+def index_html():
+    """Serve the main page with .html extension"""
+    try:
+        return send_from_directory(app.static_folder, 'index.html')
+    except Exception as e:
+        logger.error(f"Error serving index.html: {e}")
+        return create_error_response('Failed to serve main page', 'STATIC_FILE_ERROR', 500)
+
+
+@app.route('/landing.html')
+def landing_html():
+    """Serve the landing page with .html extension"""
+    try:
+        return send_from_directory(app.static_folder, 'landing.html')
+    except Exception as e:
+        logger.error(f"Error serving landing.html: {e}")
+        return create_error_response('Failed to serve landing page', 'STATIC_FILE_ERROR', 500)
 
 
 @app.route('/css/<path:path>')
@@ -534,10 +660,35 @@ def classify():
             )
         
         # Classify
-        result = classifier.classify(text)
+        raw_result = classifier.classify(text)
+        
+        # Handle both new ExpertClassifier format (object) and old format (dict)
+        if hasattr(raw_result, 'category'):
+            # Expert classifier format - convert to dict
+            result = {
+                'category': raw_result.category,
+                'category_display': raw_result.category_display,
+                'confidence': raw_result.confidence,
+                'confidence_level': raw_result.confidence_level,
+                'subcategory': raw_result.subcategory,
+                'topics': raw_result.topics,
+                'keywords': raw_result.keywords,
+                'entities': raw_result.entities,
+                'summary': raw_result.summary,
+                'analysis': raw_result.analysis,
+            }
+        else:
+            # Old format - already a dict
+            result = raw_result
         
         processing_time = round((time.perf_counter() - start_time) * 1000, 2)
         
+        # Convert confidence to percentage if needed (0-1 scale to 0-100)
+        confidence_val = result.get('confidence', 0)
+        if confidence_val <= 1.0:
+            confidence_val = confidence_val * 100
+        
+        # Build response with new format
         response = {
             'model': classifier.name,
             'model_version': getattr(classifier, 'version', '1.0.0'),
@@ -545,13 +696,24 @@ def classify():
             'input_type': 'text',
             'cached': False,
             'processing_time_ms': processing_time,
+            'category': result.get('category', 'Unknown'),
+            'category_display': result.get('category_display', result.get('category', 'Unknown').title()),
+            'confidence': round(confidence_val, 2),
+            'confidence_level': result.get('confidence_level', 'unknown'),
+            'subcategory': result.get('subcategory'),
+            'summary': result.get('summary', ''),
+            'keywords': result.get('keywords', []),
+            'entities': result.get('entities', []),
+            'topics': result.get('topics', []),
+            'analysis': result.get('analysis', {}),
+            'content_length': len(text),
+            'word_count': len(text.split()),
         }
-        response.update(result)
         
         # Cache the result
         _response_cache.set(cache_key, response.copy())
         
-        logger.info(f"Classification: {response.get('category')} ({response.get('confidence', 0):.2%}) in {processing_time}ms")
+        logger.info(f"Classification: {response.get('category')} ({response.get('confidence', 0):.2f}%) in {processing_time}ms")
         return create_success_response(response)
         
     except Exception as e:
@@ -764,9 +926,12 @@ def cache_stats():
 # ===== IMAGE CLASSIFICATION =====
 @app.route('/api/classify/image', methods=['POST'])
 def classify_image():
-    """Optimized image classification endpoint"""
+    """Optimized image classification endpoint - accepts image files (jpg, png, gif, webp)"""
     temp_file = None
     start_time = time.perf_counter()
+    
+    # Allowed image file extensions
+    ALLOWED_IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff'}
     
     try:
         use_enhanced = True
@@ -805,15 +970,37 @@ def classify_image():
                 image_metadata = result.metadata or {}
                 image_metadata['source'] = 'url'
         
-        # Check for file upload
-        elif 'image' in request.files:
-            file = request.files['image']
+        # Check for file upload using 'file' or 'image' field names
+        elif 'file' in request.files or 'image' in request.files:
+            file = request.files.get('file') or request.files.get('image')
             
             if file.filename == '':
                 return create_error_response('No file selected', 'NO_FILE', 400)
             
+            # Check file size (limit to 50MB for images)
+            file.seek(0, 2)  # Seek to end
+            file_size = file.tell()
+            file.seek(0)  # Reset to beginning
+            max_size = app.config.get('MAX_IMAGE_SIZE', 50 * 1024 * 1024)
+            if file_size > max_size:
+                return create_error_response(
+                    f'Image file too large. Maximum size is {max_size / 1024 / 1024:.0f}MB.',
+                    'FILE_TOO_LARGE',
+                    400
+                )
+            
+            # Validate file extension
+            filename = file.filename.lower()
+            file_ext = os.path.splitext(filename)[1]
+            if file_ext not in ALLOWED_IMAGE_EXTENSIONS:
+                return create_error_response(
+                    f'Invalid file type. Allowed types: {", ".join(ALLOWED_IMAGE_EXTENSIONS)}',
+                    'INVALID_FILE_TYPE',
+                    400
+                )
+            
             # Save to temp file
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=file_ext)
             file.save(temp_file.name)
             temp_file.close()
             
@@ -830,10 +1017,11 @@ def classify_image():
             image_metadata = result.metadata or {}
             image_metadata['source'] = 'upload'
             image_metadata['filename'] = file.filename
+            image_metadata['file_type'] = 'image'
         
         else:
             return create_error_response(
-                'No image provided. Send file upload or image_url in JSON.',
+                'No image provided. Send file upload with key "image" or "file", or include image_url in JSON.',
                 'NO_IMAGE',
                 400
             )
@@ -856,20 +1044,55 @@ def classify_image():
                 503
             )
         
-        result = classifier.classify(extracted_text)
+        raw_result = classifier.classify(extracted_text)
+        
+        # Handle both new ExpertClassifier format (object) and old format (dict)
+        if hasattr(raw_result, 'category'):
+            # Expert classifier format - convert to dict
+            result = {
+                'category': raw_result.category,
+                'category_display': raw_result.category_display,
+                'confidence': raw_result.confidence,
+                'confidence_level': raw_result.confidence_level,
+                'subcategory': raw_result.subcategory,
+                'topics': raw_result.topics,
+                'keywords': raw_result.keywords,
+                'entities': raw_result.entities,
+                'summary': raw_result.summary,
+                'analysis': raw_result.analysis,
+            }
+        else:
+            # Old format - already a dict
+            result = raw_result
+        
         processing_time = round((time.perf_counter() - start_time) * 1000, 2)
         
-        response = {
+        # Build standardized response matching text endpoint format (flat structure)
+        response_data = {
             'model': classifier.name,
+            'model_version': getattr(classifier, 'version', '1.0.0'),
+            'enhanced': use_enhanced,
             'input_type': 'image',
+            'cached': False,
+            'processing_time_ms': processing_time,
+            'category': result.get('category', 'Unknown'),
+            'category_display': result.get('category_display', result.get('category', 'Unknown').title()),
+            'confidence': result.get('confidence', 0),
+            'confidence_level': result.get('confidence_level', 'unknown'),
+            'subcategory': result.get('subcategory'),
+            'summary': result.get('summary', ''),
+            'keywords': result.get('keywords', []),
+            'entities': result.get('entities', []),
+            'topics': result.get('topics', []),
+            'analysis': result.get('analysis', {}),
+            'content_length': len(extracted_text),
+            'word_count': len(extracted_text.split()),
             'extracted_text': extracted_text[:1000],
             'image_metadata': image_metadata,
-            'processing_time_ms': processing_time
         }
-        response.update(result)
         
-        logger.info(f"Image classification: {response.get('category')} ({response.get('confidence', 0):.2%})")
-        return create_success_response(response)
+        logger.info(f"Image classification: {response_data.get('category')} ({response_data.get('confidence', 0):.2%})")
+        return create_success_response(response_data)
         
     except Exception as e:
         logger.error(f"Image classification error: {e}", exc_info=True)
@@ -883,9 +1106,12 @@ def classify_image():
 # ===== AUDIO CLASSIFICATION =====
 @app.route('/api/classify/audio', methods=['POST'])
 def classify_audio():
-    """Optimized audio classification endpoint"""
+    """Optimized audio classification endpoint - accepts audio files (mp3, wav, ogg, m4a)"""
     temp_file = None
     start_time = time.perf_counter()
+    
+    # Allowed audio file extensions
+    ALLOWED_AUDIO_EXTENSIONS = {'.mp3', '.wav', '.ogg', '.m4a', '.flac', '.webm', '.aac', '.wma'}
     
     try:
         use_enhanced = True
@@ -904,23 +1130,37 @@ def classify_audio():
                 installation_instructions=processor.get_installation_instructions() if processor else None
             )
         
-        # Check for file upload
-        if 'audio' in request.files:
-            file = request.files['audio']
+        # Check for file upload using 'file' or 'audio' field names
+        if 'file' in request.files or 'audio' in request.files:
+            file = request.files.get('file') or request.files.get('audio')
             
             if file.filename == '':
                 return create_error_response('No file selected', 'NO_FILE', 400)
             
-            # Get file extension
+            # Check file size (limit to 100MB for audio)
+            file.seek(0, 2)  # Seek to end
+            file_size = file.tell()
+            file.seek(0)  # Reset to beginning
+            max_size = app.config.get('MAX_AUDIO_SIZE', 100 * 1024 * 1024)
+            if file_size > max_size:
+                return create_error_response(
+                    f'Audio file too large. Maximum size is {max_size / 1024 / 1024:.0f}MB.',
+                    'FILE_TOO_LARGE',
+                    400
+                )
+            
+            # Validate file extension
             filename = file.filename.lower()
-            ext = '.wav'
-            for audio_ext in ['.mp3', '.m4a', '.flac', '.ogg', '.webm']:
-                if filename.endswith(audio_ext):
-                    ext = audio_ext
-                    break
+            file_ext = os.path.splitext(filename)[1]
+            if file_ext not in ALLOWED_AUDIO_EXTENSIONS:
+                return create_error_response(
+                    f'Invalid file type. Allowed types: {", ".join(ALLOWED_AUDIO_EXTENSIONS)}',
+                    'INVALID_FILE_TYPE',
+                    400
+                )
             
             # Save to temp file
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=file_ext)
             file.save(temp_file.name)
             temp_file.close()
             
@@ -937,11 +1177,12 @@ def classify_audio():
             audio_metadata = result.metadata or {}
             audio_metadata['source'] = 'upload'
             audio_metadata['filename'] = file.filename
+            audio_metadata['file_type'] = 'audio'
             audio_metadata['duration'] = result.duration
         
         else:
             return create_error_response(
-                'No audio provided. Send file upload.',
+                'No audio provided. Send file upload with key "audio" or "file".',
                 'NO_AUDIO',
                 400
             )
@@ -964,20 +1205,55 @@ def classify_audio():
                 503
             )
         
-        result = classifier.classify(extracted_text)
+        raw_result = classifier.classify(extracted_text)
+        
+        # Handle both new ExpertClassifier format (object) and old format (dict)
+        if hasattr(raw_result, 'category'):
+            # Expert classifier format - convert to dict
+            result = {
+                'category': raw_result.category,
+                'category_display': raw_result.category_display,
+                'confidence': raw_result.confidence,
+                'confidence_level': raw_result.confidence_level,
+                'subcategory': raw_result.subcategory,
+                'topics': raw_result.topics,
+                'keywords': raw_result.keywords,
+                'entities': raw_result.entities,
+                'summary': raw_result.summary,
+                'analysis': raw_result.analysis,
+            }
+        else:
+            # Old format - already a dict
+            result = raw_result
+        
         processing_time = round((time.perf_counter() - start_time) * 1000, 2)
         
-        response = {
+        # Build standardized response matching text endpoint format (flat structure)
+        response_data = {
             'model': classifier.name,
+            'model_version': getattr(classifier, 'version', '1.0.0'),
+            'enhanced': use_enhanced,
             'input_type': 'audio',
+            'cached': False,
+            'processing_time_ms': processing_time,
+            'category': result.get('category', 'Unknown'),
+            'category_display': result.get('category_display', result.get('category', 'Unknown').title()),
+            'confidence': result.get('confidence', 0),
+            'confidence_level': result.get('confidence_level', 'unknown'),
+            'subcategory': result.get('subcategory'),
+            'summary': result.get('summary', ''),
+            'keywords': result.get('keywords', []),
+            'entities': result.get('entities', []),
+            'topics': result.get('topics', []),
+            'analysis': result.get('analysis', {}),
+            'content_length': len(extracted_text),
+            'word_count': len(extracted_text.split()),
             'extracted_text': extracted_text[:1000],
             'audio_metadata': audio_metadata,
-            'processing_time_ms': processing_time
         }
-        response.update(result)
         
-        logger.info(f"Audio classification: {response.get('category')} ({response.get('confidence', 0):.2%})")
-        return create_success_response(response)
+        logger.info(f"Audio classification: {response_data.get('category')} ({response_data.get('confidence', 0):.2%})")
+        return create_success_response(response_data)
         
     except Exception as e:
         logger.error(f"Audio classification error: {e}", exc_info=True)
@@ -991,9 +1267,12 @@ def classify_audio():
 # ===== VIDEO CLASSIFICATION =====
 @app.route('/api/classify/video', methods=['POST'])
 def classify_video():
-    """Optimized video classification endpoint"""
+    """Optimized video classification endpoint - accepts video files (mp4, avi, mov, webm)"""
     temp_file = None
     start_time = time.perf_counter()
+    
+    # Allowed video file extensions
+    ALLOWED_VIDEO_EXTENSIONS = {'.mp4', '.avi', '.mov', '.webm', '.mkv', '.flv', '.wmv'}
     
     try:
         use_enhanced = True
@@ -1011,23 +1290,37 @@ def classify_video():
                 503
             )
         
-        # Check for file upload
-        if 'video' in request.files:
-            file = request.files['video']
+        # Check for file upload using 'file' or 'video' field names
+        if 'file' in request.files or 'video' in request.files:
+            file = request.files.get('file') or request.files.get('video')
             
             if file.filename == '':
                 return create_error_response('No file selected', 'NO_FILE', 400)
             
-            # Get file extension
+            # Check file size (limit to 200MB for video)
+            file.seek(0, 2)  # Seek to end
+            file_size = file.tell()
+            file.seek(0)  # Reset to beginning
+            max_size = app.config.get('MAX_VIDEO_SIZE', 200 * 1024 * 1024)
+            if file_size > max_size:
+                return create_error_response(
+                    f'Video file too large. Maximum size is {max_size / 1024 / 1024:.0f}MB.',
+                    'FILE_TOO_LARGE',
+                    400
+                )
+            
+            # Validate file extension
             filename = file.filename.lower()
-            ext = '.mp4'
-            for video_ext in ['.avi', '.mov', '.webm', '.mkv']:
-                if filename.endswith(video_ext):
-                    ext = video_ext
-                    break
+            file_ext = os.path.splitext(filename)[1]
+            if file_ext not in ALLOWED_VIDEO_EXTENSIONS:
+                return create_error_response(
+                    f'Invalid file type. Allowed types: {", ".join(ALLOWED_VIDEO_EXTENSIONS)}',
+                    'INVALID_FILE_TYPE',
+                    400
+                )
             
             # Save to temp file
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=file_ext)
             file.save(temp_file.name)
             temp_file.close()
             
@@ -1044,12 +1337,13 @@ def classify_video():
             video_metadata = result.metadata or {}
             video_metadata['source'] = 'upload'
             video_metadata['filename'] = file.filename
+            video_metadata['file_type'] = 'video'
             video_metadata['duration'] = result.duration
             video_metadata['frames_processed'] = result.frames_processed
         
         else:
             return create_error_response(
-                'No video provided. Send file upload.',
+                'No video provided. Send file upload with key "video" or "file".',
                 'NO_VIDEO',
                 400
             )
@@ -1072,20 +1366,55 @@ def classify_video():
                 503
             )
         
-        result = classifier.classify(extracted_text)
+        raw_result = classifier.classify(extracted_text)
+        
+        # Handle both new ExpertClassifier format (object) and old format (dict)
+        if hasattr(raw_result, 'category'):
+            # Expert classifier format - convert to dict
+            result = {
+                'category': raw_result.category,
+                'category_display': raw_result.category_display,
+                'confidence': raw_result.confidence,
+                'confidence_level': raw_result.confidence_level,
+                'subcategory': raw_result.subcategory,
+                'topics': raw_result.topics,
+                'keywords': raw_result.keywords,
+                'entities': raw_result.entities,
+                'summary': raw_result.summary,
+                'analysis': raw_result.analysis,
+            }
+        else:
+            # Old format - already a dict
+            result = raw_result
+        
         processing_time = round((time.perf_counter() - start_time) * 1000, 2)
         
-        response = {
+        # Build standardized response matching text endpoint format (flat structure)
+        response_data = {
             'model': classifier.name,
+            'model_version': getattr(classifier, 'version', '1.0.0'),
+            'enhanced': use_enhanced,
             'input_type': 'video',
+            'cached': False,
+            'processing_time_ms': processing_time,
+            'category': result.get('category', 'Unknown'),
+            'category_display': result.get('category_display', result.get('category', 'Unknown').title()),
+            'confidence': result.get('confidence', 0),
+            'confidence_level': result.get('confidence_level', 'unknown'),
+            'subcategory': result.get('subcategory'),
+            'summary': result.get('summary', ''),
+            'keywords': result.get('keywords', []),
+            'entities': result.get('entities', []),
+            'topics': result.get('topics', []),
+            'analysis': result.get('analysis', {}),
+            'content_length': len(extracted_text),
+            'word_count': len(extracted_text.split()),
             'extracted_text': extracted_text[:1000],
             'video_metadata': video_metadata,
-            'processing_time_ms': processing_time
         }
-        response.update(result)
         
-        logger.info(f"Video classification: {response.get('category')} ({response.get('confidence', 0):.2%})")
-        return create_success_response(response)
+        logger.info(f"Video classification: {response_data.get('category')} ({response_data.get('confidence', 0):.2%})")
+        return create_success_response(response_data)
         
     except Exception as e:
         logger.error(f"Video classification error: {e}", exc_info=True)

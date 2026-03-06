@@ -21,9 +21,32 @@ A production-ready news classification system using hybrid machine learning appr
 
 ## Quick Start
 
-### 1. Start the Server
+### 🚀 Recommended: Automated Verification & Startup
 
-**Option A: Using PowerShell (Recommended)**
+We've included a comprehensive verification script that checks everything and starts the server automatically:
+
+```bash
+python run_verification.py
+```
+
+This script will:
+- ✓ Check Python version compatibility
+- ✓ Verify all dependencies are installed
+- ✓ Start the server automatically
+- ✓ Test all API endpoints
+- ✓ Show you exactly how to access the application
+
+**Options**:
+```bash
+python run_verification.py --verbose    # Show detailed output
+python run_verification.py --skip-start # Only check, don't start server
+```
+
+### Alternative: Manual Startup
+
+If you prefer to start manually:
+
+**Option A: Using PowerShell (Windows)**
 ```powershell
 .\run.ps1
 ```
@@ -33,18 +56,26 @@ A production-ready news classification system using hybrid machine learning appr
 python backend/app.py
 ```
 
+**Option C: Using server.py**
+```bash
+python server.py
+```
+
 The server will start on `http://127.0.0.1:5000`
 
-### 2. Access the Application
-- **Frontend UI**: Open `http://localhost:5000` in your browser
+### Access the Application
+
+- **Main Application**: Open `http://127.0.0.1:5000` in your browser
+- **Landing Page**: `frontend/landing.html` (served from same URL)
 - **Paste news text** and click "Analyze" to classify
 - **Toggle Enhanced Model** to switch between classifiers
 
-### 3. Try the API
+### Try the API
+
 ```bash
 curl -X POST http://localhost:5000/api/classify ^
   -H "Content-Type: application/json" ^
-  -d "{\"text\":\"Apple reported record earnings today\",\"enhanced\":false}"
+  -d "{\"text\":\"Apple reported record earnings today\"}"
 ```
 
 ## Project Structure
@@ -68,7 +99,10 @@ NEWSCAT_VSCODE/
 ├── data/
 │   ├── models/pretrained/     # Saved models
 │   └── training/              # Training datasets
-├── run.ps1                    # Startup script
+├── run.ps1                    # PowerShell startup script
+├── run_verification.py        # ⭐ Comprehensive verification & startup
+├── server.py                  # Simple server launcher
+├── SETUP_GUIDE.md             # Detailed setup instructions
 └── requirements.txt           # Python dependencies
 ```
 
@@ -220,14 +254,24 @@ See `requirements.txt` for complete list.
 ✅ API: All endpoints working  
 ✅ Configuration: Centralized in config.py  
 
+## 📚 Additional Documentation
+
+- **[SETUP_GUIDE.md](SETUP_GUIDE.md)** - Comprehensive setup and troubleshooting guide
+- **[PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)** - Technical architecture and implementation details
+- **[TESTING_REPORT.md](TESTING_REPORT.md)** - Test results and coverage
+
 ## Support
 
 For issues:
-1. Check `logs/newscat.log`
-2. Verify all imports work: `python -c "from backend.app import app; print('OK')"`
-3. Test API: `curl http://localhost:5000/api/health`
+1. Run verification: `python run_verification.py --verbose`
+2. Check `logs/newscat.log`
+3. Verify imports: `python -c "from backend.app import app; print('OK')"`
+4. Test API: `curl http://localhost:5000/api/health`
+5. Consult [SETUP_GUIDE.md](SETUP_GUIDE.md#troubleshooting)
 
 ---
+
+**Need Help?** Check the [SETUP_GUIDE.md](SETUP_GUIDE.md) for detailed troubleshooting.
 
 **Last Updated**: February 16, 2026  
 **Version**: 2.0.0  

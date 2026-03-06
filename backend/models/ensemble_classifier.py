@@ -42,7 +42,6 @@ import warnings
 warnings.filterwarnings('ignore', category=UserWarning)
 
 from backend.models.base_classifier import BaseNewsClassifier
-from backend.models.advanced_text_processor import AdvancedTextProcessor
 from backend.config import Config
 
 logger = logging.getLogger(__name__)
@@ -96,13 +95,8 @@ class EnsembleNewsClassifier(BaseNewsClassifier):
         super().__init__(name, config)
         self.version = "2.0.0"
         
-        # Text processor - with fallback if spaCy not available
-        try:
-            self.text_processor = AdvancedTextProcessor(use_spacy=True, use_nltk=True)
-        except Exception as e:
-            logger.warning(f"AdvancedTextProcessor initialization failed: {e}, using basic processor")
-            from backend.models.text_processor import TextProcessor
-            self.text_processor = TextProcessor(use_advanced=True)
+        # Basic text processor for ensemble classifier
+        self.text_processor = None  # Use built-in string operations
         
         # TF-IDF Vectorizer with optimized parameters
         self.vectorizer = TfidfVectorizer(

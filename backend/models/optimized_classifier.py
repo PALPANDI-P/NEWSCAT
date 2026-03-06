@@ -202,14 +202,29 @@ class OptimizedEnsembleClassifier(BaseNewsClassifier):
             'politics': {
                 'high': ['election', 'vote', 'voting', 'president', 'congress', 'senate', 'parliament',
                         'supreme court', 'white house', 'administration', 'legislation', 'impeachment',
-                        'electoral', 'ballot', 'polling', 'campaign trail'],
+                        'electoral', 'ballot', 'polling', 'campaign trail',
+                        'president announced', 'prime minister', 'chancellor', 'premier',
+                        'government announced', 'official statement', 'press conference',
+                        'state of the union', 'executive order', 'presidential decree',
+                        'cabinet meeting', 'national assembly', 'constituency',
+                        'political leader', 'head of state', 'chief of staff',
+                        'government policy', 'public policy', 'state policy',
+                        'lawmaker', 'legislator', 'parliamentarian', 'senator',
+                        'representative', 'congressman', 'congresswoman', 'mp'],
                 'medium': ['government', 'law', 'policy', 'minister', 'democrat', 'republican',
                           'political', 'prime minister', 'governor', 'mayor', 'senator',
                           'representative', 'bill', 'amendment', 'justice', 'ruling',
                           'diplomat', 'embassy', 'treaty', 'reform', 'conservative', 'liberal',
                           'progressive', 'socialist', 'capitalist', 'democracy', 'republic',
-                          'bipartisan', 'filibuster', 'caucus', 'primary', 'constituency'],
-                'low': ['campaign', 'party', 'vote', 'poll', 'candidate', 'politician']
+                          'bipartisan', 'filibuster', 'caucus', 'primary', 'constituency',
+                          'political party', 'election campaign', 'voter', 'electorate',
+                          'government agency', 'federal agency', 'state department',
+                          'foreign policy', 'domestic policy', 'economic policy',
+                          'social policy', 'healthcare policy', 'education policy',
+                          'immigration policy', 'environmental policy', 'tax policy',
+                          'budget proposal', 'infrastructure plan', 'jobs plan'],
+                'low': ['campaign', 'party', 'vote', 'poll', 'candidate', 'politician',
+                        'gov', 'official', 'public', 'national', 'federal', 'state']
             },
             'business': {
                 'high': ['stock market', 'wall street', 'ipo', 'merger', 'acquisition', 'earnings',
@@ -227,14 +242,25 @@ class OptimizedEnsembleClassifier(BaseNewsClassifier):
             'entertainment': {
                 'high': ['oscar', 'grammy', 'emmy', 'academy award', 'golden globe', 'box office',
                         'premiere', 'blockbuster', 'streaming', 'tony award', 'sundance',
-                        'film festival', 'red carpet', 'celebrity couple'],
+                        'film festival', 'red carpet', 'celebrity couple', 'movie star',
+                        'hollywood premiere', 'box office hit', 'streaming service', 'entertainment industry',
+                        'film industry', 'music industry', 'television series', 'netflix original',
+                        'hbo series', 'amazon prime video', 'disney plus', 'apple tv',
+                        'movie theater', 'cinema chain', 'talent agency', 'entertainment news',
+                        'celebrity gossip', 'entertainment weekly', 'variety magazine',
+                        'the hollywood reporter', 'film critic', 'movie review', 'trailer release'],
                 'medium': ['movie', 'film', 'music', 'celebrity', 'actor', 'actress', 'singer',
                           'concert', 'hollywood', 'bollywood', 'netflix', 'show', 'entertainment',
                           'award', 'album', 'artist', 'theater', 'cinema', 'director', 'producer',
                           'series', 'episode', 'season', 'release', 'soundtrack', 'band',
                           'tour', 'performance', 'stage', 'drama', 'comedy', 'thriller',
-                          'disney', 'hbo', 'amazon prime', 'spotify', 'youtube'],
-                'low': ['song', 'entertain', 'celebrity', 'star', 'tv', 'show']
+                          'disney', 'hbo', 'amazon prime', 'spotify', 'youtube',
+                          'television', 'tv show', 'sitcom', 'drama series', 'reality tv',
+                          'streaming platform', 'video on demand', 'on demand', 'pay per view',
+                          'talent show', 'competition show', 'talk show', 'late night',
+                          'morning show', 'news entertainment', 'pop culture', 'viral video',
+                          'social media star', 'influencer', 'content creator', 'youtuber'],
+                'low': ['song', 'entertain', 'celebrity', 'star', 'tv', 'show', 'film', 'movie']
             },
             
             # === EXTENDED CATEGORIES ===
@@ -312,14 +338,21 @@ class OptimizedEnsembleClassifier(BaseNewsClassifier):
             'finance': {
                 'high': ['cryptocurrency', 'bitcoin', 'ethereum', 'forex', 'trading', 'hedge fund',
                         'private equity', 'asset management', 'financial markets', 'bond market',
-                        'commodity trading', 'derivatives', 'options trading', 'forex market'],
+                        'commodity trading', 'derivatives', 'options trading', 'forex market',
+                        'central bank', 'federal reserve', 'monetary policy', 'interest rate',
+                        'inflation', 'currency', 'exchange rate', 'treasury bond', 'stock market',
+                        'wall street', 'market cap', 'share price', 'dividend yield', 'ipo',
+                        'merger', 'acquisition', 'buyout', 'venture capital', 'private placement'],
                 'medium': ['finance', 'financial', 'investment', 'investor', 'portfolio', 'asset',
                           'trading', 'trader', 'broker', 'stock exchange', 'nasdaq', 'nyse',
                           'mutual fund', 'etf', 'index fund', 'bond', 'treasury', 'yield',
                           'interest', 'loan', 'mortgage', 'credit', 'debt', 'banking',
                           'fintech', 'digital banking', 'robo advisor', 'wealth management',
-                          'retirement', 'pension', '401k', 'ira', 'tax planning'],
-                'low': ['bank', 'money', 'savings', 'account', 'credit card']
+                          'retirement', 'pension', '401k', 'ira', 'tax planning',
+                          'economy', 'economic', 'gdp', 'recession', 'growth', 'forecast',
+                          'supply chain', 'corporate earnings', 'quarterly results', 'revenue',
+                          'profit margin', 'shareholder value', 'capital gains', 'tax policy'],
+                'low': ['bank', 'money', 'savings', 'account', 'credit card', 'cash', 'fund']
             },
             'automotive': {
                 'high': ['electric vehicle', 'ev', 'autonomous driving', 'self-driving car', 'car launch',
@@ -457,14 +490,24 @@ class OptimizedEnsembleClassifier(BaseNewsClassifier):
                 'high': ['murder', 'homicide', 'robbery', 'burglary', 'assault', 'kidnapping',
                         'arson', 'fraud', 'embezzlement', 'organized crime', 'serial killer',
                         'mass shooting', 'violent crime', 'drug trafficking', 'human trafficking',
-                        'money laundering', 'racketeering', 'extortion', 'blackmail'],
+                        'money laundering', 'racketeering', 'extortion', 'blackmail',
+                        'armed robbery', 'aggravated assault', 'home invasion', 'carjacking',
+                        'police arrested', 'suspect charged', 'criminal investigation',
+                        'crime scene', 'police investigation', 'detectives investigating',
+                        'law enforcement', 'fbi investigation', 'police chief', 'sheriff',
+                        'crime spree', 'criminal enterprise', 'gang activity', 'drug cartel'],
                 'medium': ['crime', 'criminal', 'arrest', 'police', 'investigation', 'suspect',
                           'victim', 'theft', 'stolen', 'illegal', 'felony', 'misdemeanor',
                           'gang', 'drug dealer', 'weapon', 'firearm', 'shooting', 'stabbing',
                           'domestic violence', 'hate crime', 'white-collar crime', 'cybercrime',
                           'identity theft', 'credit card fraud', 'bank robbery', 'carjacking',
-                          'home invasion', 'assault and battery', 'sexual assault', 'vandalism'],
-                'low': ['offense', 'illegal', 'charged', 'detained', 'criminal', 'police']
+                          'home invasion', 'assault and battery', 'sexual assault', 'vandalism',
+                          'burglary', 'larceny', 'shoplifting', 'vandalism', 'graffiti',
+                          'prostitution', 'drug possession', 'parole violation', 'probation',
+                          'arrest warrant', 'search warrant', 'crime scene tape', 'police raid',
+                          'undercover operation', 'witness protection', 'crime lab', 'forensic'],
+                'low': ['offense', 'illegal', 'charged', 'detained', 'criminal', 'police',
+                        'court', 'judge', 'prosecutor', 'defense attorney', 'trial']
             },
             'disasters': {
                 'high': ['earthquake', 'hurricane', 'tsunami', 'wildfire', 'tornado', 'flood',
@@ -481,14 +524,23 @@ class OptimizedEnsembleClassifier(BaseNewsClassifier):
             'protests': {
                 'high': ['protest', 'demonstration', 'rally', 'march', 'strike', 'civil unrest',
                         'riot', 'uprising', 'activism', 'activist', 'boycott', 'sit-in', 'walkout',
-                        'occupy movement', 'street protest', 'mass demonstration'],
+                        'occupy movement', 'street protest', 'mass demonstration',
+                        'environmental protest', 'protesters gathered', 'police confrontation',
+                        'demonstrators clashed', 'protest camp', 'protesters demanded',
+                        'march against', 'rally for', 'protest movement', 'grassroots movement',
+                        'protesters took to the streets', 'demonstration outside',
+                        'protest organizers', 'protest leaders', 'protest signs'],
                 'medium': ['demonstrator', 'protester', 'crowd', 'gathering', 'movement', 'cause',
                           'demand', 'slogan', 'placard', 'banner', 'civil disobedience', 'labor strike',
                           'union strike', 'general strike', 'hunger strike', 'protest march',
                           'anti-government', 'anti-war', 'climate protest', 'student protest',
                           'workers protest', 'political protest', 'social movement', 'advocacy group',
-                          'tear gas', 'rubber bullets', 'police clash', 'arrests at protest'],
-                'low': ['unrest', 'dissent', 'opposition', 'movement', 'protest']
+                          'tear gas', 'rubber bullets', 'police clash', 'arrests at protest',
+                          'protesters chanted', 'protesters blocked', 'protesters demanded',
+                          'demonstration turned violent', 'protest dispersal', 'riot police',
+                          'protest permit', 'protest route', 'protest organizers', 'counter-protest',
+                          'protest camp', 'protesters clashed', 'protesters gathered'],
+                'low': ['unrest', 'dissent', 'opposition', 'movement', 'protest', 'demonstrate']
             },
             
             # === HUMAN-CENTRIC CATEGORIES ===
@@ -652,10 +704,10 @@ class OptimizedEnsembleClassifier(BaseNewsClassifier):
                 pattern = r'\b(' + '|'.join(re.escape(kw) for kw in all_keywords) + r')\b'
                 self._category_patterns[category] = re.compile(pattern, re.IGNORECASE)
         
-        # Keyword weights for scoring
+        # Keyword weights for scoring (enhanced for better discrimination)
         self._keyword_weights = {
-            'high': 4.0,
-            'medium': 2.0,
+            'high': 6.0,
+            'medium': 2.5,
             'low': 1.0
         }
         
@@ -1304,14 +1356,37 @@ class OptimizedEnsembleClassifier(BaseNewsClassifier):
                 category = str(classes[pred_idx])
                 confidence = float(proba[pred_idx])
                 
-                # Multi-layer confidence enhancement
-                if confidence < 0.6:
-                    rule_result = self._advanced_rule_based_classify(text)
-                    if rule_result['confidence'] > 0.5:
-                        weight = min(0.4, rule_result['confidence'] * 0.5)
-                        confidence = confidence * (1 - weight) + rule_result['confidence'] * weight
-                        if rule_result['confidence'] > confidence:
-                            category = rule_result['category']
+                # Multi-layer confidence enhancement with keyword override
+                # Always check rule-based classifier for keyword strength
+                rule_result = self._advanced_rule_based_classify(text)
+                rule_confidence = rule_result['confidence']
+                rule_category = rule_result['category']
+                
+                # Count high-priority keyword matches for the ML-predicted category
+                ml_high_matches = sum(1 for kw in self._category_keywords.get(category, {}).get('high', [])
+                                     if kw in text.lower())
+                
+                # If rule-based has strong signal (high confidence OR many high-priority matches)
+                # AND rule category differs from ML category, consider override
+                if rule_category != category:
+                    # Strong override conditions
+                    strong_rule_signal = (rule_confidence > 0.65 or
+                                         (rule_confidence > 0.5 and rule_result.get('high_match_count', 0) >= 2))
+                    
+                    # If ML confidence is moderate but rule is strong, override
+                    if strong_rule_signal and confidence < 0.8:
+                        weight = 0.5 if rule_confidence > 0.65 else 0.3
+                        confidence = confidence * (1 - weight) + rule_confidence * weight
+                        category = rule_category
+                    # Even if ML confidence is high, check if rule has very strong keyword evidence
+                    elif rule_confidence > 0.75 and rule_result.get('high_match_count', 0) >= 2:
+                        # Blend with bias towards rule if it has multiple high-priority matches
+                        confidence = confidence * 0.7 + rule_confidence * 0.3
+                        if rule_confidence > confidence:
+                            category = rule_category
+                # If same category, blend confidences for better accuracy
+                elif rule_confidence > confidence:
+                    confidence = confidence * 0.8 + rule_confidence * 0.2
                 
                 # Get top 5 predictions
                 top_indices = np.argsort(proba)[-5:][::-1]
@@ -1380,9 +1455,17 @@ class OptimizedEnsembleClassifier(BaseNewsClassifier):
             base_confidence = max_score / total_score if total_score > 0 else 0.3
             
             high_matches = len(keyword_matches[best_category])
-            boost = min(0.2, high_matches * 0.05)
+            medium_matches = len([k for k in keyword_matches[best_category] if any(k in m for m in self._category_keywords[best_category].get('medium', []))])
             
-            confidence = min(0.95, max(0.35, base_confidence * 0.7 + 0.25 + boost))
+            # Enhanced confidence calculation with tiered boosts
+            high_boost = min(0.35, high_matches * 0.08)  # Increased boost for high-priority matches
+            medium_boost = min(0.15, medium_matches * 0.03)
+            
+            # If we have at least one high-priority match, give additional confidence
+            if high_matches > 0:
+                confidence = min(0.98, max(0.4, base_confidence * 0.6 + 0.35 + high_boost + medium_boost))
+            else:
+                confidence = min(0.9, max(0.3, base_confidence * 0.8 + 0.2 + medium_boost))
             
             # Get top 5 predictions
             sorted_categories = sorted(category_scores.items(), key=lambda x: x[1], reverse=True)[:5]
@@ -1400,6 +1483,8 @@ class OptimizedEnsembleClassifier(BaseNewsClassifier):
         result['method'] = 'advanced_rule_based'
         result['keyword_matches'] = keyword_matches.get(best_category, [])[:5]
         result['top_predictions'] = top_predictions
+        result['high_match_count'] = len([k for k in keyword_matches.get(best_category, [])
+                                          if k in self._category_keywords.get(best_category, {}).get('high', [])])
         
         # Extract content-specific incident details
         incident_details = self._extract_incident_details(text, best_category)
@@ -1555,16 +1640,15 @@ class OptimizedEnsembleClassifier(BaseNewsClassifier):
         }, model_path)
     
     def get_info(self) -> Dict[str, Any]:
-        """Get model information"""
-        return {
-            'name': self.name,
-            'version': self.version,
-            'is_trained': self.is_trained,
+        """Get model information (standardized format)"""
+        info = super().get_info()
+        # Add optimized-specific info
+        info.update({
             'metrics': self._metrics.__dict__ if self._metrics else None,
             'cache_stats': _classification_cache.stats(),
-            'categories': self.categories,
             'category_count': len(self.categories)
-        }
+        })
+        return info
 
 
 def clear_cache():

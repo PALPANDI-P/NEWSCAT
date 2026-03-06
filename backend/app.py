@@ -1,1198 +1,822 @@
 """
-NEWSCAT - Ultra-Optimized Flask Application v6.0
-Multi-Modal AI News Classification System - Future-Level Performance
-Supports: Text, Image, Audio, Video inputs
-
-Optimizations v6.0:
-- Ultra-fast keyword classifier (~1-3ms inference)
-- Pre-compiled regex patterns
-- Optimized TTL cache with perfect hashing
-- Response compression (gzip/brotli)
-- Memory-efficient batch processing
-- Request deduplication
-- Background cache cleanup
-- Streaming for large files
+NEWSCAT v7.0 - Expert Edition Flask Application
+Ultra-fast, error-free API with comprehensive error handling
 """
 
 import os
 import sys
-import logging
-import threading
-import hashlib
-import json
-import tempfile
 import time
-import gc
-from datetime import datetime
+import logging
+import traceback
 from pathlib import Path
-from functools import wraps, lru_cache
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
-from typing import Dict, List, Any, Optional, Callable
-from collections import OrderedDict
-import atexit
+from datetime import datetime
+from functools import wraps
 
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from flask import Flask, jsonify, request, send_from_directory, Response, stream_with_context
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
-from flask_compress import Compress
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-# Import config
 from backend.config import DevelopmentConfig, ProductionConfig
+from backend.response_formatter import (
+    create_success_response, create_error_response, create_partial_response,
+    format_classification_result, format_health_check, format_categories_response,
+    format_model_info, ConfidenceLevel, get_confidence_level
+)
+from backend.utils import (
+    TextValidator, PerformanceMonitor, SmartCache, DataFormatter,
+    FileUtils, ErrorHandler, get_smart_cache, get_metrics_collector
+)
 
-# ===== PERFORMANCE CONSTANTS =====
-CACHE_TTL = 300  # 5 minutes cache TTL
-MAX_CACHE_SIZE = 1000  # Increased cache size
-MAX_BATCH_SIZE = 100  # Increased batch size
-REQUEST_TIMEOUT = 30
-MAX_TEXT_LENGTH = 100000  # Increased max text
-MIN_TEXT_LENGTH = 10
-MAX_WORKERS = 8
-CACHE_CLEANUP_INTERVAL = 60
-
-# Environment
+# Configuration
 ENV = os.getenv('FLASK_ENV', 'development')
 Config = ProductionConfig if ENV == 'production' else DevelopmentConfig
 
-# ===== ULTRA-FAST CACHE =====
-class OptimizedTTLCache:
-    """High-performance thread-safe LRU cache with TTL"""
-    
-    __slots__ = ['max_size', 'ttl', '_cache', '_timestamps', '_lock', '_hits', '_misses']
-    
-    def __init__(self, max_size: int = 1000, ttl_seconds: int = 300):
-        self.max_size = max_size
-        self.ttl = ttl_seconds
-        self._cache: OrderedDict = OrderedDict()
-        self._timestamps: Dict[str, float] = {}
-        self._lock = threading.RLock()
-        self._hits = 0
-        self._misses = 0
-    
-    def get(self, key: str) -> Optional[Dict]:
-        with self._lock:
-            if key in self._cache:
-                timestamp = self._timestamps.get(key, 0)
-                if time.time() - timestamp <= self.ttl:
-                    self._cache.move_to_end(key)
-                    self._hits += 1
-                    return self._cache[key].copy()
-                else:
-                    del self._cache[key]
-                    del self._timestamps[key]
-            self._misses += 1
-            return None
-    
-    def set(self, key: str, value: Dict) -> None:
-        with self._lock:
-            while len(self._cache) >= self.max_size:
-                oldest_key = next(iter(self._cache))
-                del self._cache[oldest_key]
-                self._timestamps.pop(oldest_key, None)
-            
-            self._cache[key] = value
-            self._timestamps[key] = time.time()
-            self._cache.move_to_end(key)
-    
-    def get_stats(self) -> Dict:
-        with self._lock:
-            total = self._hits + self._misses
-            hit_rate = self._hits / total if total > 0 else 0
-            return {
-                'size': len(self._cache),
-                'max_size': self.max_size,
-                'hits': self._hits,
-                'misses': self._misses,
-                'hit_rate': f"{hit_rate:.2%}"
-            }
-    
-    def clear(self) -> None:
-        with self._lock:
-            self._cache.clear()
-            self._timestamps.clear()
-    
-    def cleanup_expired(self) -> int:
-        removed = 0
-        now = time.time()
-        with self._lock:
-            expired = [k for k, ts in self._timestamps.items() if now - ts > self.ttl]
-            for key in expired:
-                self._cache.pop(key, None)
-                self._timestamps.pop(key, None)
-                removed += 1
-        return removed
-
-# Initialize optimized cache
-_response_cache = OptimizedTTLCache(max_size=MAX_CACHE_SIZE, ttl_seconds=CACHE_TTL)
-MAX_BATCH_SIZE = 50  # Maximum items in batch request
-REQUEST_TIMEOUT = 30  # Seconds before request times out
-MAX_TEXT_LENGTH = 50000  # Maximum text length
-MIN_TEXT_LENGTH = 10  # Minimum text length
-
-# ===== THREAD POOL =====
-executor = ThreadPoolExecutor(max_workers=MAX_WORKERS, thread_name_prefix="newscat_worker")
-
-# ===== LOGGING SETUP =====
-LOG_DIR = Path(__file__).resolve().parent.parent / 'logs'
-LOG_DIR.mkdir(parents=True, exist_ok=True)
-
+# Setup logging
 logging.basicConfig(
     level=logging.INFO if ENV == 'production' else logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(str(LOG_DIR / 'newscat.log'), encoding='utf-8'),
-        logging.StreamHandler()
-    ]
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-
-# ===== APP INITIALIZATION =====
+# Flask app initialization
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-FRONTEND_DIR = PROJECT_ROOT / 'frontend'
-
-app = Flask(__name__, 
-            static_folder=str(FRONTEND_DIR),
-            template_folder=str(FRONTEND_DIR))
+app = Flask(__name__, static_folder=str(PROJECT_ROOT / 'frontend'))
 app.config.from_object(Config)
 
-# Enable CORS with optimized settings
-CORS(app, origins=app.config['CORS_ORIGINS'], supports_credentials=True)
-
-# Enable compression
-Compress(app)
-
-
-# ===== MODEL MANAGER FOR LAZY LOADING =====
-def _init_model_manager():
-    """Initialize model manager with optimized lazy loaders"""
-    from backend.models.model_manager import get_model_manager
-    manager = get_model_manager()
-    
-    # Ultra-Optimized Classifier v4.0 (Primary)
-    def load_ultra_optimized():
-        try:
-            from backend.models.optimized_classifier_v2 import UltraOptimizedClassifier
-            return UltraOptimizedClassifier(config=dict(app.config))
-        except Exception as e:
-            logger.warning(f"UltraOptimizedClassifier not available: {e}, falling back")
-            return None
-    
-    manager.register('ultra', load_ultra_optimized, preload=False)
-    
-    # Optimized Classifier v3.5 (Secondary)
-    def load_optimized():
-        try:
-            from backend.models.optimized_classifier import OptimizedEnsembleClassifier
-            return OptimizedEnsembleClassifier(config=dict(app.config))
-        except Exception as e:
-            logger.warning(f"OptimizedEnsembleClassifier not available: {e}")
-            return None
-    
-    manager.register('optimized', load_optimized, preload=False)
-    
-    # Ensemble Classifier (Fallback)
-    def load_ensemble():
-        try:
-            from backend.models.ensemble_classifier import EnsembleNewsClassifier
-            return EnsembleNewsClassifier(config=dict(app.config))
-        except Exception as e:
-            logger.warning(f"EnsembleNewsClassifier not available: {e}")
-            return None
-    
-    manager.register('ensemble', load_ensemble, preload=False)
-    
-    # Simple Classifier (Final Fallback)
-    def load_simple():
-        from backend.models.simple_classifier import SimpleNewsClassifier
-        return SimpleNewsClassifier(config=dict(app.config))
-    
-    manager.register('simple', load_simple, preload=False)
-    
-    # Optimized Keyword Extractor
-    def load_keyword_extractor():
-        try:
-            from backend.models.fast_keyword_extractor import FastKeywordExtractor
-            return FastKeywordExtractor()
-        except Exception as e:
-            logger.warning(f"FastKeywordExtractor not available: {e}, using fallback")
-            try:
-                from backend.models.advanced_keyword_extractor import AdvancedKeywordExtractor
-                return AdvancedKeywordExtractor(method='hybrid')
-            except:
-                from backend.models.keyword_extractor import KeywordExtractor
-                return KeywordExtractor()
-    
-    manager.register('keyword_extractor', load_keyword_extractor, preload=False)
-    
-    # Image Processor
-    def load_image_processor():
-        from backend.models.image_processor import ImageProcessor
-        return ImageProcessor(lazy_init=True)
-    
-    manager.register('image_processor', load_image_processor, preload=False)
-    
-    # Audio Processor
-    def load_audio_processor():
-        from backend.models.audio_processor import AudioProcessor
-        return AudioProcessor(lazy_init=True)
-    
-    manager.register('audio_processor', load_audio_processor, preload=False)
-    
-    # Video Processor
-    def load_video_processor():
-        from backend.models.video_processor import VideoProcessor
-        return VideoProcessor(lazy_init=True)
-    
-    manager.register('video_processor', load_video_processor, preload=False)
-    
-    return manager
-
-
-# Initialize model manager
-model_manager = _init_model_manager()
-
-# ===== CACHE FUNCTIONS =====
-def get_cache_key(text: str, endpoint: str = 'classify', **kwargs) -> str:
-    """Generate cache key using fast hash"""
-    key_data = f"{endpoint}:{text}:{sorted(kwargs.items())}"
-    return hashlib.blake2b(key_data.encode(), digest_size=16).hexdigest()
-
-
-def get_cached_response(cache_key: str) -> Optional[Dict]:
-    """Get cached response if valid"""
-    return _response_cache.get(cache_key)
-
-
-def set_cached_response(cache_key: str, data: Dict) -> None:
-    """Cache a response"""
-    _response_cache.set(cache_key, data)
-
-
-def clear_cache():
-    """Clear all cached responses"""
-    _response_cache.clear()
-    logger.info("Response cache cleared")
-
-
-# ===== HELPER FUNCTIONS =====
-def get_classifier(use_enhanced: bool = True):
-    """Get appropriate classifier with optimized priority chain"""
-    from backend.models.model_manager import get_model_manager
-    manager = get_model_manager()
-    
-    if use_enhanced:
-        # Priority: Ultra > Optimized > Ensemble > Simple
-        for model_name in ['ultra', 'optimized', 'ensemble']:
-            model = manager.get(model_name)
-            if model is not None:
-                logger.debug(f"Using classifier: {model_name}")
-                return model
-    
-    # Fallback to simple
-    return manager.get('simple')
-
-
-def validate_text(text: str) -> tuple:
-    """Validate input text"""
-    if not text or not isinstance(text, str):
-        return False, "Invalid input text"
-    
-    text = text.strip()
-    if len(text) < MIN_TEXT_LENGTH:
-        return False, f"Text too short. Minimum {MIN_TEXT_LENGTH} characters."
-    
-    if len(text) > MAX_TEXT_LENGTH:
-        return False, f"Text too long. Maximum {MAX_TEXT_LENGTH} characters."
-    
-    return True, text
-
-
-def cleanup_temp_file(filepath: str):
-    """Clean up temporary file - non-blocking"""
-    def _cleanup():
-        try:
-            if os.path.exists(filepath):
-                os.remove(filepath)
-        except Exception as e:
-            logger.debug(f"Failed to cleanup temp file {filepath}: {e}")
-    
-    # Run cleanup in background thread
-    threading.Thread(target=_cleanup, daemon=True).start()
-
-
-def create_error_response(message: str, code: str, status: int = 400, **kwargs):
-    """Create standardized error response"""
-    response = {
-        'status': 'error',
-        'message': message,
-        'code': code,
-        'timestamp': datetime.now().isoformat()
+# Configure CORS with explicit settings to prevent connection issues
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["http://localhost:*", "http://127.0.0.1:*", "null"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Accept", "X-Requested-With"],
+        "supports_credentials": False
     }
-    response.update(kwargs)
-    return jsonify(response), status
+})
 
+# Global classifier instance
+_classifier = None
 
-def create_success_response(data: Dict, **kwargs):
-    """Create standardized success response"""
-    response = {
-        'status': 'success',
-        'timestamp': datetime.now().isoformat()
-    }
-    response.update(data)
-    response.update(kwargs)
-    return jsonify(response)
+def get_classifier():
+    """Lazy load classifier on first request with error handling"""
+    global _classifier
+    if _classifier is None:
+        try:
+            from backend.models.lightning_classifier import LightningClassifier
+            _classifier = LightningClassifier()
+            logger.info(f"Classifier loaded: {_classifier.name} v{_classifier.version}")
+        except Exception as e:
+            logger.error(f"Failed to load classifier: {e}")
+            raise
+    return _classifier
 
+def validate_text(text):
+    """Validate and sanitize input text"""
+    is_valid, result = TextValidator.is_valid(text)
+    return is_valid, result
 
-# ===== REQUEST TIMEOUT DECORATOR =====
-def with_timeout(timeout_seconds: int = REQUEST_TIMEOUT):
-    """Decorator to add timeout to request handlers"""
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            try:
-                future = executor.submit(func, *args, **kwargs)
-                return future.result(timeout=timeout_seconds)
-            except FuturesTimeoutError:
-                logger.error(f"Request timeout in {func.__name__}")
-                return create_error_response(
-                    'Request timed out. Please try with shorter input.',
-                    'REQUEST_TIMEOUT',
-                    504
-                )
-            except Exception as e:
-                logger.error(f"Error in {func.__name__}: {e}")
-                return create_error_response(
-                    str(e),
-                    'SERVER_ERROR',
-                    500
-                )
-        return wrapper
-    return decorator
-
+def handle_errors(f):
+    """Decorator for consistent error handling"""
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except Exception as e:
+            logger.error(f"Error in {f.__name__}: {str(e)}")
+            logger.error(traceback.format_exc())
+            return jsonify({
+                'status': 'error',
+                'message': 'Internal server error',
+                'error': str(e) if ENV == 'development' else None
+            }), 500
+    return wrapper
 
 # ===== ROUTES =====
+
 @app.route('/')
 def index():
-    """Serve the main HTML page"""
+    """Serve main page"""
     try:
         return send_from_directory(app.static_folder, 'index.html')
     except Exception as e:
-        logger.error(f"Error serving index.html: {e}")
-        return create_error_response('Failed to serve main page', 'STATIC_FILE_ERROR', 500)
-
+        logger.error(f"Error serving index: {e}")
+        return jsonify({'status': 'error', 'message': 'Failed to load page'}), 500
 
 @app.route('/css/<path:path>')
 def serve_css(path):
     """Serve CSS files"""
     try:
-        css_folder = os.path.join(app.static_folder, 'css')
-        return send_from_directory(css_folder, path)
+        return send_from_directory(os.path.join(app.static_folder, 'css'), path)
     except Exception as e:
-        logger.error(f"Error serving CSS file {path}: {e}")
-        return create_error_response(f'CSS file not found: {path}', 'STATIC_FILE_ERROR', 404)
-
+        logger.error(f"Error serving CSS: {e}")
+        return jsonify({'status': 'error', 'message': 'CSS not found'}), 404
 
 @app.route('/js/<path:path>')
 def serve_js(path):
-    """Serve JavaScript files"""
+    """Serve JS files"""
     try:
-        js_folder = os.path.join(app.static_folder, 'js')
-        return send_from_directory(js_folder, path)
+        return send_from_directory(os.path.join(app.static_folder, 'js'), path)
     except Exception as e:
-        logger.error(f"Error serving JS file {path}: {e}")
-        return create_error_response(f'JavaScript file not found: {path}', 'STATIC_FILE_ERROR', 404)
+        logger.error(f"Error serving JS: {e}")
+        return jsonify({'status': 'error', 'message': 'JS not found'}), 404
 
+# ===== API ROUTES =====
 
-@app.route('/fonts/<path:path>')
-def serve_fonts(path):
-    """Serve font files"""
-    try:
-        fonts_folder = os.path.join(app.static_folder, 'fonts')
-        return send_from_directory(fonts_folder, path)
-    except Exception as e:
-        logger.error(f"Error serving font file {path}: {e}")
-        return create_error_response(f'Font file not found: {path}', 'STATIC_FILE_ERROR', 404)
-
-
-# ===== TEXT CLASSIFICATION =====
-@app.route('/api/classify', methods=['POST'])
-def classify():
-    """Main text classification endpoint with caching"""
-    start_time = time.time()
-    
-    try:
-        data = request.get_json()
-        if not data:
-            return create_error_response('No JSON data provided', 'INVALID_REQUEST', 400)
-        
-        text = data.get('text', '').strip()
-        use_enhanced = data.get('enhanced', True)
-        
-        # Validate
-        is_valid, result = validate_text(text)
-        if not is_valid:
-            return create_error_response(result, 'INVALID_INPUT', 400)
-        
-        text = result  # Validated text
-        
-        # Check cache
-        cache_key = get_cache_key(text, 'classify', enhanced=use_enhanced)
-        cached = get_cached_response(cache_key)
-        if cached:
-            cached['cached'] = True
-            cached['processing_time_ms'] = round((time.time() - start_time) * 1000, 2)
-            return jsonify(cached)
-        
-        logger.info(f"Classification request: {len(text)} chars, enhanced={use_enhanced}")
-        
-        # Get classifier (lazy loaded)
-        classifier = get_classifier(use_enhanced)
-        if not classifier:
-            return create_error_response(
-                'Classifier not available',
-                'CLASSIFIER_UNAVAILABLE',
-                503
-            )
-        
-        # Classify
-        result = classifier.classify(text)
-        
-        processing_time = round((time.time() - start_time) * 1000, 2)
-        
-        response = {
-            'model': classifier.name,
-            'model_version': getattr(classifier, 'version', '1.0.0'),
-            'enhanced': use_enhanced,
-            'input_type': 'text',
-            'cached': False,
-            'processing_time_ms': processing_time,
-        }
-        response.update(result)
-        
-        # Cache the result
-        set_cached_response(cache_key, response)
-        
-        logger.info(f"Classification: {response.get('category')} ({response.get('confidence', 0):.2%}) in {processing_time}ms")
-        return create_success_response(response)
-        
-    except Exception as e:
-        logger.error(f"Classification error: {e}", exc_info=True)
-        return create_error_response(str(e), 'SERVER_ERROR', 500)
-
-
-# ===== BATCH CLASSIFICATION =====
-@app.route('/api/classify/batch', methods=['POST'])
-def classify_batch():
-    """Batch classification endpoint for multiple texts"""
-    start_time = time.time()
-    
-    try:
-        data = request.get_json()
-        if not data:
-            return create_error_response('No JSON data provided', 'INVALID_REQUEST', 400)
-        
-        texts = data.get('texts', [])
-        use_enhanced = data.get('enhanced', True)
-        
-        if not isinstance(texts, list):
-            return create_error_response('texts must be an array', 'INVALID_INPUT', 400)
-        
-        if len(texts) == 0:
-            return create_error_response('No texts provided', 'INVALID_INPUT', 400)
-        
-        if len(texts) > MAX_BATCH_SIZE:
-            return create_error_response(
-                f'Too many texts. Maximum {MAX_BATCH_SIZE} per batch.',
-                'BATCH_TOO_LARGE',
-                400
-            )
-        
-        # Get classifier
-        classifier = get_classifier(use_enhanced)
-        if not classifier:
-            return create_error_response(
-                'Classifier not available',
-                'CLASSIFIER_UNAVAILABLE',
-                503
-            )
-        
-        results = []
-        for i, text in enumerate(texts):
-            try:
-                text = str(text).strip()
-                is_valid, validated = validate_text(text)
-                
-                if not is_valid:
-                    results.append({
-                        'index': i,
-                        'status': 'error',
-                        'message': validated
-                    })
-                    continue
-                
-                # Check cache
-                cache_key = get_cache_key(validated, 'classify', enhanced=use_enhanced)
-                cached = get_cached_response(cache_key)
-                
-                if cached:
-                    cached['index'] = i
-                    cached['cached'] = True
-                    results.append(cached)
-                else:
-                    result = classifier.classify(validated)
-                    result['index'] = i
-                    result['cached'] = False
-                    set_cached_response(cache_key, result)
-                    results.append(result)
-                    
-            except Exception as e:
-                results.append({
-                    'index': i,
-                    'status': 'error',
-                    'message': str(e)
-                })
-        
-        processing_time = round((time.time() - start_time) * 1000, 2)
-        
-        return create_success_response({
-            'results': results,
-            'total': len(texts),
-            'successful': len([r for r in results if r.get('status') != 'error']),
-            'model': classifier.name,
-            'processing_time_ms': processing_time
-        })
-        
-    except Exception as e:
-        logger.error(f"Batch classification error: {e}", exc_info=True)
-        return create_error_response(str(e), 'SERVER_ERROR', 500)
-
-
-# ===== KEYWORD EXTRACTION =====
-@app.route('/api/keywords', methods=['POST'])
-def extract_keywords():
-    """Keyword extraction endpoint"""
-    try:
-        data = request.get_json()
-        text = data.get('text', '').strip()
-        top_n = min(int(data.get('top_n', 5)), 20)  # Max 20 keywords
-        
-        if not text:
-            return create_error_response('No text provided', 'INVALID_INPUT', 400)
-        
-        # Get keyword extractor (lazy loaded)
-        from backend.models.model_manager import get_model_manager
-        extractor = get_model_manager().get('keyword_extractor')
-        
-        if not extractor:
-            return create_error_response(
-                'Keyword extractor not available',
-                'EXTRACTOR_UNAVAILABLE',
-                503
-            )
-        
-        keywords = extractor.extract(text, top_n=top_n)
-        
-        return create_success_response({
-            'keywords': keywords,
-            'top_n': top_n
-        })
-        
-    except Exception as e:
-        logger.error(f"Keyword extraction error: {e}")
-        return create_error_response(str(e), 'SERVER_ERROR', 500)
-
-
-# ===== CATEGORIES =====
-@app.route('/api/categories', methods=['GET'])
-def get_categories():
-    """Get all categories"""
-    categories = app.config.get('CATEGORIES', [
-        'technology', 'sports', 'politics', 'business',
-        'entertainment', 'health', 'science', 'world',
-        'education', 'environment'
-    ])
-    
-    return create_success_response({
-        'categories': categories,
-        'count': len(categories)
-    })
-
-
-# ===== HEALTH CHECK =====
 @app.route('/api/health', methods=['GET'])
-def health():
-    """Health check endpoint with model status"""
-    from backend.models.model_manager import get_model_manager
-    manager = get_model_manager()
-    model_status = manager.get_status()
+@handle_errors
+def health_check():
+    """Health check endpoint with processor status"""
+    # Get processor statuses
+    img_available = False
+    audio_available = False
+    video_available = False
     
-    # Build classifiers status for frontend compatibility
-    classifiers_status = {}
-    for model_name, info in model_status.get('models', {}).items():
-        classifiers_status[model_name] = info.get('loaded', False)
+    # Check image processor
+    try:
+        from backend.models.image_processor import get_image_processor
+        img_proc = get_image_processor()
+        img_available = img_proc.is_available()
+    except Exception as e:
+        logger.debug(f"Image processor status check failed: {e}")
     
-    return create_success_response({
-        'status': 'healthy',
-        'service': 'NEWSCAT',
-        'version': '6.0.0',
-        'phase': 'Multi-Modal AI - Ultra-Optimized',
-        'classifiers': classifiers_status,
-        'models': model_status,
-        'cache': _response_cache.get_stats(),
-        },
-        'config': {
-            'min_text_length': MIN_TEXT_LENGTH,
-            'max_text_length': MAX_TEXT_LENGTH,
-            'max_batch_size': MAX_BATCH_SIZE,
-            'request_timeout': REQUEST_TIMEOUT
+    # Check audio processor
+    try:
+        from backend.models.audio_processor import get_audio_processor
+        audio_proc = get_audio_processor()
+        audio_available = audio_proc.is_available()
+    except Exception as e:
+        logger.debug(f"Audio processor status check failed: {e}")
+    
+    # Check video processor
+    try:
+        from backend.models.video_processor import get_video_processor
+        vid_proc = get_video_processor()
+        video_available = vid_proc.is_available()
+    except Exception as e:
+        logger.debug(f"Video processor status check failed: {e}")
+    
+    return jsonify(format_health_check(
+        classifications_available=_classifier is not None,
+        image_processing_available=img_available,
+        audio_processing_available=audio_available,
+        video_processing_available=video_available,
+        version='7.0.0'
+    ))
+
+@app.route('/api/processor-status', methods=['GET'])
+@handle_errors
+def processor_status():
+    """Get detailed processor status and installation instructions"""
+    status = {
+        'text': {
+            'available': True,
+            'message': 'Text classification is always available'
         }
+    }
+    
+    # Image processor status
+    try:
+        from backend.models.image_processor import get_image_processor
+        img_proc = get_image_processor()
+        status['image'] = {
+            'available': img_proc.is_available(),
+            'pil_available': img_proc.is_pil_available(),
+            'engine': img_proc.ocr_engine if hasattr(img_proc, 'ocr_engine') and img_proc.ocr_engine != 'none' else None,
+            'installation_instructions': img_proc.get_installation_instructions() if not img_proc.is_available() else None
+        }
+    except Exception as e:
+        status['image'] = {
+            'available': False,
+            'error': str(e),
+            'installation_instructions': 'Install dependencies: pip install Pillow easyocr'
+        }
+    
+    # Audio processor status
+    try:
+        from backend.models.audio_processor import get_audio_processor
+        audio_proc = get_audio_processor()
+        status['audio'] = {
+            'available': audio_proc.is_available(),
+            'engine': audio_proc.stt_engine if hasattr(audio_proc, 'stt_engine') and audio_proc.stt_engine != 'none' else None,
+            'ffmpeg_available': audio_proc._check_ffmpeg() if hasattr(audio_proc, '_check_ffmpeg') else None,
+            'installation_instructions': audio_proc.get_installation_instructions() if not audio_proc.is_available() else None
+        }
+    except Exception as e:
+        status['audio'] = {
+            'available': False,
+            'error': str(e),
+            'installation_instructions': 'Install dependencies: pip install openai-whisper SpeechRecognition'
+        }
+    
+    # Video processor status
+    try:
+        from backend.models.video_processor import get_video_processor
+        vid_proc = get_video_processor()
+        status['video'] = {
+            'available': vid_proc.is_available(),
+            'dependencies': vid_proc.get_dependencies_status() if hasattr(vid_proc, 'get_dependencies_status') else {},
+            'installation_instructions': vid_proc.get_installation_instructions() if not vid_proc.is_available() else None
+        }
+    except Exception as e:
+        status['video'] = {
+            'available': False,
+            'error': str(e),
+            'installation_instructions': 'Install dependencies: pip install opencv-python-headless Pillow numpy'
+        }
+    
+    return jsonify({
+        'status': 'success',
+        'processors': status
     })
 
-
-# ===== MODEL INFO =====
-@app.route('/api/model/info', methods=['GET'])
-def model_info():
-    """Get model information"""
-    use_enhanced = request.args.get('enhanced', 'true').lower() == 'true'
-    classifier = get_classifier(use_enhanced)
+@app.route('/api/classify', methods=['POST'])
+@handle_errors
+def classify():
+    """Classify text endpoint"""
+    start_time = time.perf_counter()
     
-    if not classifier:
-        return create_error_response('Classifier not available', 'NOT_FOUND', 404)
+    # Parse request
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': 'Invalid JSON'}), 400
     
-    return create_success_response(classifier.get_info())
-
-
-# ===== MODEL PRELOAD =====
-@app.route('/api/model/preload', methods=['POST'])
-def preload_models():
-    """Preload models for faster subsequent requests"""
-    data = request.get_json() or {}
-    models = data.get('models', ['optimized', 'ensemble'])
+    text = data.get('text', '').strip()
     
-    from backend.models.model_manager import get_model_manager
-    manager = get_model_manager()
-    results = manager.preload(models)
+    # Validate input
+    is_valid, result = validate_text(text)
+    if not is_valid:
+        return jsonify({'status': 'error', 'message': result}), 400
     
-    return create_success_response({
-        'preloaded': results,
-        'status': manager.get_status()
-    })
+    try:
+        # Get classifier and classify
+        classifier = get_classifier()
+        classification_result = classifier.classify(
+            result, 
+            include_confidence=True,
+            include_all_scores=True
+        )
+        
+        # Calculate total processing time
+        total_time = (time.perf_counter() - start_time) * 1000
+        
+        # Format top_predictions to ensure confidence is 0-100 scale
+        top_predictions = classification_result.get('top_predictions', [])
+        for pred in top_predictions:
+            if 'confidence' in pred and pred['confidence'] <= 1.0:
+                pred['confidence'] = pred['confidence'] * 100
+        
+        # Extract keywords
+        keywords = extract_keywords(result)
+        
+        # Calculate content metrics
+        words = len(result.split())
+        sentences = len([s for s in result.split('.') if s.strip()])
+        
+        # Use new response formatter
+        response = format_classification_result(
+            category=classification_result['category'],
+            confidence=classification_result['confidence'],
+            top_predictions=top_predictions,
+            keywords=keywords,
+            model_name=classifier.name,
+            model_version=classifier.version,
+            input_type='text',
+            processing_time_ms=round(total_time, 2),
+            content_metrics={
+                'character_count': len(result),
+                'word_count': words,
+                'sentence_count': sentences
+            }
+        )
+        
+        return jsonify(response)
+        
+    except Exception as e:
+        logger.error(f"Classification error: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Classification failed'
+        }), 500
 
-
-# ===== CLEAR CACHE =====
-@app.route('/api/cache/clear', methods=['POST'])
-def clear_cache_endpoint():
-    """Clear response cache"""
-    clear_cache()
-    return create_success_response({'message': 'Cache cleared'})
-
-
-# ===== IMAGE CLASSIFICATION =====
 @app.route('/api/classify/image', methods=['POST'])
+@handle_errors
 def classify_image():
-    """Image classification endpoint with OCR"""
+    """Classify image endpoint with OCR text extraction"""
+    import tempfile
+    import os
+    
+    start_time = time.perf_counter()
     temp_file = None
     
+    logger.info(f"Image classification request from {request.remote_addr}")
+    logger.debug(f"Request content type: {request.content_type}")
+    logger.debug(f"Request files keys: {list(request.files.keys())}")
+    logger.debug(f"Request form keys: {list(request.form.keys())}")
+    
     try:
-        use_enhanced = True
-        extracted_text = ""
-        image_metadata = {}
-        
-        # Get image processor (lazy loaded)
-        from backend.models.model_manager import get_model_manager
-        processor = get_model_manager().get('image_processor')
-        
-        if not processor or not processor.is_available():
-            return create_error_response(
-                'Image processing not available. Please install OCR dependencies.',
-                'IMAGE_PROCESSOR_UNAVAILABLE',
-                503,
-                installation_instructions=processor.get_installation_instructions() if processor else None
-            )
-        
-        # Check for image URL in JSON data
-        if request.is_json:
-            data = request.get_json()
-            use_enhanced = data.get('enhanced', True)
-            image_url = data.get('image_url', '').strip()
-            
-            if image_url:
-                result = processor.process_image_url(image_url)
-                
-                if not result.success:
-                    return create_error_response(
-                        result.error_message,
-                        'IMAGE_PROCESSING_ERROR',
-                        400
-                    )
-                
-                extracted_text = result.extracted_text
-                image_metadata = result.metadata or {}
-                image_metadata['source'] = 'url'
-        
         # Check for file upload
-        elif 'image' in request.files:
-            file = request.files['image']
-            
-            if file.filename == '':
-                return create_error_response('No file selected', 'NO_FILE', 400)
-            
-            # Save to temp file for processing
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
-            file.save(temp_file.name)
-            temp_file.close()
-            
-            result = processor.process_image_file(temp_file.name)
-            
-            if not result.success:
-                return create_error_response(
-                    result.error_message,
-                    'IMAGE_PROCESSING_ERROR',
-                    400
-                )
-            
-            extracted_text = result.extracted_text
-            image_metadata = result.metadata or {}
-            image_metadata['source'] = 'upload'
-            image_metadata['filename'] = file.filename
+        if 'image' not in request.files:
+            logger.warning(f"No image file in request.files. Available keys: {list(request.files.keys())}")
+            return jsonify({'status': 'error', 'message': 'No image file provided'}), 400
         
-        else:
-            return create_error_response(
-                'No image provided. Send file upload or image_url in JSON.',
-                'NO_IMAGE',
-                400
-            )
+        file = request.files['image']
+        logger.info(f"Received image file: {file.filename}")
+        
+        if file.filename == '':
+            return jsonify({'status': 'error', 'message': 'Empty filename'}), 400
+        
+        # Check file size (limit to 10MB)
+        file.seek(0, 2)  # Seek to end
+        file_size = file.tell()
+        file.seek(0)  # Reset to beginning
+        if file_size > Config.MAX_IMAGE_SIZE:
+            return jsonify({
+                'status': 'error',
+                'message': f'Image file too large. Maximum size is {Config.MAX_IMAGE_SIZE / 1024 / 1024:.0f}MB.'
+            }), 413
+        
+        # Get image processor with error handling
+        try:
+            from backend.models.image_processor import get_image_processor
+            processor = get_image_processor()
+        except Exception as e:
+            logger.error(f"Failed to load image processor: {e}")
+            return jsonify({
+                'status': 'error',
+                'message': 'Image processing module failed to load.',
+                'installation_instructions': 'Install dependencies: pip install Pillow easyocr pytesseract'
+            }), 503
+        
+        if not processor.is_available():
+            return jsonify({
+                'status': 'error',
+                'message': 'Image processing not available. Please install OCR dependencies.',
+                'pil_available': processor.is_pil_available(),
+                'installation_instructions': processor.get_installation_instructions()
+            }), 503
+        
+        # Save to temp file
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
+        file.save(temp_file.name)
+        temp_file.close()
+        
+        # Process image
+        result = processor.process_image_file(temp_file.name)
+        
+        if not result.success:
+            return jsonify({
+                'status': 'error',
+                'message': result.error_message
+            }), 400
+        
+        extracted_text = result.extracted_text
         
         # Validate extracted text
-        if not extracted_text or len(extracted_text.strip()) < MIN_TEXT_LENGTH:
-            return create_error_response(
-                'Could not extract enough text from image. Please try a clearer image.',
-                'INSUFFICIENT_TEXT',
-                400,
-                extracted_text_preview=extracted_text[:500] if extracted_text else ''
-            )
-        
-        logger.info(f"Image classification: {len(extracted_text)} chars extracted")
+        if not extracted_text or len(extracted_text.strip()) < 10:
+            return jsonify({
+                'status': 'error',
+                'message': 'Could not extract enough text from image. Please try a clearer image with more text.',
+                'extracted_text_preview': extracted_text[:200] if extracted_text else ''
+            }), 400
         
         # Classify extracted text
-        classifier = get_classifier(use_enhanced)
-        if not classifier:
-            return create_error_response(
-                'Classifier not available',
-                'CLASSIFIER_UNAVAILABLE',
-                503
-            )
+        classifier = get_classifier()
+        classification_result = classifier.classify(
+            extracted_text,
+            include_confidence=True,
+            include_all_scores=True
+        )
         
-        result = classifier.classify(extracted_text)
+        processing_time = round((time.perf_counter() - start_time) * 1000, 2)
         
-        response = {
-            'model': classifier.name,
-            'input_type': 'image',
-            'extracted_text': extracted_text[:1000],
-            'image_metadata': image_metadata
-        }
-        response.update(result)
+        # Format top_predictions to ensure confidence is 0-100 scale
+        top_predictions = classification_result.get('top_predictions', [])
+        for pred in top_predictions:
+            if 'confidence' in pred and pred['confidence'] <= 1.0:
+                pred['confidence'] = pred['confidence'] * 100
         
-        logger.info(f"Image classification: {response.get('category')} ({response.get('confidence', 0):.2%})")
-        return create_success_response(response)
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'category': classification_result['category'],
+                'confidence': classification_result['confidence'],
+                'processing_time_ms': processing_time,
+                'model': classifier.name,
+                'input_type': 'image',
+                'extracted_text': extracted_text[:500],
+                'ocr_confidence': result.confidence,
+                'keywords': extract_keywords(extracted_text),
+                'top_predictions': top_predictions
+            }
+        })
         
     except Exception as e:
-        logger.error(f"Image classification error: {e}", exc_info=True)
-        return create_error_response(str(e), 'SERVER_ERROR', 500)
+        # Handle client disconnections gracefully
+        if 'ClientDisconnected' in type(e).__name__ or 'disconnect' in str(e).lower():
+            logger.warning(f"Client disconnected during image upload: {e}")
+            return jsonify({
+                'status': 'error',
+                'message': 'Upload cancelled or connection lost. Please try again.'
+            }), 499
+        
+        logger.error(f"Image classification error: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({
+            'status': 'error',
+            'message': f'Image processing failed: {str(e)}'
+        }), 500
     
     finally:
         # Cleanup temp file
-        if temp_file:
-            cleanup_temp_file(temp_file.name)
+        if temp_file and os.path.exists(temp_file.name):
+            try:
+                os.remove(temp_file.name)
+            except Exception:
+                pass
 
-
-# ===== IMAGE PROCESSOR STATUS =====
-@app.route('/api/image/status', methods=['GET'])
-def image_processor_status():
-    """Get image processor status"""
-    from backend.models.model_manager import get_model_manager
-    processor = get_model_manager().get('image_processor')
-    
-    if not processor:
-        return jsonify({
-            'available': False,
-            'message': 'Image processor not registered'
-        })
-    
-    return jsonify({
-        'available': processor.is_available(),
-        'status': processor.get_status()
-    })
-
-
-# ===== AUDIO CLASSIFICATION =====
 @app.route('/api/classify/audio', methods=['POST'])
+@handle_errors
 def classify_audio():
-    """Audio classification endpoint with Speech-to-Text"""
+    """Classify audio endpoint with speech-to-text extraction"""
+    import tempfile
+    import os
+    
+    start_time = time.perf_counter()
     temp_file = None
     
+    logger.info(f"Audio classification request from {request.remote_addr}")
+    logger.debug(f"Request content type: {request.content_type}")
+    logger.debug(f"Request files keys: {list(request.files.keys())}")
+    
     try:
-        use_enhanced = True
-        extracted_text = ""
-        audio_metadata = {}
-        
-        # Get audio processor (lazy loaded)
-        from backend.models.model_manager import get_model_manager
-        processor = get_model_manager().get('audio_processor')
-        
-        if not processor or not processor.is_available():
-            return create_error_response(
-                'Audio processing not available. Please install Speech-to-Text dependencies.',
-                'AUDIO_PROCESSOR_UNAVAILABLE',
-                503,
-                installation_instructions=processor.get_installation_instructions() if processor else None
-            )
-        
         # Check for file upload
-        if 'audio' in request.files:
-            file = request.files['audio']
-            
-            if file.filename == '':
-                return create_error_response('No file selected', 'NO_FILE', 400)
-            
-            # Get file extension
-            filename = file.filename.lower()
-            ext = '.wav'
-            for audio_ext in ['.mp3', '.m4a', '.flac', '.ogg', '.webm']:
-                if filename.endswith(audio_ext):
-                    ext = audio_ext
-                    break
-            
-            # Save to temp file
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
-            file.save(temp_file.name)
-            temp_file.close()
-            
-            result = processor.process_audio_file(temp_file.name)
-            
-            if not result.success:
-                return create_error_response(
-                    result.error_message,
-                    'AUDIO_PROCESSING_ERROR',
-                    400
-                )
-            
-            extracted_text = result.extracted_text
-            audio_metadata = result.metadata or {}
-            audio_metadata['source'] = 'upload'
-            audio_metadata['filename'] = file.filename
-            audio_metadata['duration'] = result.duration
+        if 'audio' not in request.files:
+            logger.warning(f"No audio file in request.files. Available keys: {list(request.files.keys())}")
+            return jsonify({'status': 'error', 'message': 'No audio file provided'}), 400
         
-        else:
-            return create_error_response(
-                'No audio provided. Send file upload.',
-                'NO_AUDIO',
-                400
-            )
+        file = request.files['audio']
+        logger.info(f"Received audio file: {file.filename}")
+        
+        if file.filename == '':
+            return jsonify({'status': 'error', 'message': 'Empty filename'}), 400
+        
+        # Check file size (limit to 50MB)
+        file.seek(0, 2)  # Seek to end
+        file_size = file.tell()
+        file.seek(0)  # Reset to beginning
+        if file_size > Config.MAX_AUDIO_SIZE:
+            return jsonify({
+                'status': 'error',
+                'message': f'Audio file too large. Maximum size is {Config.MAX_AUDIO_SIZE / 1024 / 1024:.0f}MB.'
+            }), 413
+        
+        # Get audio processor with error handling
+        try:
+            from backend.models.audio_processor import get_audio_processor
+            processor = get_audio_processor()
+        except Exception as e:
+            logger.error(f"Failed to load audio processor: {e}")
+            return jsonify({
+                'status': 'error',
+                'message': 'Audio processing module failed to load.',
+                'installation_instructions': 'Install dependencies: pip install openai-whisper SpeechRecognition'
+            }), 503
+        
+        if not processor.is_available():
+            return jsonify({
+                'status': 'error',
+                'message': 'Audio processing not available. Please install Speech-to-Text dependencies.',
+                'ffmpeg_available': processor._check_ffmpeg() if hasattr(processor, '_check_ffmpeg') else None,
+                'installation_instructions': processor.get_installation_instructions()
+            }), 503
+        
+        # Get file extension
+        filename = file.filename.lower()
+        ext = '.wav'
+        for audio_ext in ['.mp3', '.m4a', '.flac', '.ogg', '.webm']:
+            if filename.endswith(audio_ext):
+                ext = audio_ext
+                break
+        
+        # Save to temp file
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
+        file.save(temp_file.name)
+        temp_file.close()
+        
+        # Process audio
+        result = processor.process_audio_file(temp_file.name)
+        
+        if not result.success:
+            return jsonify({
+                'status': 'error',
+                'message': result.error_message
+            }), 400
+        
+        extracted_text = result.extracted_text
         
         # Validate extracted text
-        if not extracted_text or len(extracted_text.strip()) < MIN_TEXT_LENGTH:
-            return create_error_response(
-                'Could not extract enough text from audio. Please try clearer audio.',
-                'INSUFFICIENT_TEXT',
-                400,
-                extracted_text_preview=extracted_text[:500] if extracted_text else ''
-            )
-        
-        logger.info(f"Audio classification: {len(extracted_text)} chars from {audio_metadata.get('duration', 0):.1f}s audio")
+        if not extracted_text or len(extracted_text.strip()) < 10:
+            return jsonify({
+                'status': 'error',
+                'message': 'Could not extract enough text from audio. Please try clearer audio.',
+                'extracted_text_preview': extracted_text[:200] if extracted_text else ''
+            }), 400
         
         # Classify extracted text
-        classifier = get_classifier(use_enhanced)
-        if not classifier:
-            return create_error_response(
-                'Classifier not available',
-                'CLASSIFIER_UNAVAILABLE',
-                503
-            )
+        classifier = get_classifier()
+        classification_result = classifier.classify(
+            extracted_text,
+            include_confidence=True,
+            include_all_scores=True
+        )
         
-        result = classifier.classify(extracted_text)
+        processing_time = round((time.perf_counter() - start_time) * 1000, 2)
         
-        response = {
-            'model': classifier.name,
-            'input_type': 'audio',
-            'extracted_text': extracted_text[:1000],
-            'audio_metadata': audio_metadata
-        }
-        response.update(result)
+        # Format top_predictions to ensure confidence is 0-100 scale
+        top_predictions = classification_result.get('top_predictions', [])
+        for pred in top_predictions:
+            if 'confidence' in pred and pred['confidence'] <= 1.0:
+                pred['confidence'] = pred['confidence'] * 100
         
-        logger.info(f"Audio classification: {response.get('category')} ({response.get('confidence', 0):.2%})")
-        return create_success_response(response)
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'category': classification_result['category'],
+                'confidence': classification_result['confidence'],
+                'processing_time_ms': processing_time,
+                'model': classifier.name,
+                'input_type': 'audio',
+                'extracted_text': extracted_text[:500],
+                'transcription_confidence': result.confidence,
+                'duration': result.duration,
+                'keywords': extract_keywords(extracted_text),
+                'top_predictions': top_predictions
+            }
+        })
         
     except Exception as e:
-        logger.error(f"Audio classification error: {e}", exc_info=True)
-        return create_error_response(str(e), 'SERVER_ERROR', 500)
+        # Handle client disconnections gracefully
+        if 'ClientDisconnected' in type(e).__name__ or 'disconnect' in str(e).lower():
+            logger.warning(f"Client disconnected during audio upload: {e}")
+            return jsonify({
+                'status': 'error',
+                'message': 'Upload cancelled or connection lost. Please try again.'
+            }), 499  # 499 Client Closed Request
+        
+        logger.error(f"Audio classification error: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({
+            'status': 'error',
+            'message': f'Audio processing failed: {str(e)}'
+        }), 500
     
     finally:
         # Cleanup temp file
-        if temp_file:
-            cleanup_temp_file(temp_file.name)
+        if temp_file and os.path.exists(temp_file.name):
+            try:
+                os.remove(temp_file.name)
+            except Exception:
+                pass
 
-
-# ===== AUDIO PROCESSOR STATUS =====
-@app.route('/api/audio/status', methods=['GET'])
-def audio_processor_status():
-    """Get audio processor status"""
-    from backend.models.model_manager import get_model_manager
-    processor = get_model_manager().get('audio_processor')
-    
-    if not processor:
-        return jsonify({
-            'available': False,
-            'message': 'Audio processor not registered'
-        })
-    
-    return jsonify({
-        'available': processor.is_available(),
-        'status': processor.get_status()
-    })
-
-
-# ===== VIDEO CLASSIFICATION =====
 @app.route('/api/classify/video', methods=['POST'])
+@handle_errors
 def classify_video():
-    """Video classification endpoint"""
+    """Classify video endpoint with frame OCR and audio transcription"""
+    import tempfile
+    import os
+    
+    start_time = time.perf_counter()
     temp_file = None
     
+    logger.info(f"Video classification request from {request.remote_addr}")
+    logger.debug(f"Request content type: {request.content_type}")
+    logger.debug(f"Request files keys: {list(request.files.keys())}")
+    
     try:
-        use_enhanced = True
-        extracted_text = ""
-        video_metadata = {}
-        
-        # Get video processor (lazy loaded)
-        from backend.models.model_manager import get_model_manager
-        processor = get_model_manager().get('video_processor')
-        
-        if not processor or not processor.is_available():
-            return create_error_response(
-                'Video processing not available. Please install video processing dependencies.',
-                'VIDEO_PROCESSOR_UNAVAILABLE',
-                503
-            )
-        
         # Check for file upload
-        if 'video' in request.files:
-            file = request.files['video']
-            
-            if file.filename == '':
-                return create_error_response('No file selected', 'NO_FILE', 400)
-            
-            # Get file extension
-            filename = file.filename.lower()
-            ext = '.mp4'
-            for video_ext in ['.avi', '.mov', '.webm', '.mkv']:
-                if filename.endswith(video_ext):
-                    ext = video_ext
-                    break
-            
-            # Save to temp file
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
-            file.save(temp_file.name)
-            temp_file.close()
-            
-            result = processor.process_video_file(temp_file.name)
-            
-            if not result.success:
-                return create_error_response(
-                    result.error_message,
-                    'VIDEO_PROCESSING_ERROR',
-                    400
-                )
-            
-            extracted_text = result.extracted_text
-            video_metadata = result.metadata or {}
-            video_metadata['source'] = 'upload'
-            video_metadata['filename'] = file.filename
-            video_metadata['duration'] = result.duration
-            video_metadata['frames_processed'] = result.frames_processed
+        if 'video' not in request.files:
+            logger.warning(f"No video file in request.files. Available keys: {list(request.files.keys())}")
+            return jsonify({'status': 'error', 'message': 'No video file provided'}), 400
         
-        else:
-            return create_error_response(
-                'No video provided. Send file upload.',
-                'NO_VIDEO',
-                400
-            )
+        file = request.files['video']
+        logger.info(f"Received video file: {file.filename}")
+        
+        if file.filename == '':
+            return jsonify({'status': 'error', 'message': 'Empty filename'}), 400
+        
+        # Check file size (limit to 100MB)
+        file.seek(0, 2)  # Seek to end
+        file_size = file.tell()
+        file.seek(0)  # Reset to beginning
+        if file_size > Config.MAX_VIDEO_SIZE:
+            return jsonify({
+                'status': 'error',
+                'message': f'Video file too large. Maximum size is {Config.MAX_VIDEO_SIZE / 1024 / 1024:.0f}MB.'
+            }), 413
+        
+        # Get video processor with error handling
+        try:
+            from backend.models.video_processor import get_video_processor
+            processor = get_video_processor()
+        except Exception as e:
+            logger.error(f"Failed to load video processor: {e}")
+            return jsonify({
+                'status': 'error',
+                'message': 'Video processing module failed to load.',
+                'installation_instructions': 'Install dependencies: pip install opencv-python-headless Pillow numpy'
+            }), 503
+        
+        if not processor.is_available():
+            return jsonify({
+                'status': 'error',
+                'message': 'Video processing not available. Please install OpenCV and video dependencies.',
+                'dependencies': processor.get_dependencies_status() if hasattr(processor, 'get_dependencies_status') else {},
+                'installation_instructions': processor.get_installation_instructions()
+            }), 503
+        
+        # Get file extension
+        filename = file.filename.lower()
+        ext = '.mp4'
+        for video_ext in ['.avi', '.mov', '.mkv', '.webm']:
+            if filename.endswith(video_ext):
+                ext = video_ext
+                break
+        
+        # Save to temp file
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
+        file.save(temp_file.name)
+        temp_file.close()
+        
+        # Process video
+        result = processor.process_video_file(temp_file.name, extract_audio=True)
+        
+        if not result.success:
+            return jsonify({
+                'status': 'error',
+                'message': result.error_message
+            }), 400
+        
+        extracted_text = result.extracted_text
         
         # Validate extracted text
-        if not extracted_text or len(extracted_text.strip()) < MIN_TEXT_LENGTH:
-            return create_error_response(
-                'Could not extract enough text from video.',
-                'INSUFFICIENT_TEXT',
-                400,
-                extracted_text_preview=extracted_text[:500] if extracted_text else ''
-            )
-        
-        logger.info(f"Video classification: {len(extracted_text)} chars from {video_metadata.get('duration', 0):.1f}s video")
+        if not extracted_text or len(extracted_text.strip()) < 10:
+            return jsonify({
+                'status': 'error',
+                'message': 'Could not extract enough text from video. Please try a video with clearer text or speech.',
+                'extracted_text_preview': extracted_text[:200] if extracted_text else ''
+            }), 400
         
         # Classify extracted text
-        classifier = get_classifier(use_enhanced)
-        if not classifier:
-            return create_error_response(
-                'Classifier not available',
-                'CLASSIFIER_UNAVAILABLE',
-                503
-            )
+        classifier = get_classifier()
+        classification_result = classifier.classify(
+            extracted_text,
+            include_confidence=True,
+            include_all_scores=True
+        )
         
-        result = classifier.classify(extracted_text)
+        processing_time = round((time.perf_counter() - start_time) * 1000, 2)
         
-        response = {
-            'model': classifier.name,
-            'input_type': 'video',
-            'extracted_text': extracted_text[:1000],
-            'video_metadata': video_metadata
-        }
-        response.update(result)
+        # Format top_predictions to ensure confidence is 0-100 scale
+        top_predictions = classification_result.get('top_predictions', [])
+        for pred in top_predictions:
+            if 'confidence' in pred and pred['confidence'] <= 1.0:
+                pred['confidence'] = pred['confidence'] * 100
         
-        logger.info(f"Video classification: {response.get('category')} ({response.get('confidence', 0):.2%})")
-        return create_success_response(response)
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'category': classification_result['category'],
+                'confidence': classification_result['confidence'],
+                'processing_time_ms': processing_time,
+                'model': classifier.name,
+                'input_type': 'video',
+                'extracted_text': extracted_text[:500],
+                'frames_processed': result.frames_processed,
+                'duration': result.duration,
+                'keywords': extract_keywords(extracted_text),
+                'top_predictions': top_predictions
+            }
+        })
         
     except Exception as e:
-        logger.error(f"Video classification error: {e}", exc_info=True)
-        return create_error_response(str(e), 'SERVER_ERROR', 500)
+        # Handle client disconnections gracefully
+        if 'ClientDisconnected' in type(e).__name__ or 'disconnect' in str(e).lower():
+            logger.warning(f"Client disconnected during video upload: {e}")
+            return jsonify({
+                'status': 'error',
+                'message': 'Upload cancelled or connection lost. Please try again.'
+            }), 499
+        
+        logger.error(f"Video classification error: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({
+            'status': 'error',
+            'message': f'Video processing failed: {str(e)}'
+        }), 500
     
     finally:
         # Cleanup temp file
-        if temp_file:
-            cleanup_temp_file(temp_file.name)
+        if temp_file and os.path.exists(temp_file.name):
+            try:
+                os.remove(temp_file.name)
+            except Exception:
+                pass
 
+@app.route('/api/categories', methods=['GET'])
+@handle_errors
+def get_categories():
+    """Get available categories"""
+    from backend.config import Config
+    return jsonify(format_categories_response(Config.CATEGORIES))
 
-# ===== VIDEO PROCESSOR STATUS =====
-@app.route('/api/video/status', methods=['GET'])
-def video_processor_status():
-    """Get video processor status"""
-    from backend.models.model_manager import get_model_manager
-    processor = get_model_manager().get('video_processor')
-    
-    if not processor:
-        return jsonify({
-            'available': False,
-            'message': 'Video processor not registered'
-        })
-    
-    return jsonify({
-        'available': processor.is_available(),
-        'status': processor.get_status()
-    })
+@app.route('/api/model/info', methods=['GET'])
+@handle_errors
+def get_model_info():
+    """Get model information"""
+    classifier = get_classifier()
+    response = format_model_info(
+        name=classifier.name,
+        version=classifier.version,
+        categories=list(classifier.categories) if isinstance(classifier.categories, list) else list(classifier.categories.keys()),
+        accuracy=getattr(classifier, 'accuracy', 0),
+        trained=getattr(classifier, 'is_trained', False),
+        model_type='rule-based'
+    )
+    return jsonify(response)
 
+# ===== HELPER FUNCTIONS =====
+
+def extract_keywords(text: str, max_keywords: int = 10) -> list:
+    """Extract keywords from text"""
+    try:
+        import re
+        from collections import Counter
+        
+        # Simple keyword extraction
+        words = re.findall(r'\b[A-Za-z]{4,}\b', text.lower())
+        
+        # Filter common words
+        stop_words = {'this', 'that', 'with', 'from', 'they', 'have', 'been', 'were', 'said'}
+        words = [w for w in words if w not in stop_words]
+        
+        # Get most common
+        counter = Counter(words)
+        return [{'word': word, 'count': count} for word, count in counter.most_common(max_keywords)]
+    except Exception as e:
+        logger.warning(f"Keyword extraction failed: {e}")
+        return []
 
 # ===== ERROR HANDLERS =====
+
 @app.errorhandler(404)
 def not_found(error):
-    return create_error_response('Not found', 'NOT_FOUND', 404)
+    return jsonify({
+        'status': 'error',
+        'message': 'Resource not found'
+    }), 404
 
+@app.errorhandler(405)
+def method_not_allowed(error):
+    return jsonify({
+        'status': 'error',
+        'message': 'Method not allowed'
+    }), 405
 
 @app.errorhandler(500)
 def internal_error(error):
-    logger.error(f"Internal error: {error}")
-    return create_error_response('Internal server error', 'INTERNAL_ERROR', 500)
-
+    return jsonify({
+        'status': 'error',
+        'message': 'Internal server error'
+    }), 500
 
 @app.errorhandler(413)
-def request_too_large(error):
-    return create_error_response('Request entity too large', 'REQUEST_TOO_LARGE', 413)
-
-
-# ===== CLEANUP ON EXIT =====
-def cleanup_on_exit():
-    """Cleanup resources on application exit"""
-    logger.info("Cleaning up resources...")
-    clear_cache()
-    executor.shutdown(wait=False)
-    
-    # Clear model manager
-    from backend.models.model_manager import get_model_manager
-    get_model_manager().clear_all()
-    
-    gc.collect()
-    logger.info("Cleanup complete")
-
-
-atexit.register(cleanup_on_exit)
-
-
-# ===== BACKGROUND CACHE CLEANUP =====
-def schedule_cache_cleanup():
-    """Schedule periodic cache cleanup"""
-    def cleanup_task():
-        while True:
-            time.sleep(CACHE_CLEANUP_INTERVAL)
-            removed = _response_cache.cleanup_expired()
-            if removed > 0:
-                logger.debug(f"Cache cleanup: removed {removed} expired items")
-    
-    cleanup_thread = threading.Thread(target=cleanup_task, daemon=True)
-    cleanup_thread.start()
-
-# Start background tasks
-schedule_cache_cleanup()
-
-
-# ===== OPEN BROWSER =====
-def open_browser(host: str, port: int):
-    """Open browser after server starts"""
-    time.sleep(1.5)
-    url = f"http://{host}:{port}"
-    logger.info(f"Opening browser: {url}")
-    webbrowser.open(url)
-
+def too_large(error):
+    return jsonify({
+        'status': 'error',
+        'message': 'File too large. Maximum size: 10MB for images, 50MB for audio, 100MB for video.'
+    }), 413
 
 # ===== MAIN =====
+
 if __name__ == '__main__':
-    host = app.config.get('HOST', 'localhost')
-    port = app.config.get('PORT', 5000)
+    # Pre-load classifier on startup for faster first request
+    try:
+        get_classifier()
+        logger.info("Classifier pre-loaded successfully")
+    except Exception as e:
+        logger.warning(f"Could not pre-load classifier: {e}")
+        logger.warning("Classifier will be loaded on first request")
     
-    print("\n" + "="*70)
-    print("   NEWSCAT - Multi-Modal AI News Classification System v6.0")
-    print("   Ultra-Optimized with Future-Level Performance")
-    print("="*70)
-    print(f"   Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"   URL: http://{host}:{port}")
-    print(f"   Environment: {ENV}")
-    print(f"   Debug Mode: {app.config.get('DEBUG', False)}")
-    print("-" * 70)
-    print("   Features:")
-    print("      • Ultra-fast classifier (~1-3ms inference)")
-    print("      • 35 news categories with keyword matching")
-    print("      • Optimized TTL cache with perfect hashing")
-    print("      • Response compression (gzip/brotli)")
-    print("      • Lazy model loading (loads on first request)")
-    print("      • Batch classification with streaming support")
-    print("      • Memory-efficient processing")
-    print("      • Background cache cleanup")
-    print("      • Non-blocking temp file cleanup")
-    print("-" * 70)
-    print("   API Endpoints:")
-    print("      • POST /api/classify - Single text classification")
-    print("      • POST /api/classify/batch - Batch classification")
-    print("      • POST /api/classify/image - Image OCR classification")
-    print("      • POST /api/classify/audio - Audio STT classification")
-    print("      • POST /api/classify/video - Video classification")
-    print("      • POST /api/keywords - Keyword extraction")
-    print("      • POST /api/model/preload - Preload models")
-    print("      • GET  /api/health - Health check")
-    print("="*70)
-    print("   Browser will open automatically...")
-    print("="*70 + "\n")
-    
-    # Open browser in background thread
-    browser_thread = threading.Thread(target=open_browser, args=(host, port))
-    browser_thread.daemon = True
-    browser_thread.start()
-    
-    # Run Flask app
+    # Run the Flask app
     app.run(
-        debug=app.config.get('DEBUG', False),
-        host=host,
-        port=port,
-        threaded=True
+        host=Config.HOST,
+        port=Config.PORT,
+        debug=Config.DEBUG,
+        threaded=Config.THREADED
     )

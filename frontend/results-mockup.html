@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Classification Results - Mockup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+            padding: 20px;
+            color: #1a202c;
+        }
+
+        @keyframes gradientShift {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+            font-weight: 400;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.5);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.6);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 24px;
+        }
+
+        .card-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #2d3748;
+        }
+
+        .summary-card .card-icon {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .classification-card .card-icon {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+        }
+
+        .keywords-card .card-icon {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+        }
+
+        .sentiment-card .card-icon {
+            background: linear-gradient(135deg, #43e97b, #38f9d7);
+        }
+
+        .metadata-card .card-icon {
+            background: linear-gradient(135deg, #fa709a, #fee140);
+        }
+
+        .summary-content {
+            line-height: 1.8;
+            color: #4a5568;
+            font-size: 1.05rem;
+        }
+
+        .classification-item {
+            margin-bottom: 25px;
+        }
+
+        .classification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .category-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #2d3748;
+        }
+
+        .confidence-score {
+            font-weight: 700;
+            font-size: 1.2rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .progress-bar-container {
+            background: #e2e8f0;
+            border-radius: 12px;
+            height: 16px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            border-radius: 12px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+            transition: width 1.5s ease-out;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        .keywords-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .keyword-badge {
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: white;
+            box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: default;
+        }
+
+        .keyword-badge:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 16px rgba(79, 172, 254, 0.4);
+        }
+
+        .sentiment-display {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .sentiment-score {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #43e97b, #38f9d7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .sentiment-label {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .sentiment-bar {
+            background: #e2e8f0;
+            border-radius: 20px;
+            height: 24px;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sentiment-fill {
+            height: 100%;
+            border-radius: 20px;
+            background: linear-gradient(90deg, #f56565, #fbbf24, #43e97b);
+            transition: width 1.5s ease-out;
+            box-shadow: 0 2px 10px rgba(67, 233, 123, 0.4);
+        }
+
+        .sentiment-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #718096;
+            font-weight: 500;
+        }
+
+        .metadata-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .metadata-item {
+            background: linear-gradient(135deg, #f7fafc, #edf2f7);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+
+        .metadata-label {
+            font-size: 0.85rem;
+            color: #718096;
+            margin-bottom: 8px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metadata-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #2d3748;
+        }
+
+        .metadata-unit {
+            font-size: 0.8rem;
+            color: #a0aec0;
+            font-weight: 500;
+        }
+
+        .full-width-card {
+            grid-column: 1 / -1;
+        }
+
+        .badges-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .category-badge {
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: transform 0.2s ease;
+        }
+
+        .category-badge:hover {
+            transform: translateY(-2px);
+        }
+
+        .badge-politics {
+            background: linear-gradient(135deg, #e53e3e, #fc8181);
+        }
+
+        .badge-sports {
+            background: linear-gradient(135deg, #38b2ac, #81e6d9);
+        }
+
+        .badge-technology {
+            background: linear-gradient(135deg, #667eea, #9f7aea);
+        }
+
+        .badge-business {
+            background: linear-gradient(135deg, #d69e2e, #ecc94b);
+        }
+
+        .badge-entertainment {
+            background: linear-gradient(135deg, #ed8936, #f6ad55);
+        }
+
+        .badge-health {
+            background: linear-gradient(135deg, #48bb78, #68d391);
+        }
+
+        .badge-science {
+            background: linear-gradient(135deg, #4299e1, #63b3ed);
+        }
+
+        .badge-world {
+            background: linear-gradient(135deg, #9f7aea, #b794f4);
+        }
+
+        .timestamp {
+            text-align: center;
+            color: white;
+            margin-top: 30px;
+            font-size: 0.9rem;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .metadata-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 News Classification Results</h1>
+            <p>AI-Powered Analysis & Classification Dashboard</p>
+        </div>
+
+        <div class="results-grid">
+            <!-- Summary Card -->
+            <div class="card summary-card">
+                <div class="card-header">
+                    <div class="card-icon">📝</div>
+                    <h2 class="card-title">Summary</h2>
+                </div>
+                <div class="summary-content">
+                    <p>The article discusses recent advancements in artificial intelligence and machine learning
+                        technologies. It covers key developments in neural networks, natural language processing, and
+                        their applications across various industries. The content emphasizes the transformative
+                        potential of AI in healthcare, finance, and autonomous systems, while also addressing ethical
+                        considerations and future regulatory frameworks.</p>
+                </div>
+            </div>
+
+            <!-- Classification Results -->
+            <div class="card classification-card">
+                <div class="card-header">
+                    <div class="card-icon">🎯</div>
+                    <h2 class="card-title">Classification Results</h2>
+                </div>
+                <div class="classification-item">
+                    <div class="classification-header">
+                        <span class="category-name">Technology</span>
+                        <span class="confidence-score">87%</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" style="width: 87%;"></div>
+                    </div>
+                </div>
+                <div class="classification-item">
+                    <div class="classification-header">
+                        <span class="category-name">Science</span>
+                        <span class="confidence-score">72%</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" style="width: 72%;"></div>
+                    </div>
+                </div>
+                <div class="classification-item">
+                    <div class="classification-header">
+                        <span class="category-name">Business</span>
+                        <span class="confidence-score">45%</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" style="width: 45%;"></div>
+                    </div>
+                </div>
+                <div class="classification-item">
+                    <div class="classification-header">
+                        <span class="category-name">Health</span>
+                        <span class="confidence-score">28%</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" style="width: 28%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Keywords & Tags -->
+            <div class="card keywords-card">
+                <div class="card-header">
+                    <div class="card-icon">🏷️</div>
+                    <h2 class="card-title">Extracted Keywords</h2>
+                </div>
+                <div class="keywords-container">
+                    <span class="keyword-badge">Artificial Intelligence</span>
+                    <span class="keyword-badge">Machine Learning</span>
+                    <span class="keyword-badge">Neural Networks</span>
+                    <span class="keyword-badge">NLP</span>
+                    <span class="keyword-badge">Deep Learning</span>
+                    <span class="keyword-badge">Automation</span>
+                    <span class="keyword-badge">Data Science</span>
+                    <span class="keyword-badge">Robotics</span>
+                    <span class="keyword-badge">Algorithm</span>
+                    <span class="keyword-badge">Innovation</span>
+                </div>
+            </div>
+
+            <!-- Sentiment Analysis -->
+            <div class="card sentiment-card">
+                <div class="card-header">
+                    <div class="card-icon">😊</div>
+                    <h2 class="card-title">Sentiment Analysis</h2>
+                </div>
+                <div class="sentiment-display">
+                    <div class="sentiment-score">+0.72</div>
+                    <div class="sentiment-label">Positive Sentiment</div>
+                    <div class="sentiment-bar">
+                        <div class="sentiment-fill" style="width: 72%;"></div>
+                    </div>
+                    <div class="sentiment-labels">
+                        <span>😠 Negative</span>
+                        <span>😐 Neutral</span>
+                        <span>😊 Positive</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metadata -->
+            <div class="card metadata-card">
+                <div class="card-header">
+                    <div class="card-icon">ℹ️</div>
+                    <h2 class="card-title">Metadata</h2>
+                </div>
+                <div class="metadata-grid">
+                    <div class="metadata-item">
+                        <div class="metadata-label">Word Count</div>
+                        <div class="metadata-value">1,247</div>
+                    </div>
+                    <div class="metadata-item">
+                        <div class="metadata-label">Language</div>
+                        <div class="metadata-value">EN</div>
+                    </div>
+                    <div class="metadata-item">
+                        <div class="metadata-label">Processing</div>
+                        <div class="metadata-value">2.3<span class="metadata-unit">s</span></div>
+                    </div>
+                    <div class="metadata-item">
+                        <div class="metadata-label">Readability</div>
+                        <div class="metadata-value">72</div>
+                    </div>
+                    <div class="metadata-item">
+                        <div class="metadata-label">Sentences</div>
+                        <div class="metadata-value">48</div>
+                    </div>
+                    <div class="metadata-item">
+                        <div class="metadata-label">Paragraphs</div>
+                        <div class="metadata-value">12</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category Badges -->
+            <div class="card full-width-card">
+                <div class="card-header">
+                    <div class="card-icon">🏆</div>
+                    <h2 class="card-title">Primary Categories</h2>
+                </div>
+                <div class="badges-container">
+                    <span class="category-badge badge-technology">Technology</span>
+                    <span class="category-badge badge-science">Science</span>
+                    <span class="category-badge badge-business">Business</span>
+                    <span class="category-badge badge-health">Health</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="timestamp">
+            Generated on <span id="datetime"></span> | NewsCat AI Classification System
+        </div>
+    </div>
+
+    <script>
+        // Set current datetime
+        const now = new Date();
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+        document.getElementById('datetime').textContent = now.toLocaleDateString('en-US', options);
+
+        // Animate progress bars on load
+        window.addEventListener('load', () => {
+            const bars = document.querySelectorAll('.progress-bar, .sentiment-fill');
+            bars.forEach(bar => {
+                const width = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.width = width;
+                }, 100);
+            });
+        });
+    </script>
+</body>
+
+</html>

@@ -1,6 +1,7 @@
 # Web Framework
 Flask==3.0.0
 Flask-CORS==4.0.0
+Flask-Compress==1.14
 Flask-RESTful==0.3.10
 python-dotenv==1.0.0
 Werkzeug==3.0.1
@@ -36,6 +37,7 @@ pyaudio>=0.2.14
 pydub>=0.25.1
 openai-whisper>=20231117
 ffmpeg-python>=0.2.0
+webrtcvad>=2.0.10  # Voice Activity Detection (optional but recommended)
 
 # Video Processing
 moviepy>=1.0.3
@@ -46,6 +48,7 @@ requests==2.31.0
 python-multipart==0.0.6
 pyyaml==6.0.1
 jsonschema==4.20.0
+orjson==3.9.10
 
 # Development
 black==23.12.1
