@@ -750,6 +750,27 @@ def get_model_info():
     )
     return jsonify(response)
 
+@app.route('/api/news/realtime', methods=['GET'])
+@handle_errors
+def get_realtime_news():
+    """Fetch real-time news headlines for classification testing across diverse categories"""
+    # Mocking real-world news headlines to ensure instant testing without API keys, covering 5 diverse "sides"
+    news_items = [
+        {"id": "1", "title": "OpenAI announces new GPT reasoning model", "content": "The new model shows significant improvements in complex logic, mathematics, and coding tasks, pushing the boundaries of artificial intelligence capabilities.", "source": "Tech Innovations"},
+        {"id": "2", "title": "Federal Reserve holds interest rates steady", "content": "Central bank officials decided to keep rates unchanged as inflation data matches expectations, signaling stability in global financial markets.", "source": "Finance Weekly"},
+        {"id": "3", "title": "Real Madrid wins Champions League Final", "content": "A stunning late goal secured the victory for Real Madrid in a thrilling match against Manchester City, crowning them the undisputed kings of European football.", "source": "Global Sports"},
+        {"id": "4", "title": "New study shows coffee may increase lifespan", "content": "Researchers found that drinking 2-3 cups of coffee daily is associated with a lower risk of heart disease and cardiovascular abnormalities.", "source": "Health Science Daily"},
+        {"id": "5", "title": "NASA's Artemis program delayed by two years", "content": "Technical challenges with the lunar lander have pushed back the targeted human return to the moon, emphasizing the complexities of deep space exploration.", "source": "Space Exploration News"},
+        {"id": "6", "title": "Global leaders sign new climate pact", "content": "At the COP summit, nations agreed to triple renewable energy capacity by 2030, marking a monumental shift toward sustainable environmental policy.", "source": "Eco World"},
+        {"id": "7", "title": "Cybersecurity firm uncovers massive data breach", "content": "Hackers infiltrated multiple enterprise databases using a zero-day exploit, exposing the personal records of over 50 million global users.", "source": "Cyber Defense Network"}
+    ]
+    
+    return jsonify({
+        'status': 'success',
+        'data': news_items,
+        'timestamp': datetime.utcnow().isoformat() + "Z"
+    })
+
 # ===== HELPER FUNCTIONS =====
 
 def extract_keywords(text: str, max_keywords: int = 10) -> list:

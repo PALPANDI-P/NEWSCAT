@@ -241,11 +241,11 @@ class AudioPreprocessor:
 
 class WhisperProcessor:
     """
-    OpenAI Whisper large-v3 processor
-    Most accurate open-source speech recognition
+    OpenAI Whisper processor
+    Using 'tiny' model for blazing fast sub-second performance.
     """
     
-    MODEL_NAME = "large-v3"
+    MODEL_NAME = "tiny"
     SUPPORTED_LANGUAGES = [
         'en', 'zh', 'de', 'es', 'ru', 'ko', 'fr', 'ja', 'pt', 'tr', 'pl', 'ca', 'nl',
         'ar', 'sv', 'it', 'id', 'hi', 'fi', 'vi', 'he', 'uk', 'el', 'ms', 'cs', 'ro',
@@ -509,7 +509,7 @@ class NeuralAudioProcessor:
             segments = transcription.get('segments', [])
             
             # Calculate confidence
-            avg_confidence = 0.85  # Base confidence for Whisper large-v3
+            avg_confidence = 0.85  # Base confidence
             if segments:
                 confidences = [s.confidence for s in segments if s.confidence > 0]
                 if confidences:
@@ -520,7 +520,7 @@ class NeuralAudioProcessor:
             
             # Build metadata
             metadata = {
-                'engine': 'whisper-large-v3',
+                'engine': 'whisper-tiny',
                 'language': detected_lang,
                 'duration': duration,
                 'sample_rate': audio_info.get('frame_rate'),
@@ -640,7 +640,7 @@ class NeuralAudioProcessor:
         return {
             'name': self.name,
             'version': self.version,
-            'engine': 'whisper-large-v3',
+            'engine': 'whisper-tiny',
             'supported_languages': len(WhisperProcessor.SUPPORTED_LANGUAGES),
             'max_duration': self.MAX_DURATION,
             'max_file_size': self.MAX_FILE_SIZE,

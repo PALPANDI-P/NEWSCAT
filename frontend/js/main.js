@@ -692,8 +692,12 @@ const api = {
             });
 
             if (!response.ok) {
-                const error = await response.json().catch(() => ({ message: 'Unknown error' }));
-                throw new Error(error.message || `HTTP ${response.status}`);
+                let errMessage = `HTTP ${response.status}`;
+                try {
+                    const errorJson = await response.json();
+                    errMessage = errorJson.message || errMessage;
+                } catch (e) { }
+                throw new Error(errMessage);
             }
 
             const data = await response.json();
@@ -728,8 +732,8 @@ const api = {
         }
 
         const formData = new FormData();
-        // Backend expects 'file' as the field name for all upload types
-        formData.append('file', file);
+        // Backend specifically expects the key to match the type ('image', 'audio', 'video')
+        formData.append(type, file);
 
         // Verify FormData contents
         console.log(`[API classifyFile] FormData created, checking entries:`);
@@ -788,12 +792,10 @@ const api = {
                 console.log(`[API classifyFile] Upload aborted`);
                 return null;
             }
-            // Enhance network error messages
             if (error.message?.includes('NetworkError') || error.message?.includes('Failed to fetch')) {
                 throw new Error('Network connection failed. Please check your connection and try again.');
             }
-            console.error(`[API classifyFile] Upload error:`, error);
-            throw error;
+            throw new Error(error.message || 'Error uploading file');
         }
     },
 
@@ -899,289 +901,187 @@ const notificationManager = {
 };
 
 // =============================================================================
-// RESULTS MANAGER - Clean v3/v4 Style Display
+// RESULTS MANAGER - Refactored for Dashboard UI
 // =============================================================================
 const resultsManager = {
-    display(data) {
-        const section = document.getElementById('results-section');
-        if (!section) return;
-
-        section.style.display = 'block';
-        section.classList.remove('hidden');
-        section.classList.add('animate-fade-in');
-
+    display(data, inputText = 'Content analysis complete', inputType = 'text') {
+        // Show results state without hiding hero state
+        const resultsEl = document.getElementById('results-state');
+        resultsEl.classList.remove('hidden');
+        
+        // Smooth scroll to results after a tiny delay to ensure DOM is updated
         setTimeout(() => {
-            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 100);
-
+        
+        // 0. Update Input Summary
+        const summaryTextEl = document.getElementById('summary-text');
+        const summaryBadgeEl = document.getElementById('summary-badge');
+        const summaryIconEl = document.getElementById('summary-icon');
+        
+        if (summaryTextEl) {
+            summaryTextEl.textContent = inputType === 'text' && inputText.length > 60 
+                ? inputText.substring(0, 60) + '...' 
+                : inputText;
+        }
+        
+        if (summaryBadgeEl) {
+            summaryBadgeEl.textContent = `${inputType.toUpperCase()} MODE`;
+            // Color based on type
+            summaryBadgeEl.className = 'text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-full border shadow-[0_0_10px_rgba(255,255,255,0.05)] whitespace-nowrap font-bold ';
+            if (inputType === 'text') summaryBadgeEl.classList.add('text-indigo-400', 'bg-indigo-500/10', 'border-indigo-500/20');
+            else if (inputType === 'image') summaryBadgeEl.classList.add('text-purple-400', 'bg-purple-500/10', 'border-purple-500/20');
+            else if (inputType === 'audio') summaryBadgeEl.classList.add('text-green-400', 'bg-green-500/10', 'border-green-500/20');
+            else if (inputType === 'video') summaryBadgeEl.classList.add('text-cyan-400', 'bg-cyan-500/10', 'border-cyan-500/20');
+        }
+        
+        if (summaryIconEl) {
+            let iconClass = 'fa-file';
+            if (inputType === 'text') iconClass = 'fa-keyboard text-indigo-400';
+            else if (inputType === 'image') iconClass = 'fa-image text-purple-400';
+            else if (inputType === 'audio') iconClass = 'fa-microphone text-green-400';
+            else if (inputType === 'video') iconClass = 'fa-video text-cyan-400';
+            summaryIconEl.className = `fas ${iconClass}`;
+        }
+        
+        // 1. Main Category Update
         const category = data.category || 'unknown';
-        const confidence = Math.min((data.confidence || 0), 100);
         const style = categoryStyles[category] || categoryStyles.unknown;
+        const icon = this.getCategoryIcon(category);
+        
+        const mainIconEl = document.getElementById('result-main-icon');
+        const iconContainerEl = document.getElementById('result-icon-container');
+        const mainCategoryEl = document.getElementById('result-main-category');
+        const subCategoryEl = document.getElementById('result-sub-category');
+        
+        mainIconEl.className = `fas ${icon}`;
+        iconContainerEl.style.backgroundColor = `${style.color}33`; // 20% opacity
+        iconContainerEl.style.color = style.color;
+        iconContainerEl.style.borderColor = `${style.color}50`;
+        
+        mainCategoryEl.textContent = utils.capitalizeFirst(data.category_display || data.category);
+        
+        // Try mapping category to subtext
+        const subtexts = {
+            'politics': 'Government, elections, policies',
+            'technology': 'Tech innovations, AI, software',
+            'sports': 'Sports events, athletes, teams',
+            'business': 'Markets, companies, economy',
+            'entertainment': 'Movies, music, celebrities',
+            'science': 'Scientific discoveries, research',
+            'health': 'Medical news, healthcare',
+            'environment': 'Climate, nature, conservation',
+            'education': 'Schools, universities, learning',
+            'world': 'International news, global events'
+        };
+        subCategoryEl.textContent = subtexts[category.toLowerCase()] || 'News Classification Result';
+        
+        // 2. Confidence Circle Update
+        const confidence = Math.min((data.confidence || 0), 100);
+        const confidenceCircle = document.getElementById('confidence-circle');
+        const confidenceText = document.getElementById('confidence-text');
+        
+        const circumference = 2 * Math.PI * 40; // r=40
+        const offset = circumference - (confidence / 100) * circumference;
+        
+        confidenceCircle.style.strokeDashoffset = offset;
+        confidenceCircle.style.stroke = this.getConfidenceColor(confidence);
+        confidenceText.textContent = `${confidence.toFixed(1)}%`;
+        
+        // 3. Execution Summary Panel Update
+        this.updateExecutionSummary(data);
+        
+        // 4. Text Analysis Panel Update
+        this.updateTextAnalysisGrid(data);
 
-        // Update main result card
-        this.updateResultCard(data, style);
-
-        // Update summary
-        this.updateSummary(data);
-
-        // Update key metrics
-        this.updateMetrics(data);
-
-        // Display topics grid (v3/v4 style)
-        this.displayTopicsGrid(data);
-
-        // Display extracted text/media info if available
-        this.displayExtractedInfo(data);
-
-        // Display model info
-        this.displayModelInfo(data);
-
-        notificationManager.show(
-            `Analysis complete! ${utils.capitalizeFirst(category)} (${confidence.toFixed(1)}% confidence)`,
-            'success'
-        );
+        notificationManager.show(`Analysis complete! ${utils.capitalizeFirst(category)}`, 'success');
     },
 
-    updateResultCard(data, style) {
-        // Update category display
-        const categoryEl = document.getElementById('result-category');
-        if (categoryEl) {
-            categoryEl.innerHTML = `
-                <div class="result-category-main" style="color: ${style.color}">
-                    ${utils.capitalizeFirst(data.category_display || data.category)}
-                </div>
-            `;
+    updateExecutionSummary(data) {
+        const textEl = document.getElementById('topic-summary-text');
+        const indicatorEl = document.getElementById('topic-summary-indicator');
+        
+        if (!textEl) return;
+        
+        let summary = "Classification complete. Category matched successfully.";
+        if (data.main_topic_summary) {
+            summary = data.main_topic_summary;
+        } else if (data.summary) {
+            summary = data.summary;
+        }
+        
+        // Typewriter effect
+        textEl.textContent = "";
+        let i = 0;
+        textEl.style.opacity = '1';
+        
+        // Optional indicator color match
+        if(indicatorEl && data.category) {
+            const style = categoryStyles[data.category] || categoryStyles.unknown;
+            indicatorEl.style.background = `linear-gradient(to bottom, ${style.color}, ${style.color}88)`;
         }
 
-        // Update confidence badge
-        const badge = document.getElementById('result-confidence-badge');
-        if (badge) {
-            badge.style.background = `linear-gradient(135deg, ${style.color}30, ${style.color}10)`;
-            badge.style.borderColor = style.color;
-            badge.style.color = style.color;
-            const badgeText = badge.querySelector('span');
-            if (badgeText) badgeText.textContent = `${(data.confidence || 0).toFixed(1)}%`;
-        }
-
-        // Update confidence level indicator
-        const confidenceLevel = document.getElementById('result-confidence-level');
-        if (confidenceLevel) {
-            const level = data.confidence_level || this.getConfidenceLevel(data.confidence);
-            const levelText = this.formatConfidenceLevel(level);
-            confidenceLevel.textContent = levelText;
-            confidenceLevel.style.color = this.getConfidenceColor(data.confidence);
-        }
-    },
-
-    updateSummary(data) {
-        const summaryEl = document.getElementById('result-summary');
-        if (!summaryEl) return;
-
-        // Use provided summary or generate one
-        let summary = data.summary || '';
-        if (!summary) {
-            summary = this.generateSummary(data);
-        }
-
-        summaryEl.textContent = summary;
-    },
-
-    generateSummary(data) {
-        const category = utils.capitalizeFirst(data.category_display || data.category || 'Unknown');
-        const confidence = (data.confidence || 0).toFixed(1);
-        const wordCount = data.word_count || (data.original_text?.split(/\s+/).length || 0);
-
-        let summary = `Classified as ${category} with ${confidence}% confidence. `;
-        summary += `Processed ${wordCount} words.`;
-
-        // Add secondary topics if available
-        if (data.topics && data.topics.length > 0) {
-            const secondary = data.topics.slice(0, 3).map(t => utils.capitalizeFirst(t.category_display || t.category)).join(', ');
-            if (secondary) {
-                summary += ` Related topics: ${secondary}.`;
+        function typeWriter() {
+            if (i < summary.length) {
+                textEl.textContent += summary.charAt(i);
+                i++;
+                setTimeout(typeWriter, 15);
             }
         }
-
-        return summary;
+        
+        // slight delay to let the panel slide in
+        setTimeout(typeWriter, 400);
     },
 
-    updateMetrics(data) {
-        // Word count
-        const wordCountEl = document.getElementById('metric-word-count');
-        if (wordCountEl) {
-            wordCountEl.textContent = data.word_count || 0;
-        }
-
-        // Processing time
-        const timeEl = document.getElementById('metric-processing-time');
-        if (timeEl) {
-            const timeMs = data.processing_time_ms || 0;
-            timeEl.textContent = timeMs > 0 ? `${timeMs.toFixed(0)}ms` : 'N/A';
-        }
-
-        // Keywords count
-        const keywordsEl = document.getElementById('metric-keywords');
-        if (keywordsEl) {
-            const count = data.keywords ? data.keywords.length : 0;
-            keywordsEl.textContent = count;
-        }
-
-        // Entities count
-        const entitiesEl = document.getElementById('metric-entities');
-        if (entitiesEl) {
-            const count = data.entities ? data.entities.length : 0;
-            entitiesEl.textContent = count;
+    updateTextAnalysisGrid(data) {
+        // Only show text analysis for text input type, or simulate it if we wanted to
+        const panel = document.getElementById('text-analysis-panel');
+        if (!panel) return;
+        
+        if (state.currentInputType === 'text') {
+            panel.classList.remove('hidden');
+            const wordsMatch = data.original_text ? data.original_text.match(/\\b\\w+\\b/g) : [];
+            const words = wordsMatch ? wordsMatch.length : 0;
+            const chars = data.original_text ? Math.min(data.original_text.length, 10000) : 0;
+            const sentences = data.original_text ? Math.max(1, (data.original_text.match(/[.!?]+/g) || []).length) : 0;
+            const readability = Math.min(20, Math.max(1, Math.round(words / Math.max(1, sentences) * 0.5))); // Fake simplified readability
+            
+            this.animateValue('analysis-words', 0, words, 1000);
+            this.animateValue('analysis-chars', 0, chars, 1000);
+            this.animateValue('analysis-sentences', 0, sentences, 1000);
+            this.animateValue('analysis-readability', 0, readability, 1000);
+        } else {
+            panel.classList.add('hidden'); // Hide text analysis metrics if not text mode
         }
     },
-
-    displayKeywords(data) {
-        // For now, we'll keep the topics grid but make it cleaner
-        // This method can be expanded later if we want a separate keyword list
-        return;
-    },
-
-    displayTopicsGrid(data) {
-        const container = document.getElementById('topics-grid');
-        if (!container) return;
-
-        const predictions = data.topics || data.top_predictions || [];
-        if (predictions.length === 0) {
-            container.innerHTML = '<div class="topic-chip">No additional topics detected</div>';
-            return;
-        }
-
-        // Show only top 5-8 predictions for cleaner display (v3/v4 style)
-        const displayPredictions = predictions.slice(0, 6);
-        let topicsHtml = '';
-
-        displayPredictions.forEach((pred, index) => {
-            const confidence = Math.min(pred.confidence || 0, 100);
-            const category = pred.category_display || pred.category;
-            const style = categoryStyles[pred.category] || categoryStyles.unknown;
-            const icon = this.getCategoryIcon(pred.category);
-
-            topicsHtml += `
-                <div class="topic-chip" style="animation-delay: ${index * 0.05}s">
-                    <i class="fas ${icon}" style="color: ${style.color}"></i>
-                    <span>${utils.capitalizeFirst(category)}</span>
-                    <span class="topic-confidence">${confidence.toFixed(1)}%</span>
-                </div>
-            `;
-        });
-
-        container.innerHTML = topicsHtml;
-    },
-
-    getConfidenceLevel(confidence) {
-        if (confidence >= 90) return 'very_high';
-        if (confidence >= 75) return 'high';
-        if (confidence >= 60) return 'moderate';
-        if (confidence >= 40) return 'low';
-        return 'very_low';
-    },
-
-    formatConfidenceLevel(level) {
-        const labels = {
-            'very_high': 'Very High Confidence',
-            'high': 'High Confidence',
-            'moderate': 'Moderate Confidence',
-            'low': 'Low Confidence',
-            'very_low': 'Very Low Confidence'
+    
+    animateValue(id, start, end, duration) {
+        const obj = document.getElementById(id);
+        if (!obj) return;
+        let startTimestamp = null;
+        const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            obj.innerHTML = Math.floor(progress * (end - start) + start);
+            if (progress < 1) {
+                window.requestAnimationFrame(step);
+            }
         };
-        return labels[level] || level;
+        window.requestAnimationFrame(step);
     },
 
     getConfidenceColor(confidence) {
-        if (confidence >= 90) return '#10b981'; // green
-        if (confidence >= 75) return '#3b82f6'; // blue
-        if (confidence >= 60) return '#f59e0b'; // amber
-        if (confidence >= 40) return '#f97316'; // orange
-        return '#ef4444'; // red
+        if (confidence >= 90) return '#22c55e'; // green-500
+        if (confidence >= 75) return '#3b82f6'; // blue-500
+        if (confidence >= 60) return '#f59e0b'; // amber-500
+        if (confidence >= 40) return '#f97316'; // orange-500
+        return '#ef4444'; // red-500
     },
 
     getCategoryIcon(category) {
         const style = categoryStyles[category] || categoryStyles.unknown;
         return style.icon;
-    },
-
-    displayExtractedInfo(data) {
-        const container = document.getElementById('extracted-info-container');
-        if (!container) return;
-
-        let html = '';
-
-        // Show extracted text for image/audio/video
-        if (data.extracted_text) {
-            const inputType = data.input_type || 'content';
-            const sourceLabel = {
-                'image': 'OCR Extracted Text',
-                'audio': 'Transcribed Audio',
-                'video': 'Extracted Video Content'
-            }[inputType] || 'Extracted Text';
-
-            html += `
-                <div class="extracted-info-card">
-                    <h4><i class="fas fa-file-alt"></i> ${sourceLabel}</h4>
-                    <div class="extracted-text-content">
-                        ${utils.sanitizeText(data.extracted_text)}
-                        ${data.extracted_text.length >= 500 ? '<span class="text-truncated">... (truncated)</span>' : ''}
-                    </div>
-                    ${data.ocr_confidence ? `<div class="extraction-confidence">OCR Confidence: ${(data.ocr_confidence * 100).toFixed(1)}%</div>` : ''}
-                    ${data.transcription_confidence ? `<div class="extraction-confidence">Transcription Confidence: ${(data.transcription_confidence * 100).toFixed(1)}%</div>` : ''}
-                </div>
-            `;
-        }
-
-        // Show video/audio specific info
-        if (data.duration) {
-            html += `
-                <div class="media-info-item">
-                    <i class="fas fa-clock"></i>
-                    <span>Duration: ${data.duration.toFixed(1)}s</span>
-                </div>
-            `;
-        }
-
-        if (data.frames_processed) {
-            html += `
-                <div class="media-info-item">
-                    <i class="fas fa-images"></i>
-                    <span>Frames Processed: ${data.frames_processed}</span>
-                </div>
-            `;
-        }
-
-        container.innerHTML = html || '';
-        container.classList.toggle('hidden', !html);
-    },
-
-    displayModelInfo(data) {
-        const container = document.getElementById('model-info-container');
-        if (!container) return;
-
-        const modelName = data.model || 'Unknown Model';
-        const processingTime = data.processing_time_ms ? `${data.processing_time_ms.toFixed(0)}ms` : 'N/A';
-        const inputType = data.input_type || 'text';
-
-        container.innerHTML = `
-            <div class="model-info-grid">
-                <div class="model-info-item">
-                    <i class="fas fa-robot"></i>
-                    <span>Model: ${utils.sanitizeText(modelName)}</span>
-                </div>
-                <div class="model-info-item">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span>Processing Time: ${processingTime}</span>
-                </div>
-                <div class="model-info-item">
-                    <i class="fas fa-keyboard"></i>
-                    <span>Input Type: ${utils.capitalizeFirst(inputType)}</span>
-                </div>
-            </div>
-        `;
-    },
-
-    // Topics grid and summary methods implemented above
+    }
 };
 
 // =============================================================================
@@ -1191,45 +1091,12 @@ const uiManager = {
     switchInputType(type) {
         state.currentInputType = type;
 
-        // Update tab buttons
-        document.querySelectorAll('.input-type-btn').forEach(btn => {
-            const isActive = btn.dataset.type === type;
-            btn.classList.toggle('active', isActive);
-        });
+        // Reset display to hero
+        document.getElementById('results-state').classList.add('hidden');
+        document.getElementById('hero-state').classList.remove('hidden');
 
-        // Update panels
-        document.querySelectorAll('.input-panel').forEach(panel => {
-            panel.classList.toggle('active', panel.dataset.type === type);
-        });
-
-        this.updateAnalyzeButton();
-    },
-
-    updateFilePreview(type, file) {
-        const infoEl = document.getElementById(`${type}-info`);
-        const nameEl = document.getElementById(`${type}-filename`);
-        const sizeEl = document.getElementById(`${type}-filesize`);
-
-        if (nameEl) nameEl.textContent = file.name;
-        if (sizeEl) sizeEl.textContent = utils.formatFileSize(file.size);
-        if (infoEl) infoEl.classList.remove('hidden');
-
-        // Hide upload zone
-        const uploadZone = document.getElementById(`${type}-upload-zone`);
-        if (uploadZone) uploadZone.classList.add('hidden');
-    },
-
-    removeFile(type) {
-        state.selectedFiles[type] = null;
-
-        const infoEl = document.getElementById(`${type}-info`);
-        const uploadZone = document.getElementById(`${type}-upload-zone`);
-        const input = document.getElementById(`${type}-input`);
-
-        if (infoEl) infoEl.classList.add('hidden');
-        if (uploadZone) uploadZone.classList.remove('hidden');
-        if (input) input.value = '';
-
+        // Note: Tab highlight handled by inline script in index.html
+        
         this.updateAnalyzeButton();
     },
 
@@ -1238,39 +1105,67 @@ const uiManager = {
         if (!btn) return;
 
         let isValid = false;
-        let debugLength = 0;
 
         switch (state.currentInputType) {
             case 'text':
-                const textarea = document.getElementById('news-text');
+                const textarea = document.getElementById('text-input');
                 if (textarea) {
-                    debugLength = textarea.value.trim().length;
-                    isValid = debugLength >= CONFIG.MIN_CHARS;
+                    isValid = textarea.value.trim().length >= CONFIG.MIN_CHARS;
                 }
-                console.log(`[Debug] Text length: ${debugLength}, MIN: ${CONFIG.MIN_CHARS}, Valid: ${isValid}`);
                 break;
             case 'image':
             case 'audio':
             case 'video':
                 isValid = state.selectedFiles[state.currentInputType] !== null;
-                console.log(`[Debug] File selected: ${isValid}`);
                 break;
         }
 
         btn.disabled = !isValid || state.isAnalyzing;
-        btn.classList.toggle('disabled', !isValid);
-        console.log(`[Debug] Button disabled: ${btn.disabled}, isAnalyzing: ${state.isAnalyzing}`);
+        btn.classList.toggle('opacity-50', !isValid || state.isAnalyzing);
+        btn.classList.toggle('cursor-not-allowed', !isValid || state.isAnalyzing);
     },
 
     updateCharCount() {
-        const textarea = document.getElementById('news-text');
+        const textarea = document.getElementById('text-input');
         const countEl = document.getElementById('char-count');
+        const warningEl = document.getElementById('char-warning');
 
         if (textarea && countEl) {
-            countEl.textContent = textarea.value.length;
+            const len = textarea.value.length;
+            const trimLen = textarea.value.trim().length;
+            countEl.textContent = len;
+            
+            if (warningEl) {
+                if (trimLen > 0 && trimLen < CONFIG.MIN_CHARS) {
+                    warningEl.classList.remove('hidden');
+                } else {
+                    warningEl.classList.add('hidden');
+                }
+            }
         }
 
         this.updateAnalyzeButton();
+    },
+    
+    updateFilePreview(type, file) {
+        // Custom simple preview implementation based on our new dashboard UI
+        const previewContainer = document.getElementById(`${type}-preview-container`);
+        const previewEl = document.getElementById(`${type}-preview`);
+        
+        if (previewContainer && previewEl && file) {
+            if (type === 'image') {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewEl.src = e.target.result;
+                    previewContainer.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else if (type === 'audio' || type === 'video') {
+                const url = URL.createObjectURL(file);
+                previewEl.src = url;
+                previewContainer.classList.remove('hidden');
+            }
+        }
     }
 };
 
@@ -1279,66 +1174,23 @@ const uiManager = {
 // =============================================================================
 const eventHandlers = {
     handleFileSelect(e, type) {
-        console.log(`[FileSelect] Event triggered for ${type}`, e.target);
+        console.log(`[FileSelect] Event triggered for ${type}`);
 
         const file = e.target.files?.[0];
-        if (!file) {
-            console.warn(`[FileSelect] No file selected for ${type}`);
-            return;
-        }
-
-        console.log(`[FileSelect] File selected: ${file.name}, size: ${file.size}, type: ${file.type} `);
+        if (!file) return;
 
         const maxSize = CONFIG.MAX_FILE_SIZES[type];
         if (file.size > maxSize) {
             const maxMB = Math.round(maxSize / 1024 / 1024);
-            notificationManager.show(`File too large.Maximum ${maxMB}MB allowed.`, 'error');
-            console.warn(`[FileSelect] File too large: ${file.size} > ${maxSize} `);
+            notificationManager.show(`File too large. Maximum ${maxMB}MB allowed.`, 'error');
             return;
         }
 
         state.selectedFiles[type] = file;
-        console.log(`[FileSelect] File stored in state.selectedFiles[${type}]`);
-
         uiManager.updateFilePreview(type, file);
         uiManager.updateAnalyzeButton();
-
-        notificationManager.show(`${utils.capitalizeFirst(type)} selected: ${file.name} `, 'success');
-    },
-
-    handleDrop(e, type) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const dropZone = document.getElementById(`${type}-upload - zone`);
-        dropZone?.classList.remove('drag-over');
-
-        const files = e.dataTransfer.files;
-        console.log(`[Drop] Files dropped: ${files.length} files`);
-
-        if (files.length > 0) {
-            const file = files[0];
-            const input = document.getElementById(`${type}-input`);
-
-            // Create a DataTransfer to simulate file input
-            const dt = new DataTransfer();
-            dt.items.add(file);
-            input.files = dt.files;
-
-            console.log(`[Drop] File set on input: ${file.name} `);
-            this.handleFileSelect({ target: input }, type);
-        }
-    },
-
-    handleUploadZoneClick(type) {
-        console.log(`[UploadZone] Click triggered for ${type}`);
-        const input = document.getElementById(`${type}-input`);
-        if (input) {
-            console.log(`[UploadZone] Triggering click on file input`);
-            input.click();
-        } else {
-            console.error(`[UploadZone] Input element not found for ${type}`);
-        }
+        
+        notificationManager.show(`${utils.capitalizeFirst(type)} ready to analyze`, 'success');
     }
 };
 
@@ -1346,24 +1198,12 @@ const eventHandlers = {
 // ANALYSIS FUNCTION
 // =============================================================================
 async function analyzeContent() {
-    if (state.isAnalyzing) {
-        console.log('[Analyze] Already analyzing, skipping');
-        return;
-    }
+    if (state.isAnalyzing) return;
 
-    console.log(`[Analyze] Starting analysis for type: ${state.currentInputType} `);
     state.isAnalyzing = true;
     uiManager.updateAnalyzeButton();
 
-    const messages = {
-        text: { main: 'Analyzing...', sub: 'Processing text content' },
-        image: { main: 'Analyzing...', sub: 'Processing image content' },
-        audio: { main: 'Audio Analysis...', sub: 'Transcribing with Whisper' },
-        video: { main: 'Video Analysis...', sub: 'Scene detection in progress' }
-    };
-
-    const msg = messages[state.currentInputType];
-    loadingManager.show(msg.main, msg.sub);
+    loadingManager.show('Analyzing Data', 'Ensemble ML models processing content...');
 
     try {
         let result;
@@ -1371,99 +1211,75 @@ async function analyzeContent() {
 
         switch (state.currentInputType) {
             case 'text':
-                const textarea = document.getElementById('news-text');
+                const textarea = document.getElementById('text-input');
                 inputText = textarea?.value.trim() || '';
-                console.log(`[Analyze] Text length: ${inputText.length}, content: "${inputText.substring(0, 50)}..."`);
-                loadingManager.update('Processing...', 'Analyzing text content');
                 result = await api.classifyText(inputText);
-                console.log('[Analyze] API response received:', result);
                 break;
 
             case 'image':
             case 'audio':
             case 'video':
                 const file = state.selectedFiles[state.currentInputType];
-                console.log(`[Analyze] Selected file for ${state.currentInputType}: `, file);
-
-                if (!file) {
-                    throw new Error(`No ${state.currentInputType} file selected`);
-                }
-
-                loadingManager.update('Processing...', 'AI models analyzing content');
+                if (!file) throw new Error(`No ${state.currentInputType} file selected`);
                 result = await api.classifyFile(file, state.currentInputType);
-                inputText = file?.name || 'File';
+                inputText = file.name;
                 break;
         }
 
-        // Handle result - check for null (aborted), error status, or success
         if (result === null) {
-            // Request was aborted - don't show error, just stop
             loadingManager.hide();
-            return;
+            return; // Aborted
         }
 
         if (result?.status === 'success') {
-            loadingManager.update('Finalizing...', 'Preparing results display');
-            addToHistory(result.data || result, inputText, state.currentInputType);
-
+            // Simulate minimal processing time if backend too fast for UX
             setTimeout(() => {
-                resultsManager.display(result.data || result);
+                resultsManager.display(result.data || result, inputText, state.currentInputType);
                 loadingManager.hide();
-            }, 300);
-        } else if (result?.status === 'error') {
-            // API returned an error status
-            throw new Error(result.message || 'Server returned an error');
+                addToHistory(result.data || result, inputText, state.currentInputType);
+            }, 500);
         } else {
-            // Unexpected response format
-            throw new Error('Invalid response from server');
+            throw new Error(result?.message || 'Server returned an error');
         }
     } catch (error) {
         loadingManager.hide();
-
-        // Provide user-friendly error messages based on error type
         let errorMessage = error.message || 'Unknown error occurred';
-
-        if (error.name === 'AbortError') {
-            // Request was cancelled - no need to show error
-            console.log('Request was cancelled');
-            return;
-        } else if (error.message?.includes('NetworkError') ||
-            error.message?.includes('Failed to fetch') ||
-            error.message?.includes('network')) {
-            errorMessage = 'Network connection failed. Please check your connection and try again.';
-        } else if (error.message?.includes('499') || error.message?.includes('cancelled')) {
-            errorMessage = 'Upload was cancelled or connection was lost. Please try again.';
-        } else if (error.message?.includes('HTTP')) {
-            errorMessage = `Server error: ${error.message} `;
+        if (error.name !== 'AbortError') {
+             notificationManager.show(`Analysis failed: ${errorMessage}`, 'error');
         }
-
-        notificationManager.show(`Analysis failed: ${errorMessage} `, 'error');
-        console.error('Analysis error:', error);
     } finally {
         state.isAnalyzing = false;
         uiManager.updateAnalyzeButton();
     }
 }
 
-// =============================================================================
-// HISTORY MANAGEMENT
-// =============================================================================
+
 function addToHistory(result, inputText, inputType) {
+    // Determine category based on response logic
+    let categoryToSave = result.category;
+    if (result.main_topic && result.main_topic.toLowerCase() !== result.category.toLowerCase()) {
+        categoryToSave = `${utils.capitalizeFirst(result.main_topic)} > ${utils.capitalizeFirst(result.category)}`;
+    }
+
     const entry = {
+        id: Date.now().toString(),
         timestamp: new Date().toISOString(),
-        category: result.category,
+        category: categoryToSave,
         confidence: result.confidence,
         inputType,
-        inputPreview: inputType === 'text' ? inputText.substring(0, 100) + '...' : inputText
+        inputPreview: inputType === 'text' ? inputText.substring(0, 80) + '...' : inputText
     };
 
+    if (!state.classificationHistory) state.classificationHistory = [];
     state.classificationHistory.unshift(entry);
-    if (state.classificationHistory.length > 50) {
+    
+    if (state.classificationHistory.length > CONFIG.MAX_HISTORY) {
         state.classificationHistory.pop();
     }
 
     try {
-        localStorage.setItem('newscat_history', JSON.stringify(state.classificationHistory));
+        localStorage.setItem(CONFIG.HISTORY_KEY, JSON.stringify(state.classificationHistory));
+        renderHistory();
     } catch (e) {
         console.warn('Failed to save history:', e);
     }
@@ -1471,45 +1287,292 @@ function addToHistory(result, inputText, inputType) {
 
 function loadHistory() {
     try {
-        const saved = localStorage.getItem('newscat_history');
+        const saved = localStorage.getItem(CONFIG.HISTORY_KEY);
         if (saved) {
             state.classificationHistory = JSON.parse(saved);
+        } else {
+            state.classificationHistory = [];
         }
+        renderHistory();
     } catch (e) {
         console.warn('Failed to load history:', e);
+        state.classificationHistory = [];
     }
 }
 
+function clearHistory() {
+    state.classificationHistory = [];
+    try {
+        localStorage.removeItem(CONFIG.HISTORY_KEY);
+        renderHistory();
+        notificationManager.show('History cleared successfully', 'success');
+    } catch (e) {
+        console.warn('Failed to clear history:', e);
+    }
+}
+
+function renderHistory() {
+    const historyList = document.getElementById('history-list');
+    if (!historyList) return;
+
+    if (!state.classificationHistory || state.classificationHistory.length === 0) {
+        historyList.innerHTML = `
+            <div class="history-empty p-8 text-center rounded-xl bg-dark-900 border border-dark-800">
+                <i class="fas fa-inbox text-4xl mb-4 text-dark-500"></i>
+                <p class="text-dark-400 font-medium">No classifications yet. Start by analyzing some content!</p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '<div class="flex flex-col gap-3">';
+    state.classificationHistory.forEach(item => {
+        const date = new Date(item.timestamp).toLocaleDateString(undefined, { 
+            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+        });
+        
+        let iconHtml = '';
+        switch(item.inputType) {
+            case 'text': iconHtml = '<i class="fas fa-keyboard text-brand-purple"></i>'; break;
+            case 'image': iconHtml = '<i class="fas fa-image text-blue-400"></i>'; break;
+            case 'audio': iconHtml = '<i class="fas fa-music text-green-400"></i>'; break;
+            case 'video': iconHtml = '<i class="fas fa-video text-red-400"></i>'; break;
+            default: iconHtml = '<i class="fas fa-file text-gray-400"></i>';
+        }
+
+        html += `
+            <div class="history-item flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-dark-900/50 hover:bg-dark-800 border border-dark-800 hover:border-brand-purple/30 transition-all duration-300">
+                <div class="flex items-start gap-4 mb-3 sm:mb-0 max-w-full sm:max-w-[70%]">
+                    <div class="mt-1 bg-dark-950 p-2 rounded-lg border border-white/5 flex-shrink-0">
+                        ${iconHtml}
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-white font-medium truncate text-sm sm:text-base">${utils.sanitizeText(item.inputPreview)}</p>
+                        <p class="text-dark-400 text-xs mt-1"><i class="far fa-clock mr-1"></i>${date}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 flex-shrink-0 ml-12 sm:ml-0">
+                    <span class="px-3 py-1 bg-brand-purple/20 border border-brand-purple/30 text-brand-purpleLight rounded-full text-xs font-semibold whitespace-nowrap">
+                        ${item.category}
+                    </span>
+                    <span class="text-xs font-bold ${item.confidence > 80 ? 'text-green-400' : 'text-yellow-400'}">
+                        ${Number(item.confidence).toFixed(1)}%
+                    </span>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    // Add brief animation when updating
+    historyList.style.opacity = '0';
+    setTimeout(() => {
+        historyList.innerHTML = html;
+        historyList.style.transition = 'opacity 0.3s ease';
+        historyList.style.opacity = '1';
+    }, 150);
+}
+
 // =============================================================================
-// SAMPLE LOADER
+// SAMPLE LOADER & REAL-WORLD NEWS
 // =============================================================================
-function loadSample(type) {
-    const textarea = document.getElementById('news-text');
-    if (!textarea || !sampleArticles[type]) return;
+function loadTextCharByChar(text) {
+    const textarea = document.getElementById('text-input') || document.getElementById('news-text');
+    if (!textarea) return;
 
     textarea.value = '';
-    uiManager.updateCharCount();
-
-    const text = sampleArticles[type];
+    // Use the char-count element specific to where the textarea is found
+    const charCount = document.getElementById('char-count');
+    if (charCount) charCount.textContent = '0 characters';
+    
+    // Simulate typing
     let index = 0;
-
     const typeInterval = setInterval(() => {
         if (index < text.length) {
             textarea.value += text.charAt(index);
             index++;
-            uiManager.updateCharCount();
+            if (charCount) charCount.textContent = `${textarea.value.length} characters`;
         } else {
             clearInterval(typeInterval);
+            validateInput(); // Validate input after text is loaded
         }
     }, 3);
 }
+
+function loadSample(type) {
+    if (!samples[type]) return;
+    loadTextCharByChar(samples[type]);
+}
+
+async function fetchRealtimeNews() {
+    try {
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) {
+            loadingOverlay.classList.add('active');
+            loadingOverlay.querySelector('.loading-text').textContent = 'Fetching Live News...';
+            loadingOverlay.querySelector('.loading-subtext').textContent = 'Connecting to real-world sources';
+        }
+        
+        const response = await api.request('/news/realtime');
+        
+        if (loadingOverlay) loadingOverlay.classList.remove('active');
+        
+        if (response.status === 'success' && response.data && response.data.length > 0) {
+            // Pick a random news item
+            const randomIndex = Math.floor(Math.random() * response.data.length);
+            const newsItem = response.data[randomIndex];
+            
+            // Format the content
+            const fullText = `${newsItem.title}\n\n${newsItem.content}\n\nSource: ${newsItem.source}`;
+            
+            // Load it smoothly
+            loadTextCharByChar(fullText);
+            notificationManager.show('Loaded real-world news from ' + newsItem.source, 'success');
+        } else {
+            notificationManager.show('Failed to fetch real-time news.', 'error');
+        }
+    } catch (e) {
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) loadingOverlay.classList.remove('active');
+        console.error('Real-world news fetch failed:', e);
+        notificationManager.show('Failed to connect to real-world news stream.', 'error');
+    }
+}
+
+// =============================================================================
+// HISTORY MANAGER
+// =============================================================================
+let classificationHistory = [];
+
+function loadHistory() {
+    try {
+        const stored = localStorage.getItem('newscat_history');
+        if (stored) {
+            classificationHistory = JSON.parse(stored);
+            renderHistory();
+        }
+    } catch (e) {
+        console.error('Failed to load history', e);
+    }
+}
+
+function saveHistory() {
+    try {
+        localStorage.setItem('newscat_history', JSON.stringify(classificationHistory));
+    } catch (e) {
+        console.error('Failed to save history', e);
+    }
+}
+
+function addToHistory(data, inputText, inputType) {
+    const entry = {
+        id: Date.now().toString(),
+        category: data.category,
+        category_display: data.category_display || data.category,
+        confidence: data.confidence,
+        timestamp: new Date().toISOString(),
+        inputText: inputText,
+        inputType: inputType
+    };
+    
+    // Add to beginning, keep max 10
+    classificationHistory.unshift(entry);
+    if (classificationHistory.length > 10) {
+        classificationHistory.pop();
+    }
+    
+    saveHistory();
+    renderHistory();
+}
+
+function renderHistory() {
+    const container = document.getElementById('history-list');
+    if (!container) return;
+    
+    if (classificationHistory.length === 0) {
+        container.innerHTML = `
+            <div class="flex flex-col items-center justify-center p-6 text-gray-500">
+                <i class="fas fa-folder-open text-2xl mb-2 opacity-50"></i>
+                <span class="text-xs">No classification history yet</span>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    classificationHistory.forEach(item => {
+        const style = categoryStyles[item.category] || categoryStyles.unknown;
+        const conf = Math.min(item.confidence || 0, 100).toFixed(1);
+        const date = new Date(item.timestamp).toLocaleString(undefined, {
+            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+        
+        let iconClass = 'fa-file';
+        if (item.inputType === 'text') iconClass = 'fa-keyboard';
+        else if (item.inputType === 'image') iconClass = 'fa-image';
+        else if (item.inputType === 'audio') iconClass = 'fa-microphone';
+        else if (item.inputType === 'video') iconClass = 'fa-video';
+        
+        html += `
+            <div class="flex flex-col p-4 rounded-xl bg-dark-800 border border-white/5 hover:border-white/10 transition-colors gap-3 relative overflow-hidden group">
+                <div class="absolute top-0 left-0 w-1 h-full" style="background-color: ${style.color}"></div>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style="background-color: ${style.color}22; color: ${style.color};">
+                            <i class="fas ${style.icon}"></i>
+                        </div>
+                        <span class="text-white font-bold text-sm tracking-wide uppercase">${utils.capitalizeFirst(item.category_display)}</span>
+                    </div>
+                    <span class="text-xs font-bold px-2 py-1 rounded bg-dark-950/50" style="color: ${style.color}">${conf}%</span>
+                </div>
+                <div class="flex flex-col mt-1">
+                    <span class="text-xs text-gray-500 line-clamp-2 leading-relaxed"><i class="fas ${iconClass} mr-1"></i> ${item.inputText || 'Media File'}</span>
+                    <span class="text-[10px] text-gray-600 font-medium mt-2">${date}</span>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Side Panel Toggle Logic
+function toggleHistorySidebar(show) {
+    const sidebar = document.getElementById('history-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if(!sidebar || !overlay) return;
+
+    if (show) {
+        sidebar.classList.remove('translate-x-full');
+        overlay.classList.remove('hidden');
+        // Small delay for transition
+        setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    } else {
+        sidebar.classList.add('translate-x-full');
+        overlay.classList.add('opacity-0');
+        setTimeout(() => overlay.classList.add('hidden'), 500); // Wait for transition
+        document.body.style.overflow = '';
+    }
+}
+
+window.clearHistory = function() {
+    if (confirm('Are you sure you want to clear your classification history?')) {
+        classificationHistory = [];
+        saveHistory();
+        renderHistory();
+    }
+};
 
 // =============================================================================
 // INITIALIZATION
 // =============================================================================
 function initEventListeners() {
+    // Expose setInputState for inline tab switching in HTML
+    window.setInputState = (mode) => uiManager.switchInputType(mode);
+
     // Text input
-    const textarea = document.getElementById('news-text');
+    const textarea = document.getElementById('text-input');
     if (textarea) {
         textarea.addEventListener('input', () => uiManager.updateCharCount());
     }
@@ -1519,6 +1582,15 @@ function initEventListeners() {
         btn.addEventListener('click', () => uiManager.switchInputType(btn.dataset.type));
     });
 
+    // History Sidebar Toggles
+    const openBtn = document.getElementById('history-toggle-btn');
+    const closeBtn = document.getElementById('close-history-btn');
+    const overlay = document.getElementById('sidebar-overlay');
+
+    if (openBtn) openBtn.addEventListener('click', () => toggleHistorySidebar(true));
+    if (closeBtn) closeBtn.addEventListener('click', () => toggleHistorySidebar(false));
+    if (overlay) overlay.addEventListener('click', () => toggleHistorySidebar(false));
+
     // Analyze button
     const analyzeBtn = document.getElementById('analyze-btn');
     if (analyzeBtn) {
@@ -1527,12 +1599,12 @@ function initEventListeners() {
 
     // File inputs
     ['image', 'audio', 'video'].forEach(type => {
-        const input = document.getElementById(`${type}-input`);
+        const input = document.getElementById(`${type}-upload`);
         if (input) {
-            console.log(`[Init] Attaching change listener to ${type}-input`);
+            console.log(`[Init] Attaching change listener to ${type}-upload`);
             input.addEventListener('change', (e) => eventHandlers.handleFileSelect(e, type));
         } else {
-            console.error(`[Init] Input element not found: ${type}-input`);
+            console.error(`[Init] Input element not found: ${type}-upload`);
         }
 
         // Drag and drop
@@ -1619,6 +1691,7 @@ if (document.readyState === 'loading') {
 // Export for global access
 window.newscat = {
     loadSample,
+    fetchRealtimeNews,
     removeFile: (type) => uiManager.removeFile(type),
     switchInputType: (type) => uiManager.switchInputType(type),
     getCacheStats: () => requestCache.getStats(),

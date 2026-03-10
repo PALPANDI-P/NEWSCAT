@@ -507,7 +507,7 @@ class CinematicProcessor:
     def process_video_file(self, video_path: str,
                           extract_scenes: bool = True,
                           extract_audio: bool = True,
-                          max_scenes: int = 10) -> VideoProcessingResult:
+                          max_scenes: int = 3) -> VideoProcessingResult:
         """
         Process video with full cinematic analysis
         
@@ -588,7 +588,7 @@ class CinematicProcessor:
                     keyframes = self.keyframe_extractor.extract_keyframes(
                         video_path, 
                         scene_boundaries,
-                        frames_per_scene=2
+                        frames_per_scene=1
                     )
                     temp_files.extend([k.image_path for k in keyframes])
                 

@@ -24,5 +24,10 @@
     "[python]": {
         "editor.defaultFormatter": "ms-python.python"
     },
-    "CodeGPT.apiKey": "Anthropic"
+    "CodeGPT.apiKey": "Anthropic",
+    "continue.enableQuickActions": true,
+    "continue.pauseCodebaseIndexOnStart": false,
+    "continue.pauseTabAutocompleteOnBattery": false,
+    "continue.enableConsole": true,
+    "powershell.sideBar.CommandExplorerVisibility": false
 }

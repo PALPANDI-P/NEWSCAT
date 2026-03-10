@@ -8,6 +8,7 @@
         "eamodio.gitlens",
         "streetsidesoftware.code-spell-checker",
         "batisteo.vscode-django",
-        "adrianliechti.wingman-vscode"
+        "adrianliechti.wingman-vscode",
+        "continue.continue"
     ]
 }

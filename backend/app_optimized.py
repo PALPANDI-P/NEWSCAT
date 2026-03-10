@@ -296,12 +296,15 @@ def _init_model_manager():
     
     manager.register('image_processor', load_image_processor, preload=False)
     
-    # Audio Processor (Simple version without ffmpeg dependency)
+    # Audio Processor (Simple version without ffmpeg dependency - more reliable)
     def load_audio_processor():
         try:
             from backend.models.simple_audio_processor import SimpleAudioProcessor
-            return SimpleAudioProcessor(lazy_init=True)
+            processor = SimpleAudioProcessor(lazy_init=True)
+            logger.info("Using SimpleAudioProcessor (no ffmpeg required)")
+            return processor
         except ImportError:
+            logger.warning("SimpleAudioProcessor not available, falling back to AudioProcessor")
             from backend.models.audio_processor import AudioProcessor
             return AudioProcessor(lazy_init=True)
     
@@ -319,6 +322,24 @@ def _init_model_manager():
 
 # Initialize model manager
 model_manager = _init_model_manager()
+
+# Preload default classifier on startup for faster first request
+def _preload_default_model():
+    """Preload the default classifier in background"""
+    try:
+        logger.info("Preloading default classifier...")
+        classifier = get_classifier(use_enhanced=True)
+        if classifier:
+            logger.info(f"Preloaded classifier: {classifier.name}")
+        else:
+            logger.warning("Could not preload classifier")
+    except Exception as e:
+        logger.debug(f"Model preload deferred: {e}")
+
+# Start preloading in background thread
+import threading
+preload_thread = threading.Thread(target=_preload_default_model, daemon=True)
+preload_thread.start()
 
 
 # ===== CACHE FUNCTIONS =====
@@ -689,6 +710,10 @@ def classify():
             confidence_val = confidence_val * 100
         
         # Build response with new format
+        analysis = result.get('analysis', {}).copy()
+        # Add top_predictions for frontend compatibility
+        analysis['top_predictions'] = result.get('topics', [])[:4]
+        
         response = {
             'model': classifier.name,
             'model_version': getattr(classifier, 'version', '1.0.0'),
@@ -705,7 +730,7 @@ def classify():
             'keywords': result.get('keywords', []),
             'entities': result.get('entities', []),
             'topics': result.get('topics', []),
-            'analysis': result.get('analysis', {}),
+            'analysis': analysis,
             'content_length': len(text),
             'word_count': len(text.split()),
         }
@@ -1068,6 +1093,10 @@ def classify_image():
         processing_time = round((time.perf_counter() - start_time) * 1000, 2)
         
         # Build standardized response matching text endpoint format (flat structure)
+        analysis = result.get('analysis', {}).copy()
+        # Add top_predictions for frontend compatibility
+        analysis['top_predictions'] = result.get('topics', [])[:4]
+        
         response_data = {
             'model': classifier.name,
             'model_version': getattr(classifier, 'version', '1.0.0'),
@@ -1084,7 +1113,7 @@ def classify_image():
             'keywords': result.get('keywords', []),
             'entities': result.get('entities', []),
             'topics': result.get('topics', []),
-            'analysis': result.get('analysis', {}),
+            'analysis': analysis,
             'content_length': len(extracted_text),
             'word_count': len(extracted_text.split()),
             'extracted_text': extracted_text[:1000],
@@ -1229,6 +1258,10 @@ def classify_audio():
         processing_time = round((time.perf_counter() - start_time) * 1000, 2)
         
         # Build standardized response matching text endpoint format (flat structure)
+        analysis = result.get('analysis', {}).copy()
+        # Add top_predictions for frontend compatibility
+        analysis['top_predictions'] = result.get('topics', [])[:4]
+        
         response_data = {
             'model': classifier.name,
             'model_version': getattr(classifier, 'version', '1.0.0'),
@@ -1245,7 +1278,7 @@ def classify_audio():
             'keywords': result.get('keywords', []),
             'entities': result.get('entities', []),
             'topics': result.get('topics', []),
-            'analysis': result.get('analysis', {}),
+            'analysis': analysis,
             'content_length': len(extracted_text),
             'word_count': len(extracted_text.split()),
             'extracted_text': extracted_text[:1000],

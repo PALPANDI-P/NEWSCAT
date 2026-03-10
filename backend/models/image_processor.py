@@ -248,13 +248,8 @@ class AdvancedOCREngine:
             if self._initialized:
                 return
             
-            # Try EasyOCR first
-            try:
-                import easyocr
-                self.primary_engine = easyocr.Reader(['en'], gpu=False, verbose=False)
-                logger.info("EasyOCR initialized")
-            except Exception as e:
-                logger.debug(f"EasyOCR not available: {e}")
+            # REMOVED: EasyOCR initialization blocked the main thread for minutes causing timeout bugs.
+            logger.debug("EasyOCR bypass enabled for instant sub-second performance.")
             
             # Try Tesseract as fallback
             try:

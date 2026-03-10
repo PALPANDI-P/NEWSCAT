@@ -65,6 +65,7 @@ def create_success_response(
             # Primary classification result
             "category": data.get("category", "unknown"),
             "category_display": data.get("category_display", data.get("category", "Unknown")),
+            "main_topic": data.get("main_topic", data.get("category", "unknown")),
             "confidence": min(100, max(0, data.get("confidence", 0))),  # Ensure 0-100
             "confidence_level": get_confidence_level(data.get("confidence", 0)),
             
@@ -73,6 +74,7 @@ def create_success_response(
             "model_name": data.get("model_name", "NewsCAT"),
             "model_version": data.get("model_version", "7.0"),
             "input_type": data.get("input_type", "text"),
+            "main_topic_summary": data.get("main_topic_summary", "No summary available.")
         }
     }
     

@@ -65,261 +65,281 @@ class CategoryKnowledgeGraph:
     """
     
     CATEGORIES = {
-        # Technology Branch
+        # --- TECHNOLOGY BRANCH ---
         'artificial_intelligence': {
-            'parent': 'technology',
-            'neural_weight': 1.0,
+            'parent': 'technology', 'neural_weight': 1.0,
             'embeddings': {
-                'core': ['artificial intelligence', 'machine learning', 'deep learning', 'neural network', 'ai', 'ml'],
-                'models': ['gpt', 'chatgpt', 'llama', 'claude', 'bert', 'transformer', 'llm', 'foundation model'],
-                'techniques': ['nlp', 'computer vision', 'reinforcement learning', 'generative ai', 'gan', 'diffusion'],
-                'applications': ['automation', 'prediction', 'classification', 'generation', 'synthesis'],
-                'companies': ['openai', 'anthropic', 'deepmind', 'meta ai', 'google ai', 'microsoft research']
+                'core': ['artificial intelligence', 'machine learning', 'deep learning', 'neural network', 'ai', 'ml', 'agi'],
+                'models': ['gpt', 'chatgpt', 'llama', 'claude', 'bert', 'transformer', 'llm', 'foundation model', 'generative ai', 'gen-ai'],
+                'techniques': ['nlp', 'computer vision', 'reinforcement learning', 'gan', 'diffusion', 'prompt engineering'],
+                'companies': ['openai', 'anthropic', 'deepmind', 'meta ai', 'google ai', 'xai', 'midjourney']
             },
-            'semantic_context': ['algorithm', 'training', 'inference', 'dataset', 'model', 'neural'],
+            'semantic_context': ['algorithm', 'training', 'inference', 'dataset', 'model', 'neural', 'weights', 'parameters'],
             'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
         },
-        'technology': {
-            'parent': None,
-            'neural_weight': 0.9,
-            'embeddings': {
-                'core': ['technology', 'tech', 'digital', 'software', 'hardware', 'innovation'],
-                'domains': ['computing', 'internet', 'cloud', 'cybersecurity', 'data science', 'blockchain'],
-                'trends': ['startup', 'disruption', 'scalability', 'architecture', 'platform'],
-                'concepts': ['algorithm', 'api', 'database', 'framework', 'infrastructure']
-            },
-            'semantic_context': ['computer', 'device', 'system', 'network', 'application'],
-            'confidence_multipliers': {'high': 3.0, 'medium': 1.8, 'low': 0.8}
-        },
         'cybersecurity': {
-            'parent': 'technology',
-            'neural_weight': 0.95,
+            'parent': 'technology', 'neural_weight': 0.95,
             'embeddings': {
-                'core': ['cybersecurity', 'hacking', 'breach', 'ransomware', 'malware', 'phishing'],
-                'threats': ['ddos', 'zero-day', 'exploit', 'vulnerability', 'attack vector'],
-                'defense': ['encryption', 'firewall', 'antivirus', 'penetration testing', 'soc'],
-                'compliance': ['gdpr', 'hipaa', 'pci-dss', 'iso 27001', 'nist', 'compliance']
+                'core': ['cybersecurity', 'hacking', 'breach', 'ransomware', 'malware', 'phishing', 'cyberattack', 'hacker'],
+                'threats': ['ddos', 'zero-day', 'exploit', 'vulnerability', 'attack vector', 'spyware', 'trojan'],
+                'defense': ['encryption', 'firewall', 'antivirus', 'penetration testing', 'soc', 'zero trust', 'mfa'],
             },
-            'semantic_context': ['security', 'protection', 'threat', 'risk', 'audit'],
+            'semantic_context': ['security', 'protection', 'threat', 'risk', 'password', 'authentication'],
             'confidence_multipliers': {'high': 4.0, 'medium': 2.2, 'low': 1.0}
         },
         'cryptocurrency': {
-            'parent': 'technology',
-            'neural_weight': 0.92,
+            'parent': 'technology', 'neural_weight': 0.92,
             'embeddings': {
-                'core': ['bitcoin', 'ethereum', 'blockchain', 'cryptocurrency', 'crypto', 'defi'],
-                'assets': ['btc', 'eth', 'altcoin', 'token', 'nft', 'stablecoin'],
-                'mechanisms': ['mining', 'staking', 'yield farming', 'liquidity', 'smart contract'],
-                'exchanges': ['binance', 'coinbase', 'dex', 'wallet', 'trading']
+                'core': ['bitcoin', 'ethereum', 'blockchain', 'cryptocurrency', 'crypto', 'defi', 'web3'],
+                'assets': ['btc', 'eth', 'altcoin', 'token', 'nft', 'stablecoin', 'memecoin'],
+                'mechanisms': ['mining', 'staking', 'yield farming', 'smart contract', 'halving'],
+                'exchanges': ['binance', 'coinbase', 'dex', 'wallet', 'ftx', 'kraken']
             },
-            'semantic_context': ['decentralized', 'ledger', 'wallet', 'transaction', 'volatility'],
+            'semantic_context': ['decentralized', 'ledger', 'wallet', 'bull run', 'bear market', 'hodl'],
             'confidence_multipliers': {'high': 3.8, 'medium': 2.0, 'low': 0.9}
         },
-        
-        # Business & Finance Branch
-        'business': {
-            'parent': None,
-            'neural_weight': 0.88,
+        'startups': {
+            'parent': 'business', 'neural_weight': 0.90,
             'embeddings': {
-                'core': ['business', 'corporate', 'company', 'enterprise', 'industry', 'commercial'],
-                'operations': ['strategy', 'management', 'operations', 'logistics', 'supply chain'],
-                'metrics': ['revenue', 'profit', 'growth', 'market share', 'valuation', 'ipo'],
-                'roles': ['ceo', 'cfo', 'executive', 'management', 'board', 'shareholder']
+                'core': ['startup', 'entrepreneur', 'founder', 'silicon valley', 'unicorn', 'seed round'],
+                'funding': ['venture capital', 'vc', 'angel investor', 'series a', 'series b', 'crowdfunding', 'incubator', 'y combinator'],
+                'concepts': ['mvp', 'pivot', 'disruption', 'bootstrapping', 'burn rate']
             },
-            'semantic_context': ['market', 'trade', 'industry', 'sector', 'economy'],
+            'semantic_context': ['innovation', 'growth', 'scale', 'pitch', 'launch'],
+            'confidence_multipliers': {'high': 3.4, 'medium': 1.9, 'low': 0.9}
+        },
+        'technology': {
+            'parent': None, 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ['technology', 'tech', 'digital', 'software', 'hardware', 'innovation', 'gadget', 'device'],
+                'companies': ['apple', 'microsoft', 'google', 'amazon', 'meta', 'nvidia', 'tesla'],
+                'domains': ['computing', 'internet', 'cloud', 'data science', 'semiconductor', 'chip'],
+                'concepts': ['algorithm', 'api', 'database', 'framework', 'infrastructure']
+            },
+            'semantic_context': ['computer', 'system', 'network', 'application', 'mobile', 'smartphone'],
+            'confidence_multipliers': {'high': 3.0, 'medium': 1.8, 'low': 0.8}
+        },
+
+        # --- BUSINESS & FINANCE BRANCH ---
+        'markets': {
+            'parent': 'finance', 'neural_weight': 0.94,
+            'embeddings': {
+                'core': ['stock market', 'wall street', 'dow jones', 's&p 500', 'nasdaq', 'bull market', 'bear market'],
+                'instruments': ['stock', 'bond', 'derivative', 'option', 'etf', 'dividend', 'futures'],
+                'actions': ['rally', 'plunge', 'selloff', 'trading', 'investing', 'short squeeze']
+            },
+            'semantic_context': ['shares', 'index', 'portfolio', 'investor', 'equities'],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 0.9}
+        },
+        'economy': {
+            'parent': 'finance', 'neural_weight': 0.92,
+            'embeddings': {
+                'core': ['economy', 'inflation', 'recession', 'gdp', 'interest rate', 'federal reserve', 'fed'],
+                'metrics': ['cpi', 'unemployment rate', 'job growth', 'manufacturing', 'debt'],
+                'concepts': ['monetary policy', 'fiscal', 'stimulus', 'macroeconomics', 'central bank']
+            },
+            'semantic_context': ['economic', 'growth', 'prices', 'consumers', 'spending', 'wages'],
+            'confidence_multipliers': {'high': 3.3, 'medium': 1.9, 'low': 0.9}
+        },
+        'business': {
+            'parent': None, 'neural_weight': 0.88,
+            'embeddings': {
+                'core': ['business', 'corporate', 'company', 'enterprise', 'industry', 'commercial', 'ceo', 'cfo'],
+                'operations': ['strategy', 'management', 'logistics', 'supply chain', 'merger', 'acquisition', 'm&a'],
+                'metrics': ['revenue', 'profit', 'earnings', 'market share', 'valuation', 'sales', 'quarterly report']
+            },
+            'semantic_context': ['market', 'trade', 'sector', 'executive', 'board', 'shareholder'],
             'confidence_multipliers': {'high': 3.2, 'medium': 1.9, 'low': 0.9}
         },
         'finance': {
-            'parent': 'business',
-            'neural_weight': 0.93,
+            'parent': 'business', 'neural_weight': 0.93,
             'embeddings': {
-                'core': ['finance', 'financial', 'investment', 'banking', 'capital', 'funding'],
-                'markets': ['stock market', 'wall street', 'exchange', 'trading', 'forex', 'commodities'],
-                'instruments': ['stock', 'bond', 'derivative', 'option', 'future', 'etf', 'mutual fund'],
-                'institutions': ['bank', 'hedge fund', 'private equity', 'venture capital', 'investment bank']
+                'core': ['finance', 'financial', 'investment', 'banking', 'capital', 'funding', 'loan', 'mortgage'],
+                'institutions': ['bank', 'hedge fund', 'private equity', 'wall street', 'lender', 'credit union']
             },
-            'semantic_context': ['money', 'capital', 'asset', 'portfolio', 'dividend', 'interest'],
+            'semantic_context': ['money', 'capital', 'asset', 'debt', 'credit'],
             'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 0.9}
         },
-        
-        # Science & Space Branch
-        'science': {
-            'parent': None,
-            'neural_weight': 0.9,
+
+        # --- SCIENCE & NATURE BRANCH ---
+        'climate_change': {
+            'parent': 'science', 'neural_weight': 0.95,
             'embeddings': {
-                'core': ['science', 'scientific', 'research', 'study', 'discovery', 'breakthrough'],
-                'fields': ['physics', 'chemistry', 'biology', 'astronomy', 'genetics', 'neuroscience'],
-                'methods': ['experiment', 'hypothesis', 'theory', 'observation', 'analysis', 'peer review'],
-                'institutions': ['university', 'laboratory', 'research center', 'academy', 'institute']
+                'core': ['climate change', 'global warming', 'emissions', 'carbon footprint', 'greenhouse gas', 'fossil fuel'],
+                'events': ['heatwave', 'drought', 'flood', 'wildfire', 'hurricane', 'extreme weather', 'record temperatures'],
+                'solutions': ['renewable energy', 'solar', 'wind', 'sustainability', 'net zero', 'paris agreement']
             },
-            'semantic_context': ['evidence', 'data', 'publication', 'journal', 'finding'],
-            'confidence_multipliers': {'high': 3.3, 'medium': 1.9, 'low': 0.8}
+            'semantic_context': ['environment', 'pollution', 'warming', 'climate', 'carbon', 'nature'],
+            'confidence_multipliers': {'high': 3.8, 'medium': 2.1, 'low': 1.0}
         },
         'space': {
-            'parent': 'science',
-            'neural_weight': 0.94,
+            'parent': 'science', 'neural_weight': 0.94,
             'embeddings': {
-                'core': ['space', 'nasa', 'spacex', 'astronaut', 'rocket', 'satellite', 'mars'],
-                'missions': ['artemis', 'apollo', 'iss', 'james webb', 'voyager', 'rover'],
-                'concepts': ['orbit', 'galaxy', 'planet', 'universe', 'cosmos', 'black hole', 'exoplanet'],
-                'technology': ['spacecraft', 'telescope', 'launch', 'reentry', 'space station']
+                'core': ['space', 'nasa', 'spacex', 'astronaut', 'rocket', 'satellite', 'mars', 'moon', 'lunar'],
+                'missions': ['artemis', 'apollo', 'iss', 'james webb', 'jwst', 'voyager', 'rover', 'falcon 9', 'starship'],
+                'concepts': ['orbit', 'galaxy', 'planet', 'universe', 'cosmos', 'black hole', 'exoplanet', 'asteroid']
             },
-            'semantic_context': ['exploration', 'astronomy', 'celestial', 'stellar', 'cosmic'],
+            'semantic_context': ['exploration', 'astronomy', 'celestial', 'stellar', 'cosmic', 'launch'],
             'confidence_multipliers': {'high': 4.0, 'medium': 2.2, 'low': 1.0}
         },
-        
-        # Health & Medicine Branch
-        'health': {
-            'parent': None,
-            'neural_weight': 0.91,
+        'medicine': {
+            'parent': 'health', 'neural_weight': 0.93,
             'embeddings': {
-                'core': ['health', 'medical', 'medicine', 'healthcare', 'clinical', 'treatment'],
-                'conditions': ['disease', 'cancer', 'diabetes', 'pandemic', 'virus', 'infection'],
-                'treatments': ['vaccine', 'therapy', 'surgery', 'medication', 'diagnosis', 'cure'],
-                'institutions': ['hospital', 'clinic', 'pharmaceutical', 'fda', 'who', 'cdc']
+                'core': ['medicine', 'medical', 'clinical trial', 'drug', 'pharmaceutical', 'fda', 'cure', 'treatment'],
+                'fields': ['oncology', 'cancer', 'neurology', 'cardiology', 'vaccine', 'immunology', 'genetics'],
+                'entities': ['doctor', 'physician', 'surgeon', 'hospital', 'patient', 'researcher', 'pfizer', 'moderna']
             },
-            'semantic_context': ['patient', 'doctor', 'symptom', 'wellness', 'prevention'],
+            'semantic_context': ['disease', 'health', 'therapy', 'symptom', 'diagnosis', 'prescription'],
+            'confidence_multipliers': {'high': 3.6, 'medium': 2.0, 'low': 0.9}
+        },
+        'science': {
+            'parent': None, 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ['science', 'scientific', 'research', 'study', 'discovery', 'breakthrough'],
+                'fields': ['physics', 'chemistry', 'biology', 'neuroscience', 'quantum computing'],
+                'methods': ['experiment', 'hypothesis', 'theory', 'observation', 'analysis', 'peer review']
+            },
+            'semantic_context': ['evidence', 'data', 'publication', 'journal', 'laboratory', 'scientist'],
+            'confidence_multipliers': {'high': 3.3, 'medium': 1.9, 'low': 0.8}
+        },
+        'health': {
+            'parent': None, 'neural_weight': 0.91,
+            'embeddings': {
+                'core': ['health', 'healthcare', 'wellness', 'fitness', 'nutrition', 'diet', 'mental health'],
+                'conditions': ['pandemic', 'virus', 'infection', 'covid-19', 'flu', 'outbreak', 'epidemic'],
+                'institutions': ['clinic', 'who', 'cdc', 'nhs', 'medicare']
+            },
+            'semantic_context': ['wellbeing', 'exercise', 'prevention', 'public health', 'care'],
+            'confidence_multipliers': {'high': 3.2, 'medium': 1.8, 'low': 0.9}
+        },
+
+        # --- POLITICS & WORLD BRANCH ---
+        'geopolitics': {
+            'parent': 'world', 'neural_weight': 0.94,
+            'embeddings': {
+                'core': ['geopolitics', 'international relations', 'diplomacy', 'foreign policy', 'alliance', 'sanctions'],
+                'actors': ['un', 'united nations', 'nato', 'eu', 'g7', 'g20', 'ambassador', 'diplomat'],
+                'events': ['summit', 'treaty', 'negotiation', 'peace talks', 'escalation', 'ceasefire']
+            },
+            'semantic_context': ['global', 'border', 'territory', 'sovereignty', 'tensions', 'foreign'],
             'confidence_multipliers': {'high': 3.6, 'medium': 2.1, 'low': 0.9}
         },
-        
-        # Politics & World Branch
-        'politics': {
-            'parent': None,
-            'neural_weight': 0.89,
+        'war_conflict': {
+            'parent': 'world', 'neural_weight': 0.96,
             'embeddings': {
-                'core': ['politics', 'government', 'election', 'vote', 'policy', 'legislation'],
-                'roles': ['president', 'senator', 'congress', 'minister', 'parliament', 'diplomat'],
-                'parties': ['democrat', 'republican', 'conservative', 'liberal', 'independent'],
-                'processes': ['campaign', 'ballot', 'primary', 'caucus', 'referendum', 'impeachment']
+                'core': ['war', 'conflict', 'military', 'invasion', 'combat', 'battle', 'troops', 'army', 'navy', 'air force'],
+                'weapons': ['missile', 'drone', 'artillery', 'nuclear', 'bomb', 'tank', 'fighter jet'],
+                'consequences': ['casualties', 'refugees', 'destruction', 'civilian', 'crimes', 'humanitarian']
             },
-            'semantic_context': ['political', 'governance', 'administration', 'regime', 'bureaucracy'],
+            'semantic_context': ['attack', 'strike', 'forces', 'defense', 'armed', 'soldiers', 'violence'],
+            'confidence_multipliers': {'high': 3.8, 'medium': 2.2, 'low': 1.1}
+        },
+        'elections': {
+            'parent': 'politics', 'neural_weight': 0.93,
+            'embeddings': {
+                'core': ['election', 'vote', 'voting', 'ballot', 'poll', 'voter', 'campaign', 'debate'],
+                'processes': ['primary', 'caucus', 'midterms', 'presidential race', 'electoral college', 'referendum'],
+                'outcomes': ['victory', 'landslide', 'defeat', 'concede', 'turnout', 'swing state']
+            },
+            'semantic_context': ['candidate', 'race', 'polled', 'elect', 'majority', 'seat'],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 0.9}
+        },
+        'politics': {
+            'parent': None, 'neural_weight': 0.89,
+            'embeddings': {
+                'core': ['politics', 'government', 'policy', 'legislation', 'lawmaker', 'senate', 'congress', 'parliament'],
+                'roles': ['president', 'prime minister', 'senator', 'governor', 'mayor', 'minister', 'politician'],
+                'parties': ['democrat', 'republican', 'conservative', 'liberal', 'labour', 'tory', 'bipartisan']
+            },
+            'semantic_context': ['political', 'governance', 'administration', 'regime', 'bill', 'law'],
             'confidence_multipliers': {'high': 3.4, 'medium': 2.0, 'low': 0.9}
         },
         'world': {
-            'parent': None,
-            'neural_weight': 0.87,
+            'parent': None, 'neural_weight': 0.87,
             'embeddings': {
-                'core': ['world', 'international', 'global', 'foreign', 'diplomatic', 'nation'],
-                'conflicts': ['war', 'conflict', 'crisis', 'sanctions', 'treaty', 'alliance'],
-                'organizations': ['united nations', 'nato', 'eu', 'g20', 'asean', 'who'],
-                'relations': ['embassy', 'ambassador', 'summit', 'negotiation', 'agreement']
+                'core': ['world', 'international', 'global', 'nation', 'country', 'continent', 'worldwide'],
+                'regions': ['europe', 'asia', 'africa', 'middle east', 'latin america', 'north america']
             },
-            'semantic_context': ['country', 'border', 'territory', 'sovereignty', 'geopolitics'],
+            'semantic_context': ['foreign', 'abroad', 'domestic', 'crisis', 'national'],
             'confidence_multipliers': {'high': 3.0, 'medium': 1.8, 'low': 0.8}
         },
-        
-        # Sports Branch
-        'sports': {
-            'parent': None,
-            'neural_weight': 0.88,
+
+        # --- SPORTS BRANCH ---
+        'soccer': {
+            'parent': 'sports', 'neural_weight': 0.92,
             'embeddings': {
-                'core': ['sports', 'athlete', 'game', 'match', 'tournament', 'championship'],
-                'events': ['olympics', 'world cup', 'super bowl', 'wimbledon', 'champions league'],
-                'actions': ['win', 'defeat', 'score', 'goal', 'victory', 'medal', 'record'],
-                'types': ['football', 'basketball', 'tennis', 'cricket', 'baseball', 'soccer']
+                'core': ['soccer', 'football', 'fifa', 'premier league', 'la liga', 'champions league', 'world cup'],
+                'terms': ['goal', 'penalty', 'red card', 'yellow card', 'striker', 'midfielder', 'goalkeeper', 'manager'],
+                'teams': ['real madrid', 'barcelona', 'manchester united', 'arsenal', 'chelsea', 'liverpool', 'psg', 'bayern']
             },
-            'semantic_context': ['team', 'player', 'coach', 'stadium', 'league', 'competition'],
+            'semantic_context': ['match', 'pitch', 'club', 'league', 'tournament', 'cup'],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 0.9}
+        },
+        'basketball': {
+            'parent': 'sports', 'neural_weight': 0.91,
+            'embeddings': {
+                'core': ['basketball', 'nba', 'wnba', 'hoops', 'march madness', 'fiba', 'euroleague'],
+                'terms': ['dunk', 'three-pointer', 'rebound', 'assist', 'point guard', 'playoffs', 'finals', 'mvp'],
+                'teams': ['lakers', 'warriors', 'celtics', 'bulls', 'knicks', 'heat']
+            },
+            'semantic_context': ['court', 'game', 'draft', 'roster', 'coach', 'season'],
+            'confidence_multipliers': {'high': 3.4, 'medium': 1.9, 'low': 0.9}
+        },
+        'sports': {
+            'parent': None, 'neural_weight': 0.88,
+            'embeddings': {
+                'core': ['sports', 'athlete', 'game', 'match', 'tournament', 'championship', 'olympics', 'medal'],
+                'actions': ['win', 'defeat', 'score', 'victory', 'record', 'champion', 'title'],
+                'types': ['tennis', 'cricket', 'baseball', 'golf', 'rugby', 'hockey', 'boxing', 'mma', 'f1']
+            },
+            'semantic_context': ['team', 'player', 'coach', 'stadium', 'competition', 'fan'],
             'confidence_multipliers': {'high': 3.2, 'medium': 1.9, 'low': 0.9}
         },
-        
-        # Entertainment Branch
-        'entertainment': {
-            'parent': None,
-            'neural_weight': 0.86,
+
+        # --- MEDIA & ENTERTAINMENT BRANCH ---
+        'pop_culture': {
+            'parent': 'entertainment', 'neural_weight': 0.90,
             'embeddings': {
-                'core': ['entertainment', 'movie', 'film', 'music', 'celebrity', 'hollywood'],
-                'awards': ['oscar', 'grammy', 'emmy', 'golden globe', 'academy award', 'bafta'],
-                'platforms': ['netflix', 'disney', 'streaming', 'box office', 'theater', 'concert'],
-                'roles': ['actor', 'actress', 'director', 'producer', 'musician', 'performer']
+                'core': ['pop culture', 'celebrity', 'influencer', 'viral', 'trend', 'social media', 'tiktok', 'instagram'],
+                'people': ['kardashian', 'taylor swift', 'beyonce', 'mrbeast', 'youtuber', 'streamer'],
+                'events': ['met gala', 'fashion week', 'red carpet', 'scandal', 'gossip', 'paparazzi']
             },
-            'semantic_context': ['show', 'series', 'performance', 'premiere', 'blockbuster'],
-            'confidence_multipliers': {'high': 3.0, 'medium': 1.8, 'low': 0.8}
-        },
-        
-        # Gaming Branch
-        'gaming': {
-            'parent': 'entertainment',
-            'neural_weight': 0.9,
-            'embeddings': {
-                'core': ['gaming', 'video game', 'esports', 'gamer', 'gameplay', 'streamer'],
-                'platforms': ['playstation', 'xbox', 'nintendo', 'pc gaming', 'mobile game', 'console'],
-                'genres': ['rpg', 'fps', 'moba', 'battle royale', 'strategy', 'simulation'],
-                'events': ['twitch', 'tournament', 'world championship', 'speedrun', 'lets play']
-            },
-            'semantic_context': ['multiplayer', 'dlc', 'patch', 'update', 'nerf', 'buff'],
-            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 0.9}
-        },
-        
-        # Environment Branch
-        'environment': {
-            'parent': None,
-            'neural_weight': 0.87,
-            'embeddings': {
-                'core': ['environment', 'climate', 'sustainability', 'green', 'renewable', 'carbon'],
-                'issues': ['climate change', 'global warming', 'pollution', 'deforestation', 'extinction'],
-                'solutions': ['solar', 'wind', 'electric vehicle', 'carbon neutral', 'net zero', 'recycling'],
-                'policy': ['paris agreement', 'cop26', 'emission standard', 'carbon tax', 'green deal']
-            },
-            'semantic_context': ['ecosystem', 'biodiversity', 'conservation', 'natural', 'planet'],
+            'semantic_context': ['famous', 'star', 'trending', 'followers', 'fans', 'internet'],
             'confidence_multipliers': {'high': 3.3, 'medium': 1.9, 'low': 0.9}
         },
-        
-        # Education Branch
-        'education': {
-            'parent': None,
-            'neural_weight': 0.85,
+        'movies_tv': {
+            'parent': 'entertainment', 'neural_weight': 0.91,
             'embeddings': {
-                'core': ['education', 'school', 'university', 'student', 'academic', 'learning'],
-                'levels': ['primary', 'secondary', 'higher education', 'graduate', 'phd', 'undergraduate'],
-                'institutions': ['college', 'academy', 'institute', 'school district', 'board'],
-                'concepts': ['curriculum', 'scholarship', 'tuition', 'degree', 'research', 'pedagogy']
+                'core': ['movie', 'film', 'television', 'tv show', 'series', 'cinema', 'hollywood', 'box office'],
+                'platforms': ['netflix', 'disney+', 'hbo', 'amazon prime', 'hulu', 'streaming'],
+                'awards': ['oscar', 'emmy', 'golden globe', 'academy award', 'bafta'],
+                'roles': ['actor', 'actress', 'director', 'producer', 'cast', 'script', 'screenplay']
             },
-            'semantic_context': ['teacher', 'professor', 'classroom', 'study', 'exam', 'grade'],
-            'confidence_multipliers': {'high': 3.0, 'medium': 1.8, 'low': 0.8}
+            'semantic_context': ['premiere', 'trailer', 'blockbuster', 'review', 'season', 'episode'],
+            'confidence_multipliers': {'high': 3.4, 'medium': 2.0, 'low': 0.9}
         },
-        
-        # Travel Branch
-        'travel': {
-            'parent': None,
-            'neural_weight': 0.84,
+        'gaming': {
+            'parent': 'entertainment', 'neural_weight': 0.92,
             'embeddings': {
-                'core': ['travel', 'tourism', 'vacation', 'destination', 'airline', 'hotel'],
-                'transport': ['flight', 'airport', 'cruise', 'train', 'rental car', 'passport'],
-                'accommodation': ['resort', 'airbnb', 'booking', 'suite', 'amenities'],
-                'experiences': ['sightseeing', 'adventure', 'backpacking', 'luxury travel', 'visa']
+                'core': ['gaming', 'video game', 'esports', 'gamer', 'gameplay', 'game developer'],
+                'platforms': ['playstation', 'xbox', 'nintendo switch', 'pc gaming', 'steam', 'steam deck', 'console'],
+                'companies': ['ea', 'ubisoft', 'activision', 'blizzard', 'epic games', 'sony', 'nintendo'],
+                'genres': ['rpg', 'fps', 'mmo', 'battle royale', 'open world', 'indie game']
             },
-            'semantic_context': ['trip', 'journey', 'tourist', 'itinerary', 'explore', 'wanderlust'],
-            'confidence_multipliers': {'high': 3.0, 'medium': 1.8, 'low': 0.8}
-        },
-        
-        # Food Branch
-        'food': {
-            'parent': None,
-            'neural_weight': 0.83,
-            'embeddings': {
-                'core': ['food', 'cuisine', 'restaurant', 'chef', 'cooking', 'culinary'],
-                'types': ['recipe', 'diet', 'organic', 'gastronomy', 'michelin', 'farm-to-table'],
-                'trends': ['vegan', 'plant-based', 'fusion', 'street food', 'food truck', 'pop-up'],
-                'concepts': ['ingredient', 'flavor', 'taste', 'nutrition', 'meal', 'dining']
-            },
-            'semantic_context': ['eat', 'drink', 'menu', 'kitchen', 'bakery', 'cafe'],
-            'confidence_multipliers': {'high': 2.8, 'medium': 1.7, 'low': 0.8}
-        },
-        
-        # Crime Branch
-        'crime': {
-            'parent': None,
-            'neural_weight': 0.88,
-            'embeddings': {
-                'core': ['crime', 'police', 'investigation', 'court', 'trial', 'arrest'],
-                'types': ['murder', 'theft', 'fraud', 'corruption', 'cybercrime', 'terrorism'],
-                'justice': ['prison', 'sentence', 'verdict', 'jury', 'prosecution', 'defense'],
-                'enforcement': ['law enforcement', 'detective', 'forensics', 'surveillance']
-            },
-            'semantic_context': ['illegal', 'offense', 'criminal', 'suspect', 'victim', 'evidence'],
+            'semantic_context': ['multiplayer', 'dlc', 'patch', 'update', 'release', 'trailer', 'engine'],
             'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 0.9}
+        },
+        'entertainment': {
+            'parent': None, 'neural_weight': 0.86,
+            'embeddings': {
+                'core': ['entertainment', 'music', 'concert', 'album', 'song', 'artist', 'band', 'tour'],
+                'events': ['festival', 'grammy', 'billboard', 'performance', 'show', 'theater']
+            },
+            'semantic_context': ['stage', 'audience', 'live', 'track', 'release', 'listen'],
+            'confidence_multipliers': {'high': 3.0, 'medium': 1.8, 'low': 0.8}
         }
-    }
+    }    
+
     
     @classmethod
     def get_category_lineage(cls, category: str) -> List[str]:
@@ -720,9 +740,15 @@ class QuantumClassifier(BaseNewsClassifier):
         
         processing_time = (time.perf_counter() - start_time) * 1000
         
+        # Extract main topic from lineage
+        lineage = CategoryKnowledgeGraph.get_category_lineage(top_category)
+        main_topic = lineage[-1] if lineage else top_category
+        
         # Build result
         result = {
             'category': top_category,
+            'category_display': top_category.replace('_', ' ').title(),
+            'main_topic': main_topic,
             'confidence': round(confidence, 2),
             'processing_time_ms': round(processing_time, 4),
             'model': self.name,
@@ -754,7 +780,6 @@ class QuantumClassifier(BaseNewsClassifier):
                 }
                 for i, (k, v) in enumerate(sorted_scores[:5])
             ]
-        
         if include_semantic_analysis:
             result['semantic_analysis'] = {
                 'embedding_dimensions': self.EMBEDDING_DIM,
@@ -762,6 +787,27 @@ class QuantumClassifier(BaseNewsClassifier):
                 'token_count': len(text_embedding.semantic_tokens),
                 'key_matches': dict(semantic_matches.get(top_category, []))[:10]
             }
+
+        # ---------------------------------------------------------
+        # GENERATE MAIN TOPIC SUMMARY (Contextual human-readable text)
+        # ---------------------------------------------------------
+        summary = ""
+        try:
+            display_cat = top_category.replace('_', ' ').title()
+            top_tokens = list(text_embedding.semantic_tokens)
+            # Find salient words related to category
+            relevant_words = [w for w in top_tokens if len(w) > 4][:3]
+            if len(relevant_words) >= 2:
+                summary = f"This content discusses {display_cat}, specifically focusing on {relevant_words[0]} and {relevant_words[1]}."
+            elif len(relevant_words) == 1:
+                summary = f"This content is primarily about {display_cat}, with a strong focus on {relevant_words[0]}."
+            else:
+                summary = f"This content represents topics related to {display_cat} and general {CategoryKnowledgeGraph.get_category_lineage(top_category)[-1]}."
+        except Exception as e:
+            logger.error(f"Failed to generate summary: {e}")
+            summary = f"This text is evaluated as belonging to the {top_category.replace('_', ' ').title()} dataset category."
+
+        result['main_topic_summary'] = summary
         
         return result
     
