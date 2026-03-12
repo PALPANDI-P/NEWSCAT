@@ -1232,12 +1232,10 @@ async function analyzeContent() {
         }
 
         if (result?.status === 'success') {
-            // Simulate minimal processing time if backend too fast for UX
-            setTimeout(() => {
-                resultsManager.display(result.data || result, inputText, state.currentInputType);
-                loadingManager.hide();
-                addToHistory(result.data || result, inputText, state.currentInputType);
-            }, 500);
+            // Instant display — no artificial delay
+            resultsManager.display(result.data || result, inputText, state.currentInputType);
+            loadingManager.hide();
+            addToHistory(result.data || result, inputText, state.currentInputType);
         } else {
             throw new Error(result?.message || 'Server returned an error');
         }
@@ -1396,7 +1394,7 @@ function loadTextCharByChar(text) {
             clearInterval(typeInterval);
             validateInput(); // Validate input after text is loaded
         }
-    }, 3);
+    }, 1); // 1ms per character for snappy loading
 }
 
 function loadSample(type) {
@@ -1439,130 +1437,7 @@ async function fetchRealtimeNews() {
     }
 }
 
-// =============================================================================
-// HISTORY MANAGER
-// =============================================================================
-let classificationHistory = [];
-
-function loadHistory() {
-    try {
-        const stored = localStorage.getItem('newscat_history');
-        if (stored) {
-            classificationHistory = JSON.parse(stored);
-            renderHistory();
-        }
-    } catch (e) {
-        console.error('Failed to load history', e);
-    }
-}
-
-function saveHistory() {
-    try {
-        localStorage.setItem('newscat_history', JSON.stringify(classificationHistory));
-    } catch (e) {
-        console.error('Failed to save history', e);
-    }
-}
-
-function addToHistory(data, inputText, inputType) {
-    const entry = {
-        id: Date.now().toString(),
-        category: data.category,
-        category_display: data.category_display || data.category,
-        confidence: data.confidence,
-        timestamp: new Date().toISOString(),
-        inputText: inputText,
-        inputType: inputType
-    };
-    
-    // Add to beginning, keep max 10
-    classificationHistory.unshift(entry);
-    if (classificationHistory.length > 10) {
-        classificationHistory.pop();
-    }
-    
-    saveHistory();
-    renderHistory();
-}
-
-function renderHistory() {
-    const container = document.getElementById('history-list');
-    if (!container) return;
-    
-    if (classificationHistory.length === 0) {
-        container.innerHTML = `
-            <div class="flex flex-col items-center justify-center p-6 text-gray-500">
-                <i class="fas fa-folder-open text-2xl mb-2 opacity-50"></i>
-                <span class="text-xs">No classification history yet</span>
-            </div>
-        `;
-        return;
-    }
-    
-    let html = '';
-    classificationHistory.forEach(item => {
-        const style = categoryStyles[item.category] || categoryStyles.unknown;
-        const conf = Math.min(item.confidence || 0, 100).toFixed(1);
-        const date = new Date(item.timestamp).toLocaleString(undefined, {
-            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-        });
-        
-        let iconClass = 'fa-file';
-        if (item.inputType === 'text') iconClass = 'fa-keyboard';
-        else if (item.inputType === 'image') iconClass = 'fa-image';
-        else if (item.inputType === 'audio') iconClass = 'fa-microphone';
-        else if (item.inputType === 'video') iconClass = 'fa-video';
-        
-        html += `
-            <div class="flex flex-col p-4 rounded-xl bg-dark-800 border border-white/5 hover:border-white/10 transition-colors gap-3 relative overflow-hidden group">
-                <div class="absolute top-0 left-0 w-1 h-full" style="background-color: ${style.color}"></div>
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style="background-color: ${style.color}22; color: ${style.color};">
-                            <i class="fas ${style.icon}"></i>
-                        </div>
-                        <span class="text-white font-bold text-sm tracking-wide uppercase">${utils.capitalizeFirst(item.category_display)}</span>
-                    </div>
-                    <span class="text-xs font-bold px-2 py-1 rounded bg-dark-950/50" style="color: ${style.color}">${conf}%</span>
-                </div>
-                <div class="flex flex-col mt-1">
-                    <span class="text-xs text-gray-500 line-clamp-2 leading-relaxed"><i class="fas ${iconClass} mr-1"></i> ${item.inputText || 'Media File'}</span>
-                    <span class="text-[10px] text-gray-600 font-medium mt-2">${date}</span>
-                </div>
-            </div>
-        `;
-    });
-    
-    container.innerHTML = html;
-}
-
-// Side Panel Toggle Logic
-function toggleHistorySidebar(show) {
-    const sidebar = document.getElementById('history-sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
-    if(!sidebar || !overlay) return;
-
-    if (show) {
-        sidebar.classList.remove('translate-x-full');
-        overlay.classList.remove('hidden');
-        // Small delay for transition
-        setTimeout(() => overlay.classList.remove('opacity-0'), 10);
-        document.body.style.overflow = 'hidden'; // Prevent background scrolling
-    } else {
-        sidebar.classList.add('translate-x-full');
-        overlay.classList.add('opacity-0');
-        setTimeout(() => overlay.classList.add('hidden'), 500); // Wait for transition
-        document.body.style.overflow = '';
-    }
-}
-
-window.clearHistory = function() {
-    if (confirm('Are you sure you want to clear your classification history?')) {
-        classificationHistory = [];
-        saveHistory();
-        renderHistory();
-    }
-};
+// (Duplicate history functions removed — unified into single addToHistory/renderHistory above)
 
 // =============================================================================
 // INITIALIZATION
@@ -1594,7 +1469,19 @@ function initEventListeners() {
     // Analyze button
     const analyzeBtn = document.getElementById('analyze-btn');
     if (analyzeBtn) {
-        analyzeBtn.addEventListener('click', analyzeContent);
+        analyzeBtn.addEventListener('click', (e) => {
+            // Create ripple effect
+            const ripple = document.createElement('span');
+            ripple.classList.add('ripple');
+            const rect = analyzeBtn.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+            ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+            analyzeBtn.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+            analyzeContent();
+        });
     }
 
     // File inputs

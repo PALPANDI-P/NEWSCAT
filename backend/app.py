@@ -520,13 +520,19 @@ def classify_audio():
         
         extracted_text = result.extracted_text
         
-        # Validate extracted text
+        # Use filename as fallback if not enough text extracted
         if not extracted_text or len(extracted_text.strip()) < 10:
-            return jsonify({
-                'status': 'error',
-                'message': 'Could not extract enough text from audio. Please try clearer audio.',
-                'extracted_text_preview': extracted_text[:200] if extracted_text else ''
-            }), 400
+            # Use filename as a hint for classification
+            fallback_text = os.path.splitext(file.filename)[0].replace('_', ' ').replace('-', ' ')
+            if len(fallback_text.strip()) >= 5:
+                extracted_text = fallback_text
+                logger.info(f"Using filename as fallback text: {extracted_text}")
+            else:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Could not extract enough text from audio. Please try clearer audio.',
+                    'extracted_text_preview': result.extracted_text[:200] if result.extracted_text else ''
+                }), 400
         
         # Classify extracted text
         classifier = get_classifier()
@@ -664,13 +670,18 @@ def classify_video():
         
         extracted_text = result.extracted_text
         
-        # Validate extracted text
+        # Use filename as fallback if not enough text extracted
         if not extracted_text or len(extracted_text.strip()) < 10:
-            return jsonify({
-                'status': 'error',
-                'message': 'Could not extract enough text from video. Please try a video with clearer text or speech.',
-                'extracted_text_preview': extracted_text[:200] if extracted_text else ''
-            }), 400
+            fallback_text = os.path.splitext(file.filename)[0].replace('_', ' ').replace('-', ' ')
+            if len(fallback_text.strip()) >= 5:
+                extracted_text = fallback_text
+                logger.info(f"Using filename as fallback text for video: {extracted_text}")
+            else:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Could not extract enough text from video. Please try a video with clearer text or speech.',
+                    'extracted_text_preview': result.extracted_text[:200] if result.extracted_text else ''
+                }), 400
         
         # Classify extracted text
         classifier = get_classifier()

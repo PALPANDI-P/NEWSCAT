@@ -248,8 +248,12 @@ class AdvancedOCREngine:
             if self._initialized:
                 return
             
-            # REMOVED: EasyOCR initialization blocked the main thread for minutes causing timeout bugs.
-            logger.debug("EasyOCR bypass enabled for instant sub-second performance.")
+            try:
+                import easyocr
+                self.primary_engine = easyocr.Reader(['en'], gpu=False, verbose=False)
+                logger.info("EasyOCR engine initialized successfully")
+            except Exception as e:
+                logger.debug(f"EasyOCR initialization bypassed or failed: {e}")
             
             # Try Tesseract as fallback
             try:
@@ -526,6 +530,14 @@ class VisionProcessor:
     def is_available(self) -> bool:
         """Check if image processing is available"""
         return self._pil_available
+    
+    def is_pil_available(self) -> bool:
+        """Check if PIL is available (used by app.py)"""
+        return self._pil_available
+    
+    def get_installation_instructions(self) -> str:
+        """Get instructions if dependencies are missing"""
+        return "Install dependencies: pip install Pillow easyocr pytesseract"
     
     def preprocess_image(self, image):
         """

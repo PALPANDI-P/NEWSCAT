@@ -116,7 +116,7 @@ class CategoryKnowledgeGraph:
                 'domains': ['computing', 'internet', 'cloud', 'data science', 'semiconductor', 'chip'],
                 'concepts': ['algorithm', 'api', 'database', 'framework', 'infrastructure']
             },
-            'semantic_context': ['computer', 'system', 'network', 'application', 'mobile', 'smartphone'],
+            'semantic_context': ['computer', 'system', 'network', 'application', 'mobile', 'smartphone', 'laptop', 'screen', 'battery'],
             'confidence_multipliers': {'high': 3.0, 'medium': 1.8, 'low': 0.8}
         },
 
@@ -614,14 +614,15 @@ class QuantumClassifier(BaseNewsClassifier):
         if top_score <= 0:
             return 0.0
         
-        # Calculate total "probability mass"
-        total_score = sum(scores.values())
+        # Calculate total "probability mass" based on top 3 to avoid penalizing clear winners among many categories
+        sorted_scores_list = sorted(scores.values(), reverse=True)
+        top_3_total = sum(sorted_scores_list[:3])
         
-        if total_score == 0:
+        if top_3_total == 0:
             return 0.0
         
         # Base confidence
-        base_confidence = top_score / total_score
+        base_confidence = top_score / top_3_total
         
         # Quantum-inspired: measure of "certainty" based on gap to second place
         sorted_scores = sorted(scores.values(), reverse=True)
@@ -716,7 +717,7 @@ class QuantumClassifier(BaseNewsClassifier):
             
             # Semantic similarity from neural embedding
             semantic_score = self._calculate_semantic_similarity(text_embedding, category)
-            score += semantic_score * 10  # Scale to match keyword scores
+            score += semantic_score * 2.0  # Scale down to prevent random noise from dominating
             
             # Apply attention mechanism
             score = self._apply_attention_mechanism(text, category, score)
@@ -774,8 +775,8 @@ class QuantumClassifier(BaseNewsClassifier):
             result['top_predictions'] = [
                 {
                     'category': k,
-                    # Use proportional score relative to top score for proper distribution
-                    'confidence': round(min((v / top_score) * 95, 99.9), 2) if i > 0 else round(confidence, 2),
+                    # Ensure runner-ups scale proportionally based on the top confidence
+                    'confidence': round(min((v / top_score) * confidence * 0.9, 99.9), 2) if i > 0 else round(confidence, 2),
                     'raw_score': round(v, 2)
                 }
                 for i, (k, v) in enumerate(sorted_scores[:5])

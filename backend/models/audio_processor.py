@@ -472,41 +472,78 @@ class NeuralAudioProcessor:
                     error_message=f"File too large. Maximum size is {self.MAX_FILE_SIZE / 1024 / 1024}MB"
                 )
             
-            # Get audio info
+            # Get audio info (may fail without ffmpeg — not fatal)
             audio_info = self.get_audio_info(audio_path)
             duration = audio_info.get('duration', 0)
             
-            if duration > self.MAX_DURATION:
+            # Only check duration if we successfully got it
+            if duration > 0 and duration > self.MAX_DURATION:
                 return AudioProcessingResult(
                     success=False,
                     error_message=f"Audio too long. Maximum duration is {self.MAX_DURATION} seconds",
                     duration=duration
                 )
             
-            # Preprocess audio
+            # Preprocess audio (only if ffmpeg available — optional enhancement)
             processed_path = audio_path
             if preprocess and self.preprocessor.is_ffmpeg_available():
                 processed_path = self.preprocessor.preprocess(audio_path)
                 if processed_path != audio_path:
                     temp_files.append(processed_path)
+            elif not self.preprocessor.is_ffmpeg_available():
+                logger.info("FFmpeg not found — skipping audio preprocessing. Whisper will process raw file directly.")
             
-            # Check if ffmpeg is available for Whisper
-            if not self.preprocessor.is_ffmpeg_available():
+            # Transcribe audio: try Whisper first, fall back to SpeechRecognition
+            text = ""
+            detected_lang = "en"
+            segments = []
+            
+            # Attempt 1: Whisper (best accuracy, but needs ffmpeg for non-wav)
+            whisper_success = False
+            try:
+                transcription = self.whisper.transcribe(
+                    processed_path,
+                    language=language,
+                    return_segments=return_segments
+                )
+                text = transcription.get('text', '').strip()
+                detected_lang = transcription.get('language', 'en')
+                segments = transcription.get('segments', [])
+                if text:
+                    whisper_success = True
+                    logger.info(f"Whisper transcription successful: {len(text)} chars")
+            except Exception as whisper_err:
+                logger.warning(f"Whisper transcription failed (likely missing ffmpeg): {whisper_err}")
+            
+            # Attempt 2: SpeechRecognition (Google Web Speech API) as fallback
+            if not whisper_success:
+                try:
+                    import speech_recognition as sr
+                    recognizer = sr.Recognizer()
+                    
+                    # SpeechRecognition needs WAV format
+                    sr_path = processed_path
+                    
+                    # If the file is WAV, use it directly
+                    if processed_path.lower().endswith('.wav'):
+                        with sr.AudioFile(sr_path) as source:
+                            audio_data = recognizer.record(source)
+                        text = recognizer.recognize_google(audio_data)
+                        logger.info(f"SpeechRecognition fallback successful: {len(text)} chars")
+                    else:
+                        logger.warning("Audio file is not WAV and ffmpeg not available for conversion")
+                        # Last resort: return filename-based text (handled by app.py)
+                        text = ""
+                except ImportError:
+                    logger.warning("SpeechRecognition not available as fallback")
+                except Exception as sr_err:
+                    logger.warning(f"SpeechRecognition fallback failed: {sr_err}")
+            
+            if not text:
                 return AudioProcessingResult(
                     success=False,
-                    error_message="FFmpeg is required but not found. Please install FFmpeg."
+                    error_message="Could not transcribe audio. FFmpeg is required for non-WAV files. Install from https://ffmpeg.org/download.html"
                 )
-            
-            # Transcribe with Whisper
-            transcription = self.whisper.transcribe(
-                processed_path,
-                language=language,
-                return_segments=return_segments
-            )
-            
-            text = transcription.get('text', '')
-            detected_lang = transcription.get('language', 'en')
-            segments = transcription.get('segments', [])
             
             # Calculate confidence
             avg_confidence = 0.85  # Base confidence
