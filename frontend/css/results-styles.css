@@ -1,18 +1,21 @@
-/* 
- * NEWSCAT Dashboard CSS — Premium Edition
- * Supplements Tailwind HTML with custom animations, scrollbars, and specific tweaks.
- */
+/* ==========================================================================
+   NEWSCAT Dashboard CSS — Premium Expert Edition
+   Enhanced styling for AI Classification Platform
+   ========================================================================== */
 
 :root {
     --bg-dark-950: #0c0d13;
     --bg-dark-900: #13151f;
-    --brand-purple: #a855f7;
-    --brand-cyan: #06b6d4;
-    --brand-indigo: #6366f1;
-    --brand-pink: #ec4899;
-    --neon-glow-purple: rgba(168, 85, 247, 0.45);
-    --neon-glow-indigo: rgba(99, 102, 241, 0.4);
-    --neon-glow-cyan: rgba(6, 182, 212, 0.35);
+    --neon-purple: #a855f7;
+    --neon-cyan: #06b6d4;
+    --neon-indigo: #6366f1;
+    --neon-pink: #ec4899;
+    --neon-green: #22c55e;
+    --neon-orange: #f97316;
+    --neon-yellow: #eab308;
+    --neon-blue: #3b82f6;
+    --glass-bg: rgba(19, 21, 31, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.08);
 }
 
 body {
@@ -20,62 +23,41 @@ body {
 }
 
 /* ==========================================================================
-   SCROLLBAR — GRADIENT THUMB
+   CORE ANIMATIONS
    ========================================================================== */
-.nice-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+@keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
-.nice-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
 }
 
-.nice-scrollbar::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, rgba(168,85,247,0.25), rgba(99,102,241,0.2));
-    border-radius: 10px;
+@keyframes glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(168, 85, 247, 0.5); }
+    50% { box-shadow: 0 0 40px rgba(168, 85, 247, 0.8), 0 0 60px rgba(168, 85, 247, 0.4); }
 }
 
-.nice-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, rgba(168,85,247,0.5), rgba(99,102,241,0.4));
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
 }
 
-/* Main window scrollbar */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+@keyframes pulse-glow {
+    0%, 100% { 
+        box-shadow: 0 0 20px rgba(168, 85, 247, 0.3), 0 0 40px rgba(99, 102, 241, 0.2);
+    }
+    50% { 
+        box-shadow: 0 0 30px rgba(168, 85, 247, 0.6), 0 0 60px rgba(99, 102, 241, 0.4), 0 0 80px rgba(6, 182, 212, 0.2);
+    }
 }
-
-::-webkit-scrollbar-track {
-    background: var(--bg-dark-950);
-}
-
-::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, rgba(168,85,247,0.3), rgba(99,102,241,0.25));
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, rgba(168,85,247,0.6), rgba(99,102,241,0.5));
-}
-
-/* ==========================================================================
-   ANIMATIONS & EFFECTS
-   ========================================================================== */
 
 @keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.animate-fade-in-up {
-    animation: fadeInUp 0.5s ease-out forwards;
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeIn {
@@ -83,52 +65,249 @@ body {
     to { opacity: 1; }
 }
 
-.animate-fade-in {
-    animation: fadeIn 0.4s ease-out forwards;
+@keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
-/* Staggered fade-in-up for result cards */
+.animate-fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
+.animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+.animate-gradient { animation: gradient 8s ease infinite; }
+.animate-float { animation: float 6s ease-in-out infinite; }
+.animate-glow { animation: glow 2s ease-in-out infinite; }
+.animate-shimmer { animation: shimmer 2s linear infinite; }
+.animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+
+/* Staggered animations */
 .stagger-1 { animation-delay: 0.05s; }
 .stagger-2 { animation-delay: 0.1s; }
 .stagger-3 { animation-delay: 0.15s; }
 .stagger-4 { animation-delay: 0.2s; }
 
-/* Custom glow utility */
+/* ==========================================================================
+   SCROLLBAR — GRADIENT THUMB WITH GLOW
+   ========================================================================== */
+.nice-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.nice-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 4px;
+}
+
+.nice-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(168,85,247,0.8), rgba(99,102,241,0.6));
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
+}
+
+.nice-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(168,85,247,1), rgba(99,102,241,0.8));
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.7);
+}
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-dark-950);
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(168,85,247,0.5), rgba(99,102,241,0.4));
+    border-radius: 5px;
+    border: 2px solid var(--bg-dark-950);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(168,85,247,0.8), rgba(99,102,241,0.6));
+}
+
+/* ==========================================================================
+   CUSTOM GLOW UTILITIES
+   ========================================================================== */
 .shadow-glow {
     box-shadow: 0 0 40px rgba(0,0,0,0.5);
 }
 
-/* Pattern utility */
-.pattern-diagonal-lines-sm {
-    background-image: repeating-linear-gradient(
-        45deg,
-        currentColor 0,
-        currentColor 1px,
-        transparent 1px,
-        transparent 4px
-    );
+.shadow-glow-active {
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.4), 0 0 60px rgba(99, 102, 241, 0.3);
 }
 
 /* ==========================================================================
-   ANALYZE BUTTON — RIPPLE EFFECT
+   LOADING OVERLAY - Premium AI SaaS Style
+   ========================================================================== */
+#loading-overlay {
+    background: linear-gradient(135deg, rgba(12, 13, 19, 0.98) 0%, rgba(19, 21, 31, 0.95) 100%);
+}
+
+/* Step Dots Animation */
+.step-dot {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.step-dot.active {
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.6);
+}
+
+/* Enhanced Loading Particle */
+.loading-particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+    border-radius: 50%;
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.6), 0 0 40px rgba(168, 85, 247, 0.3);
+    animation: particleFloat 4s ease-in-out infinite;
+}
+
+@keyframes particleFloat {
+    0%, 100% { 
+        transform: translateY(0) scale(1); 
+        opacity: 0.8;
+    }
+    50% { 
+        transform: translateY(-30px) scale(1.2); 
+        opacity: 1;
+    }
+}
+
+/* Loading Progress Animation */
+.loading-progress-anim {
+    animation: progressBar 3s ease-in-out infinite;
+}
+
+@keyframes progressBar {
+    0% { 
+        width: 0%;
+        background-position: 0% 50%;
+    }
+    50% { 
+        width: 70%;
+        background-position: 100% 50%;
+    }
+    100% { 
+        width: 100%;
+        background-position: 0% 50%;
+    }
+}
+
+/* Cancel Button Styling */
+#cancel-classify-btn {
+    transition: all 0.3s ease;
+}
+
+#cancel-classify-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+/* ==========================================================================
+   PREMIUM INPUT FIELDS - Enhanced Focus States & Modern Styling
+   ========================================================================== */
+
+/* Text Input Enhanced */
+#text-input {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#text-input:focus {
+    box-shadow: 
+        0 0 0 4px rgba(99, 102, 241, 0.15),
+        0 4px 20px rgba(0, 0, 0, 0.3),
+        inset 0 2px 4px rgba(255, 255, 255, 0.05);
+    transform: translateY(-1px);
+}
+
+#text-input::placeholder {
+    transition: color 0.3s ease;
+}
+
+#text-input:focus::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* File Upload Zones Enhanced */
+#mode-image,
+#mode-audio,
+#mode-video {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#mode-image:hover,
+#mode-audio:hover,
+#mode-video:hover {
+    transform: scale(1.01);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* ==========================================================================
+   PREMIUM CARD STYLING - Modern Glassmorphism
+   ========================================================================== */
+
+.glass-panel {
+    background: rgba(19, 21, 31, 0.7);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 
+        0 10px 40px -10px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 
+        0 15px 50px -12px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Card hover effect */
+.card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 
+        0 20px 60px -15px rgba(168, 85, 247, 0.2),
+        0 10px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+/* ==========================================================================
+   CLASSIFY BUTTON — Premium AI Style with Enhanced Effects
    ========================================================================== */
 #analyze-btn {
     position: relative;
     overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s ease;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s ease;
+    background: linear-gradient(135deg, #a855f7 0%, #6366f1 50%, #06b6d4 100%);
+    background-size: 200% 200%;
+    animation: gradient-shift 4s ease infinite;
 }
 
 #analyze-btn:hover:not(:disabled) {
-    box-shadow:
-        0 6px 25px rgba(99, 102, 241, 0.5),
-        0 0 40px rgba(168, 85, 247, 0.25);
-    transform: translateY(-1px);
+    box-shadow: 
+        0 8px 30px rgba(99, 102, 241, 0.5),
+        0 0 50px rgba(168, 85, 247, 0.3),
+        0 0 80px rgba(6, 182, 212, 0.2);
+    transform: translateY(-3px) scale(1.01);
 }
 
 #analyze-btn:active:not(:disabled) {
     transform: translateY(0) scale(0.98);
+    box-shadow: 
+        0 4px 15px rgba(99, 102, 241, 0.4),
+        0 0 30px rgba(168, 85, 247, 0.2);
 }
 
+/* Ripple effect */
 #analyze-btn .ripple {
     position: absolute;
     border-radius: 50%;
@@ -145,8 +324,75 @@ body {
     }
 }
 
+/* Shine effect on hover */
+#analyze-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+#analyze-btn:hover::before {
+    left: 100%;
+}
+
 /* ==========================================================================
-   MODE TAB — ACTIVE GLOW PULSE
+   PREMIUM BUTTON STYLES - All Buttons
+   ========================================================================== */
+
+/* Primary Button */
+.btn-primary {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #a855f7 0%, #6366f1 50%, #06b6d4 100%);
+    background-size: 200% 200%;
+    animation: gradient-shift 4s ease infinite;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 8px 25px rgba(99, 102, 241, 0.5),
+        0 0 40px rgba(168, 85, 247, 0.3);
+}
+
+.btn-primary:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+/* Secondary Button */
+.btn-secondary {
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    color: #a5b4fc;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.5);
+    color: #c7d2fe;
+}
+
+/* Ghost Button */
+.btn-ghost {
+    background: transparent;
+    color: #9ca3af;
+    transition: all 0.3s ease;
+}
+
+.btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #f3f4f6;
+}
+
+/* ==========================================================================
+   MODE TAB — Active Glow Pulse
    ========================================================================== */
 .mode-tab {
     position: relative;
@@ -174,6 +420,240 @@ body {
 }
 
 /* ==========================================================================
+   HISTORY SIDEBAR - Enhanced Styling
+   ========================================================================== */
+
+#history-sidebar {
+    background: linear-gradient(180deg, rgba(19, 21, 31, 0.98) 0%, rgba(12, 13, 19, 0.99) 100%);
+    backdrop-filter: blur(20px);
+}
+
+.history-item {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.history-item:hover {
+    transform: translateX(-4px);
+    box-shadow: 
+        0 10px 30px -10px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* History Empty State */
+.history-empty {
+    background: linear-gradient(135deg, rgba(19, 21, 31, 0.8) 0%, rgba(12, 13, 19, 0.9) 100%);
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+/* ==========================================================================
+   RESULTS DISPLAY - Enhanced Topic/Subtopic Hierarchy
+   ========================================================================== */
+
+#result-main-category {
+    background: linear-gradient(135deg, #f3f4f6 0%, #d1d5db 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Main Topic Badge - Prominent */
+#result-main-topic {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(99, 102, 241, 0.1) 100%);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+    transition: all 0.3s ease;
+}
+
+/* Subtopic Badge - Subordinate but clear */
+#result-subtopic {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(168, 85, 247, 0.1) 100%);
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.2);
+    transition: all 0.3s ease;
+}
+
+/* Confidence Circle Enhancement */
+#confidence-circle {
+    filter: drop-shadow(0 0 8px currentColor);
+}
+
+/* ==========================================================================
+   CATEGORIES LIST - Enhanced Card Display
+   ========================================================================== */
+
+.category-item {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    border-left: 3px solid transparent;
+}
+
+.category-item:hover {
+    background: rgba(99, 102, 241, 0.1);
+    border-left-color: #6366f1;
+    transform: translateX(4px);
+}
+
+.category-item.active {
+    background: rgba(99, 102, 241, 0.15);
+    border-left-color: #a855f7;
+}
+
+/* Category Badge Styling */
+.category-badge {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 9999px;
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    color: #a5b4fc;
+    transition: all 0.2s ease;
+}
+
+.category-badge:hover {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.4);
+}
+
+/* ==========================================================================
+   CONTENT SUMMARY PANEL - Enhanced
+   ========================================================================== */
+
+#topic-summary-text {
+    line-height: 1.8;
+    letter-spacing: 0.01em;
+}
+
+#topic-summary-indicator {
+    width: 4px;
+    min-height: 60px;
+    border-radius: 4px;
+}
+
+/* ==========================================================================
+   TEXT ANALYSIS GRID - Premium Cards
+   ========================================================================== */
+
+#text-analysis-panel .grid > div {
+    transition: all 0.3s ease;
+}
+
+#text-analysis-panel .grid > div:hover {
+    transform: translateY(-4px);
+    box-shadow: 
+        0 10px 30px -10px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Analysis metric values */
+#analysis-words,
+#analysis-chars,
+#analysis-sentences,
+#analysis-readability {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #f3f4f6 0%, #d1d5db 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ==========================================================================
+   MODEL PERFORMANCE METRICS - Enhanced Display
+   ========================================================================== */
+
+#results-state .divide-x > div {
+    position: relative;
+    overflow: hidden;
+}
+
+#results-state .divide-x > div::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 20%;
+    height: 60%;
+    width: 1px;
+    background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+}
+
+#results-state .divide-x > div:last-child::after {
+    display: none;
+}
+
+/* Accuracy/performance color coding */
+.text-green-400 {
+    text-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
+}
+
+.text-indigo-400 {
+    text-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+}
+
+.text-purple-400 {
+    text-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
+}
+
+/* ==========================================================================
+   CATEGORIES CONTAINER - Expert Level Sidebar UI
+   ========================================================================== */
+
+.categories-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0.25rem;
+}
+
+.category-group-section {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.category-group-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.category-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.category-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.65rem;
+    font-weight: 500;
+    border: 1px solid;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.category-chip:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+}
+
+.category-chip i {
+    font-size: 0.55rem;
+}
+
+/* ==========================================================================
    NOTIFICATION MANAGER STYLES
    ========================================================================== */
    
@@ -192,238 +672,62 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 16px 20px;
+    padding: 14px 20px;
     border-radius: 12px;
     background: rgba(19, 21, 31, 0.95);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
     color: white;
-    font-size: 0.875rem;
+    font-size: 14px;
     font-weight: 500;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.05);
-    transform: translateX(120%);
-    opacity: 0;
-    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
     pointer-events: auto;
-    max-width: 350px;
+    transform: translateX(120%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-width: 360px;
 }
 
 .notification.show {
     transform: translateX(0);
-    opacity: 1;
 }
 
-.notification-success { border-left: 4px solid #22c55e; box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 15px rgba(34,197,94,0.1); }
-.notification-success i { color: #22c55e; }
-
-.notification-error { border-left: 4px solid #ef4444; box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 15px rgba(239,68,68,0.1); }
-.notification-error i { color: #ef4444; }
-
-.notification-info { border-left: 4px solid #3b82f6; box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 15px rgba(59,130,246,0.1); }
-.notification-info i { color: #3b82f6; }
-
-.notification-warning { border-left: 4px solid #f59e0b; box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 15px rgba(245,158,11,0.1); }
-.notification-warning i { color: #f59e0b; }
-
-/* ==========================================================================
-   LOADING OVERLAY — ENHANCED
-   ========================================================================== */
-#loading-overlay {
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+.notification i {
+    font-size: 18px;
+    flex-shrink: 0;
 }
 
-#loading-overlay.active {
-    opacity: 1;
-    visibility: visible;
+.notification-success {
+    border-color: rgba(34, 197, 94, 0.3);
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(34, 197, 94, 0.2);
 }
 
-#loading-overlay::before {
-    content: '';
-    position: absolute;
-    width: 200px;
-    height: 200px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%);
-    animation: loadingPulse 2s ease-in-out infinite;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
+.notification-success i {
+    color: #22c55e;
 }
 
-@keyframes loadingPulse {
-    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
-    50% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+.notification-error {
+    border-color: rgba(239, 68, 68, 0.3);
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(239, 68, 68, 0.2);
 }
 
-/* ==========================================================================
-   EXPERT LEVEL PREMIUM UTILITIES
-   ========================================================================== */
-
-.card-hover {
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+.notification-error i {
+    color: #ef4444;
 }
 
-.card-hover:hover {
-    transform: translateY(-4px) scale(1.01);
-    box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.15), 0 0 20px rgba(168, 85, 247, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+.notification-warning {
+    border-color: rgba(245, 158, 11, 0.3);
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(245, 158, 11, 0.2);
 }
 
-.text-glow {
-    text-shadow: 0 0 20px currentColor;
+.notification-warning i {
+    color: #f59e0b;
 }
 
-.animate-pulse-slow {
-    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+.notification-info {
+    border-color: rgba(59, 130, 246, 0.3);
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(59, 130, 246, 0.2);
 }
 
-@keyframes float {
-    0% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
-    100% { transform: translateY(0px); }
-}
-
-.animate-float {
-    animation: float 6s ease-in-out infinite;
-}
-
-/* Premium gradient text */
-.text-gradient {
-    background: linear-gradient(135deg, #a855f7, #6366f1, #06b6d4);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-size: 200% auto;
-    animation: gradientShift 5s ease infinite;
-}
-
-@keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
-
-/* ==========================================================================
-   CATEGORIES SIDEBAR — CARD HOVER LIFT + GLOW
-   ========================================================================== */
-#categories-list > div {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-#categories-list > div:hover {
-    transform: translateX(4px);
-    background: rgba(255, 255, 255, 0.06) !important;
-    box-shadow: -3px 0 12px rgba(99, 102, 241, 0.15), 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-
-#categories-list > div:hover .w-10 {
-    transform: scale(1.1);
-    transition: transform 0.3s ease;
-}
-
-/* ==========================================================================
-   RESULTS STATE — ANIMATED GRADIENT BORDER
-   ========================================================================== */
-#results-state > div:nth-child(2) {
-    position: relative;
-}
-
-#results-state > div:nth-child(2)::before {
-    content: '';
-    position: absolute;
-    inset: -1px;
-    z-index: -1;
-    border-radius: inherit;
-    background: linear-gradient(135deg, var(--brand-purple), var(--brand-indigo), var(--brand-cyan), var(--brand-purple));
-    background-size: 300% 300%;
-    animation: gradientShift 4s ease infinite;
-    opacity: 0.5;
-    border-radius: 1rem;
-}
-
-/* ==========================================================================
-   PHASE 5 CINEMATIC GLASS PANELS
-   ========================================================================== */
-
-.glass-panel {
-    background: rgba(17, 19, 28, 0.7);
-    backdrop-filter: blur(28px) saturate(1.3);
-    -webkit-backdrop-filter: blur(28px) saturate(1.3);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow:
-        0 4px 30px rgba(0, 0, 0, 0.5),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.3);
-}
-
-.glass-panel-heavy {
-    background: rgba(10, 11, 17, 0.88);
-    backdrop-filter: blur(40px) saturate(1.4);
-    -webkit-backdrop-filter: blur(40px) saturate(1.4);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-top: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
-}
-
-.shadow-neon {
-    box-shadow: 0 0 15px var(--neon-glow-indigo), 0 0 30px var(--neon-glow-purple);
-    transition: box-shadow 0.3s ease;
-}
-
-.shadow-neon:hover {
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.6), 0 0 45px rgba(168, 85, 247, 0.4);
-}
-
-.gradient-border-anim {
-    position: relative;
-    background: rgba(19, 21, 31, 0.8);
-    background-clip: padding-box;
-    border: solid 2px transparent;
-    border-radius: 1rem;
-}
-
-.gradient-border-anim:before {
-    content: '';
-    position: absolute;
-    top: 0; right: 0; bottom: 0; left: 0;
-    z-index: -1;
-    margin: -2px;
-    border-radius: inherit;
-    background: linear-gradient(135deg, #a855f7, #6366f1, #06b6d4, #a855f7);
-    background-size: 300% 300%;
-    animation: gradientShift 4s ease infinite;
-}
-
-/* ==========================================================================
-   TEXTAREA FOCUS GLOW
-   ========================================================================== */
-#text-input:focus {
-    box-shadow:
-        0 0 0 4px rgba(99, 102, 241, 0.1),
-        inset 0 2px 8px rgba(0, 0, 0, 0.3),
-        0 0 30px rgba(99, 102, 241, 0.08);
-}
-
-/* ==========================================================================
-   CONFIDENCE CIRCLE GLOW
-   ========================================================================== */
-#confidence-circle {
-    filter: drop-shadow(0 0 6px currentColor);
-}
-
-/* ==========================================================================
-   IMAGE/AUDIO/VIDEO DROP ZONE DRAG STATE
-   ========================================================================== */
-.mode-panel[class*="border-dashed"]:hover {
-    border-color: rgba(168, 85, 247, 0.4) !important;
-}
-
-.drag-over {
-    border-color: var(--brand-purple) !important;
-    background: rgba(168, 85, 247, 0.08) !important;
-    box-shadow: inset 0 0 30px rgba(168, 85, 247, 0.1);
+.notification-info i {
+    color: #3b82f6;
 }

@@ -26,7 +26,9 @@ const CONFIG = {
         audio: 100 * 1024 * 1024,  // 100MB
         video: 200 * 1024 * 1024  // 200MB
     },
-    ANIMATION_DURATION: 300
+    ANIMATION_DURATION: 300,
+    MAX_HISTORY: 50,
+    HISTORY_KEY: 'newscat_history'
 };
 
 // =============================================================================
@@ -809,49 +811,130 @@ const api = {
 };
 
 // =============================================================================
-// LOADING MANAGER
+// LOADING MANAGER - Premium AI SaaS Style
 // =============================================================================
 const loadingManager = {
     overlay: null,
-    text: null,
-    subtext: null,
+    titleEl: null,
+    subtitleEl: null,
+    stepEl: null,
+    progressEl: null,
+    dynamicMsgEl: null,
+    _interval: null,
+    _stepIndex: 0,
+    _isVisible: false,
+
+    // Enhanced loading messages for professional AI platform feel
+    _steps: [
+        { 
+            title: 'Classifying Content', 
+            sub: 'Initializing classification pipeline...', 
+            step: 'Step 1/4',
+            message: 'Running classification models...'
+        },
+        { 
+            title: 'Analyzing Content', 
+            sub: 'Extracting semantic features...', 
+            step: 'Step 2/4',
+            message: 'Analyzing content patterns...'
+        },
+        { 
+            title: 'Processing Classification', 
+            sub: 'Neural network scoring categories...', 
+            step: 'Step 3/4',
+            message: 'Processing AI classification...'
+        },
+        { 
+            title: 'Generating Summary', 
+            sub: 'Preparing results for display...', 
+            step: 'Step 4/4',
+            message: 'Finalizing results...'
+        }
+    ],
+
+    // Additional cycling messages for variety
+    _cyclingMessages: [
+        'Running classification models...',
+        'Analyzing content patterns...',
+        'Processing AI classification...',
+        'Extracting semantic features...',
+        'Evaluating category scores...',
+        'Generating content summary...',
+        'Computing confidence metrics...',
+        'Matching against taxonomy...',
+        'Applying ensemble voting...',
+        'Finalizing classification results...'
+    ],
 
     init() {
         this.overlay = document.getElementById('loading-overlay');
-        this.text = document.getElementById('loading-text');
-        this.subtext = document.getElementById('loading-subtext');
+        this.dynamicMsgEl = this.overlay ? this.overlay.querySelector('.loading-text') : null;
+        this.subTextEl = this.overlay ? this.overlay.querySelector('.loading-subtext') : null;
+        this.progressEl = this.overlay ? this.overlay.querySelector('.loading-progress') : null;
     },
 
-    show(message = 'Analyzing...', subMessage = 'Processing your content') {
+    show() {
         if (!this.overlay) this.init();
-
-        if (this.text) this.text.textContent = message;
-        if (this.subtext) this.subtext.textContent = subMessage;
-
-        this.overlay?.classList.add('active');
+        this._stepIndex = 0;
+        this._isVisible = true;
+        if (this.overlay) {
+            this.overlay.style.display = 'flex';
+            this.overlay.style.flexDirection = 'column';
+            this.overlay.style.alignItems = 'center';
+            this.overlay.style.justifyContent = 'center';
+        }
+        
+        // Reset progress with animation
+        if (this.progressEl) {
+            this.progressEl.style.width = '0%';
+            setTimeout(() => {
+                if(this.progressEl) this.progressEl.style.width = '80%';
+            }, 100);
+        }
+        
         document.body.style.overflow = 'hidden';
+        
+        // Cycle through messages for visual interest based on DOM elements available
+        this._messageInterval = setInterval(() => {
+            if (!this._isVisible || !this.dynamicMsgEl) return;
+            const randomMsg = this._cyclingMessages[Math.floor(Math.random() * this._cyclingMessages.length)];
+            this._animateMessageChange(this.dynamicMsgEl, randomMsg);
+        }, 1500);
     },
 
     hide() {
-        this.overlay?.classList.remove('active');
-        document.body.style.overflow = '';
+        this._isVisible = false;
+        if (this._messageInterval) {
+            clearInterval(this._messageInterval);
+            this._messageInterval = null;
+        }
+        
+        if (this.progressEl) {
+            this.progressEl.style.width = '100%';
+        }
+        
+        setTimeout(() => {
+            if (this.overlay) this.overlay.style.display = 'none';
+            document.body.style.overflow = '';
+        }, 300); // Wait for progress bar to finish CSS transition
     },
 
-    update(message, subMessage = null) {
-        if (message && this.text) {
-            this.animateTextChange(this.text, message);
-        }
-        if (subMessage && this.subtext) {
-            this.animateTextChange(this.subtext, subMessage);
-        }
-    },
-
-    animateTextChange(element, newText) {
+    _animateMessageChange(element, newText) {
         element.style.opacity = '0';
+        element.style.transition = 'opacity 0.2s ease';
         setTimeout(() => {
             element.textContent = newText;
             element.style.opacity = '1';
-        }, 150);
+        }, 200);
+    },
+
+    update(message, subMessage = null) {
+        if (message && this.dynamicMsgEl) {
+            this._animateMessageChange(this.dynamicMsgEl, message);
+        }
+        if (subMessage && this.subTextEl) {
+             this._animateMessageChange(this.subTextEl, subMessage);
+        }
     }
 };
 
@@ -909,6 +992,10 @@ const resultsManager = {
         const resultsEl = document.getElementById('results-state');
         resultsEl.classList.remove('hidden');
         
+        // Hide the How It Works section when results are shown
+        const howItWorks = document.getElementById('how-it-works-section');
+        if (howItWorks) howItWorks.style.display = 'none';
+        
         // Smooth scroll to results after a tiny delay to ensure DOM is updated
         setTimeout(() => {
             resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -951,30 +1038,29 @@ const resultsManager = {
         
         const mainIconEl = document.getElementById('result-main-icon');
         const iconContainerEl = document.getElementById('result-icon-container');
-        const mainCategoryEl = document.getElementById('result-main-category');
-        const subCategoryEl = document.getElementById('result-sub-category');
+        const subtopicHeaderEl = document.getElementById('result-subtopic-header');
+        const mainTopicBadgeEl = document.getElementById('result-main-topic-badge');
         
         mainIconEl.className = `fas ${icon}`;
         iconContainerEl.style.backgroundColor = `${style.color}33`; // 20% opacity
         iconContainerEl.style.color = style.color;
         iconContainerEl.style.borderColor = `${style.color}50`;
         
-        mainCategoryEl.textContent = utils.capitalizeFirst(data.category_display || data.category);
+        // Set subtopic as primary header, main topic as secondary badge
+        const mainTopic = data.main_topic || data.category || 'unknown';
+        const subtopic = data.subtopic || data.category || 'unknown';
+        const categoryDisplay = data.category_display || data.category || 'unknown';
         
-        // Try mapping category to subtext
-        const subtexts = {
-            'politics': 'Government, elections, policies',
-            'technology': 'Tech innovations, AI, software',
-            'sports': 'Sports events, athletes, teams',
-            'business': 'Markets, companies, economy',
-            'entertainment': 'Movies, music, celebrities',
-            'science': 'Scientific discoveries, research',
-            'health': 'Medical news, healthcare',
-            'environment': 'Climate, nature, conservation',
-            'education': 'Schools, universities, learning',
-            'world': 'International news, global events'
-        };
-        subCategoryEl.textContent = subtexts[category.toLowerCase()] || 'News Classification Result';
+        if (subtopicHeaderEl) {
+            subtopicHeaderEl.textContent = utils.capitalizeFirst(subtopic.replace(/_/g, ' '));
+        }
+        if (mainTopicBadgeEl) {
+            if (mainTopic.toLowerCase() !== categoryDisplay.toLowerCase()) {
+                mainTopicBadgeEl.textContent = `${utils.capitalizeFirst(mainTopic.replace(/_/g, ' '))} > ${utils.capitalizeFirst(categoryDisplay)}`;
+            } else {
+                mainTopicBadgeEl.textContent = utils.capitalizeFirst(mainTopic.replace(/_/g, ' '));
+            }
+        }
         
         // 2. Confidence Circle Update
         const confidence = Math.min((data.confidence || 0), 100);
@@ -1034,17 +1120,20 @@ const resultsManager = {
     },
 
     updateTextAnalysisGrid(data) {
-        // Only show text analysis for text input type, or simulate it if we wanted to
+        // Only show text analysis for text input type
         const panel = document.getElementById('text-analysis-panel');
         if (!panel) return;
         
         if (state.currentInputType === 'text') {
             panel.classList.remove('hidden');
-            const wordsMatch = data.original_text ? data.original_text.match(/\\b\\w+\\b/g) : [];
+            // Use the current textarea value since the backend doesn't return original_text
+            const textarea = document.getElementById('text-input');
+            const inputText = textarea ? textarea.value : '';
+            const wordsMatch = inputText ? inputText.match(/\b\w+\b/g) : [];
             const words = wordsMatch ? wordsMatch.length : 0;
-            const chars = data.original_text ? Math.min(data.original_text.length, 10000) : 0;
-            const sentences = data.original_text ? Math.max(1, (data.original_text.match(/[.!?]+/g) || []).length) : 0;
-            const readability = Math.min(20, Math.max(1, Math.round(words / Math.max(1, sentences) * 0.5))); // Fake simplified readability
+            const chars = inputText ? Math.min(inputText.length, 10000) : 0;
+            const sentences = inputText ? Math.max(1, (inputText.match(/[.!?]+/g) || []).length) : 0;
+            const readability = Math.min(20, Math.max(1, Math.round(words / Math.max(1, sentences) * 0.5))); // Simplified readability
             
             this.animateValue('analysis-words', 0, words, 1000);
             this.animateValue('analysis-chars', 0, chars, 1000);
@@ -1094,6 +1183,10 @@ const uiManager = {
         // Reset display to hero
         document.getElementById('results-state').classList.add('hidden');
         document.getElementById('hero-state').classList.remove('hidden');
+        
+        // Show the How It Works section when returning to landing
+        const howItWorks = document.getElementById('how-it-works-section');
+        if (howItWorks) howItWorks.style.display = '';
 
         // Note: Tab highlight handled by inline script in index.html
         
@@ -1231,14 +1324,24 @@ async function analyzeContent() {
             return; // Aborted
         }
 
-        if (result?.status === 'success') {
-            // Instant display — no artificial delay
-            resultsManager.display(result.data || result, inputText, state.currentInputType);
-            loadingManager.hide();
-            addToHistory(result.data || result, inputText, state.currentInputType);
+        // Handle both wrapped ({status: 'success', data: ...}) and direct responses
+        let classificationData = null;
+        if (result?.status === 'success' && result?.data) {
+            classificationData = result.data;
+        } else if (result?.status === 'success') {
+            // Direct result without data wrapper
+            classificationData = result;
+        } else if (result?.category) {
+            // Result is directly the classification data
+            classificationData = result;
         } else {
             throw new Error(result?.message || 'Server returned an error');
         }
+        
+        // Display results and save to history
+        resultsManager.display(classificationData, inputText, state.currentInputType);
+        loadingManager.hide();
+        addToHistory(classificationData, inputText, state.currentInputType);
     } catch (error) {
         loadingManager.hide();
         let errorMessage = error.message || 'Unknown error occurred';
@@ -1253,48 +1356,88 @@ async function analyzeContent() {
 
 
 function addToHistory(result, inputText, inputType) {
-    // Determine category based on response logic
-    let categoryToSave = result.category;
-    if (result.main_topic && result.main_topic.toLowerCase() !== result.category.toLowerCase()) {
-        categoryToSave = `${utils.capitalizeFirst(result.main_topic)} > ${utils.capitalizeFirst(result.category)}`;
-    }
+    const mainTopic = result.main_topic || result.category || 'unknown';
+    const subtopic = result.subtopic || result.category || 'unknown';
 
     const entry = {
         id: Date.now().toString(),
         timestamp: new Date().toISOString(),
-        category: categoryToSave,
+        date: new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        }),
+        time: new Date().toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        }),
+        category: result.category_display || result.category || 'unknown',
+        main_topic: utils.capitalizeFirst(mainTopic.replace(/_/g, ' ')),
+        subtopic: utils.capitalizeFirst(subtopic.replace(/_/g, ' ')),
         confidence: result.confidence,
         inputType,
-        inputPreview: inputType === 'text' ? inputText.substring(0, 80) + '...' : inputText
+        // Store complete content text for text classifications
+        fullContent: inputType === 'text' ? inputText : (inputText || ''),
+        inputPreview: inputType === 'text' ? inputText.substring(0, 80) + '...' : inputText,
+        // Store additional metadata
+        modelName: result.model_name || 'Ensemble Classifier',
+        processingTime: result.processing_time_ms || 0
     };
 
-    if (!state.classificationHistory) state.classificationHistory = [];
+    if (!state.classificationHistory || !Array.isArray(state.classificationHistory)) {
+        state.classificationHistory = [];
+    }
+    
     state.classificationHistory.unshift(entry);
     
+    // Hardcoded max history check
     if (state.classificationHistory.length > CONFIG.MAX_HISTORY) {
-        state.classificationHistory.pop();
+        state.classificationHistory = state.classificationHistory.slice(0, CONFIG.MAX_HISTORY);
     }
 
     try {
-        localStorage.setItem(CONFIG.HISTORY_KEY, JSON.stringify(state.classificationHistory));
+        const serialized = JSON.stringify(state.classificationHistory);
+        localStorage.setItem(CONFIG.HISTORY_KEY, serialized);
+        
+        // Verification step
+        const verify = localStorage.getItem(CONFIG.HISTORY_KEY);
+        if (!verify || verify === 'null') throw new Error("History storage write failed silently.");
+        
         renderHistory();
     } catch (e) {
-        console.warn('Failed to save history:', e);
+        console.warn('Failed to save history securely, storage may be full:', e);
+        // Recovery mechanism: shrink history aggressive
+        try {
+            state.classificationHistory = state.classificationHistory.slice(0, 10);
+            localStorage.setItem(CONFIG.HISTORY_KEY, JSON.stringify(state.classificationHistory));
+        } catch(fallbackErr) {
+            console.error('Critical History Storage Failure:', fallbackErr);
+        }
     }
 }
 
 function loadHistory() {
     try {
         const saved = localStorage.getItem(CONFIG.HISTORY_KEY);
-        if (saved) {
-            state.classificationHistory = JSON.parse(saved);
+        if (saved && saved !== 'null') {
+            const parsed = JSON.parse(saved);
+            // Defensive typing check constraint
+            if (Array.isArray(parsed)) {
+                // Filter out broken objects
+                state.classificationHistory = parsed.filter(item => item && item.id && item.category);
+            } else {
+                state.classificationHistory = [];
+            }
         } else {
             state.classificationHistory = [];
         }
         renderHistory();
     } catch (e) {
-        console.warn('Failed to load history:', e);
+        console.warn('Failed to load history, state corrupted. Resetting:', e);
         state.classificationHistory = [];
+        localStorage.removeItem(CONFIG.HISTORY_KEY); // Clean up bad data completely
+        renderHistory();
     }
 }
 
@@ -1317,7 +1460,7 @@ function renderHistory() {
         historyList.innerHTML = `
             <div class="history-empty p-8 text-center rounded-xl bg-dark-900 border border-dark-800">
                 <i class="fas fa-inbox text-4xl mb-4 text-dark-500"></i>
-                <p class="text-dark-400 font-medium">No classifications yet. Start by analyzing some content!</p>
+                <p class="text-dark-400 font-medium">No classifications yet. Start by classifying some content!</p>
             </div>
         `;
         return;
@@ -1325,9 +1468,13 @@ function renderHistory() {
 
     let html = '<div class="flex flex-col gap-3">';
     state.classificationHistory.forEach(item => {
-        const date = new Date(item.timestamp).toLocaleDateString(undefined, { 
-            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-        });
+        // Use stored date and time if available, otherwise parse from timestamp
+        const displayDate = item.date || (item.timestamp ? new Date(item.timestamp).toLocaleDateString(undefined, { 
+            month: 'short', day: 'numeric', year: 'numeric' 
+        }) : '');
+        const displayTime = item.time || (item.timestamp ? new Date(item.timestamp).toLocaleTimeString(undefined, {
+            hour: '2-digit', minute: '2-digit' 
+        }) : '');
         
         let iconHtml = '';
         switch(item.inputType) {
@@ -1338,31 +1485,42 @@ function renderHistory() {
             default: iconHtml = '<i class="fas fa-file text-gray-400"></i>';
         }
 
+        const mainTopicBadge = item.main_topic ? `<span class="text-[9px] font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded-full border border-indigo-500/20">${utils.sanitizeText(item.main_topic)}</span>` : '';
+        const subtopicBadge = item.subtopic ? `<span class="text-[9px] font-bold text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded-full border border-purple-500/20">${utils.sanitizeText(item.subtopic)}</span>` : '';
+
+        // Confidence color based on level
+        const confidenceColor = item.confidence >= 80 ? 'text-green-400' : (item.confidence >= 60 ? 'text-yellow-400' : 'text-orange-400');
+
         html += `
-            <div class="history-item flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-dark-900/50 hover:bg-dark-800 border border-dark-800 hover:border-brand-purple/30 transition-all duration-300">
-                <div class="flex items-start gap-4 mb-3 sm:mb-0 max-w-full sm:max-w-[70%]">
-                    <div class="mt-1 bg-dark-950 p-2 rounded-lg border border-white/5 flex-shrink-0">
+            <div class="history-item flex flex-col p-4 rounded-xl bg-dark-900/50 hover:bg-dark-800 border border-dark-800 hover:border-brand-purple/30 transition-all duration-300">
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 bg-dark-950 p-2 rounded-lg border border-white/5 flex-shrink-0 shadow-inner">
                         ${iconHtml}
                     </div>
-                    <div class="min-w-0">
-                        <p class="text-white font-medium truncate text-sm sm:text-base">${utils.sanitizeText(item.inputPreview)}</p>
-                        <p class="text-dark-400 text-xs mt-1"><i class="far fa-clock mr-1"></i>${date}</p>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center justify-between mb-1">
+                            <h4 class="text-white font-bold text-sm tracking-wide capitalize truncate pr-2">${utils.sanitizeText(item.subtopic)}</h4>
+                            <span class="text-xs font-bold ${confidenceColor} whitespace-nowrap">${Number(item.confidence).toFixed(1)}%</span>
+                        </div>
+                        <p class="text-gray-400 text-xs line-clamp-2 leading-relaxed italic mb-2" title="${utils.sanitizeText(item.fullContent || item.inputPreview).replace(/"/g, '&quot;')}">
+                            "${utils.sanitizeText(item.inputPreview)}"
+                        </p>
+                        <div class="flex items-center justify-between border-t border-white/5 pt-2 mt-1">
+                            <p class="text-gray-500 text-[10px] flex items-center gap-2 font-medium">
+                                <span><i class="far fa-calendar-alt mr-1"></i>${displayDate}</span>
+                                <span><i class="far fa-clock mr-1"></i>${displayTime}</span>
+                            </p>
+                            <div class="flex items-center">
+                                ${mainTopicBadge}
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="flex items-center gap-3 flex-shrink-0 ml-12 sm:ml-0">
-                    <span class="px-3 py-1 bg-brand-purple/20 border border-brand-purple/30 text-brand-purpleLight rounded-full text-xs font-semibold whitespace-nowrap">
-                        ${item.category}
-                    </span>
-                    <span class="text-xs font-bold ${item.confidence > 80 ? 'text-green-400' : 'text-yellow-400'}">
-                        ${Number(item.confidence).toFixed(1)}%
-                    </span>
                 </div>
             </div>
         `;
     });
     html += '</div>';
     
-    // Add brief animation when updating
     historyList.style.opacity = '0';
     setTimeout(() => {
         historyList.innerHTML = html;
@@ -1438,6 +1596,28 @@ async function fetchRealtimeNews() {
 }
 
 // (Duplicate history functions removed — unified into single addToHistory/renderHistory above)
+
+// =============================================================================
+// HISTORY UI FUNCTIONS
+// =============================================================================
+function toggleHistorySidebar(show) {
+    const sidebar = document.getElementById('history-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (!sidebar || !overlay) return;
+
+    if (show) {
+        sidebar.classList.remove('translate-x-full');
+        sidebar.classList.add('translate-x-0');
+        overlay.classList.remove('hidden');
+        // Small delay for fade in
+        setTimeout(() => overlay.classList.add('opacity-100'), 10);
+    } else {
+        sidebar.classList.remove('translate-x-0');
+        sidebar.classList.add('translate-x-full');
+        overlay.classList.remove('opacity-100');
+        setTimeout(() => overlay.classList.add('hidden'), 500); // Wait for transition
+    }
+}
 
 // =============================================================================
 // INITIALIZATION
@@ -1550,12 +1730,93 @@ function initEventListeners() {
     });
 }
 
+function loadCategories() {
+    const list = document.getElementById('categories-list');
+    if (!list) return;
+
+    // Group categories by their color theme for visual organization - Enhanced with more categories
+    const colorGroups = {
+        'Technology': { categories: ['technology', 'artificial_intelligence', 'cybersecurity', 'blockchain_tech', 'internet_of_things', 'cloud_computing', 'software_development', 'robotics', 'virtual_reality', 'data_science'], color: '#3b82f6' },
+        'Business & Finance': { categories: ['business', 'finance', 'economy', 'cryptocurrency', 'real_estate', 'banking', 'investments', 'startups', 'marketing', 'ecommerce'], color: '#4f46e5' },
+        'Science & Environment': { categories: ['science', 'space', 'biology', 'chemistry', 'physics', 'genetics', 'climate_change', 'environment', 'astronomy'], color: '#8b5cf6' },
+        'Health': { categories: ['health', 'medicine', 'mental_health', 'fitness', 'nutrition', 'public_health'], color: '#2dd4bf' },
+        'Politics': { categories: ['politics', 'elections', 'geopolitics', 'international_relations', 'public_policy', 'law_justice'], color: '#64748b' },
+        'Sports': { categories: ['sports', 'football_soccer', 'basketball', 'tennis', 'golf', 'motorsports', 'cricket'], color: '#0284c7' },
+        'Entertainment': { categories: ['entertainment', 'film_tv', 'music', 'celebrity', 'video_games', 'streaming', 'fashion'], color: '#7c3aed' },
+        'Lifestyle': { categories: ['lifestyle', 'travel', 'food_dining', 'education', 'relationships', 'automotive', 'beauty'], color: '#0ea5e9' }
+    };
+
+    let html = '<div class="categories-container flex flex-col gap-3">';
+    let count = 0;
+    
+    for (const [groupName, groupData] of Object.entries(colorGroups)) {
+        const groupColor = groupData.color;
+        
+        html += `
+            <div class="taxonomy-group rounded-xl overflow-hidden border border-white/5">
+                <div class="taxonomy-header px-4 py-2.5 flex items-center justify-between" style="background: linear-gradient(135deg, ${groupColor}20, ${groupColor}08);">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2.5 h-2.5 rounded-full" style="background: ${groupColor}; box-shadow: 0 0 6px ${groupColor}60;"></div>
+                        <span class="text-[11px] font-extrabold uppercase tracking-[0.12em]" style="color: ${groupColor}">${groupName}</span>
+                    </div>
+                    <span class="text-[9px] font-bold px-2 py-0.5 rounded-full" style="color: ${groupColor}; background: ${groupColor}10; border: 1px solid ${groupColor}20;">${groupData.categories.length}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-1.5 p-2.5">`;
+        
+        groupData.categories.forEach(key => {
+            const style = categoryStyles[key];
+            if (!style) return;
+            const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            html += `
+                <div class="taxonomy-chip flex items-center gap-2 px-3 py-2 rounded-lg text-[10.5px] font-semibold transition-all duration-200 cursor-pointer group" style="background: ${groupColor}08; border: 1px solid ${groupColor}12; color: ${groupColor};" data-category="${key}">
+                    <i class="fas ${style.icon} w-3.5 text-center text-[9px] opacity-70 group-hover:opacity-100 transition-opacity" style="color: ${groupColor}"></i>
+                    <span class="truncate leading-tight" style="color: var(--chip-text, #94a3b8);">${label}</span>
+                </div>`;
+            count++;
+        });
+        
+        html += '</div></div>';
+    }
+    
+    html += '</div>';
+    list.innerHTML = html;
+
+    // Update counter badge
+    const badge = document.getElementById('categories-count-badge');
+    if (badge) badge.textContent = `${count} Topics`;
+}
+
+function initThemeToggle() {
+    const themeBtn = document.getElementById('theme-toggle-btn');
+    const themeIcon = document.getElementById('theme-icon');
+    if (!themeBtn || !themeIcon) return;
+    
+    // Check saved preference
+    const isLightMode = localStorage.getItem('newscat_light_theme') === 'true';
+    if (isLightMode) {
+        document.body.classList.add('light-theme');
+        themeIcon.className = 'fas fa-sun';
+    }
+    
+    themeBtn.addEventListener('click', () => {
+        const isLight = document.body.classList.toggle('light-theme');
+        localStorage.setItem('newscat_light_theme', isLight);
+        themeIcon.className = isLight ? 'fas fa-sun' : 'fas fa-moon';
+        
+        // Visual feedback
+        const msg = isLight ? 'Light Theme Enabled' : 'Dark Theme Enabled';
+        notificationManager.show(msg, 'success');
+    });
+}
+
 function initializeApp() {
     // Initialize systems
     loadingManager.init();
 
     loadHistory();
+    loadCategories();
     initEventListeners();
+    initThemeToggle();
     uiManager.updateAnalyzeButton();
 
     // Load sample on first visit
@@ -1585,3 +1846,94 @@ window.newscat = {
     api,
     utils
 };
+
+// =============================================================================
+// ENHANCED FUNCTIONALITIES
+// =============================================================================
+
+// Auto-refresh session every 30 minutes
+let sessionRefreshInterval;
+
+function startSessionRefresh() {
+    sessionRefreshInterval = setInterval(() => {
+        const sessionLocal = localStorage.getItem('newsauth_session');
+        const sessionSession = sessionStorage.getItem('newsauth_session');
+        const session = sessionLocal || sessionSession;
+        
+        if (session) {
+            try {
+                const sessionData = JSON.parse(session);
+                // Update timestamp to keep session alive
+                sessionData.timestamp = Date.now();
+                
+                if (sessionLocal) {
+                    localStorage.setItem('newsauth_session', JSON.stringify(sessionData));
+                } else {
+                    sessionStorage.setItem('newsauth_session', JSON.stringify(sessionData));
+                }
+                console.log('[Session] Auto-refreshed');
+            } catch (e) {
+                console.warn('[Session] Refresh failed');
+            }
+        }
+    }, 30 * 60 * 1000); // 30 minutes
+}
+
+// Activity tracking for auto-logout warning
+let activityTimeout;
+const INACTIVITY_WARNING = 20 * 60 * 1000; // 20 minutes
+const INACTIVITY_LOGOUT = 25 * 60 * 1000; // 25 minutes
+
+function resetActivityTimer() {
+    clearTimeout(activityTimeout);
+    
+    // Show warning at 20 minutes
+    activityTimeout = setTimeout(() => {
+        showInactivityWarning();
+    }, INACTIVITY_WARNING);
+}
+
+function showInactivityWarning() {
+    notificationManager.show('Your session will expire in 5 minutes due to inactivity', 'warning');
+    
+    // Auto logout at 25 minutes
+    setTimeout(() => {
+        notificationManager.show('Session expired due to inactivity', 'error');
+        setTimeout(logout, 2000);
+    }, 5 * 60 * 1000);
+}
+
+// Track user activity
+['mousedown', 'keydown', 'scroll', 'touchstart'].forEach(event => {
+    document.addEventListener(event, resetActivityTimer, { passive: true });
+});
+
+// Initialize session management when auth is confirmed
+function initSessionManagement() {
+    startSessionRefresh();
+    resetActivityTimer();
+}
+
+// Enhanced keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+    // Ctrl/Cmd + L: Logout
+    if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+        e.preventDefault();
+        if (confirm('Are you sure you want to logout?')) {
+            logout();
+        }
+    }
+    
+    // Escape: Close modals/sidebars
+    if (e.key === 'Escape') {
+        const historySidebar = document.getElementById('history-sidebar');
+        if (historySidebar && historySidebar.classList.contains('translate-x-0')) {
+            toggleHistorySidebar(false);
+        }
+    }
+});
+
+// Auto-initialize session management
+if (checkAuth()) {
+    initSessionManagement();
+}

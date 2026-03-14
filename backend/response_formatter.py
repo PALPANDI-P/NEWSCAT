@@ -8,6 +8,10 @@ from datetime import datetime
 import json
 from enum import Enum
 
+try:
+    from backend.models.lightning_classifier import CategoryKnowledgeGraph
+except ImportError:
+    CategoryKnowledgeGraph = None
 
 class ResponseStatus(Enum):
     """Standard response statuses"""
@@ -58,14 +62,33 @@ def create_success_response(
     Returns:
         Formatted response dictionary
     """
+    # Derive main_topic and subtopic from Knowledge Graph if not explicitly provided
+    category = data.get("category", "unknown")
+    main_topic = data.get("main_topic")
+    subtopic = data.get("subtopic")
+    
+    if CategoryKnowledgeGraph and category in CategoryKnowledgeGraph.CATEGORIES:
+        parent = CategoryKnowledgeGraph.CATEGORIES[category].get('parent')
+        if parent:
+            main_topic = main_topic or parent
+            subtopic = subtopic or category
+        else:
+            main_topic = main_topic or category
+            subtopic = subtopic or category
+            
+    # Fallback to category itself
+    main_topic = main_topic or category
+    subtopic = subtopic or category
+
     response = {
         "status": ResponseStatus.SUCCESS.value,
         "timestamp": datetime.utcnow().isoformat() + "Z",
         "data": {
             # Primary classification result
-            "category": data.get("category", "unknown"),
-            "category_display": data.get("category_display", data.get("category", "Unknown")),
-            "main_topic": data.get("main_topic", data.get("category", "unknown")),
+            "category": category,
+            "category_display": data.get("category_display", category),
+            "main_topic": main_topic,
+            "subtopic": subtopic,
             "confidence": min(100, max(0, data.get("confidence", 0))),  # Ensure 0-100
             "confidence_level": get_confidence_level(data.get("confidence", 0)),
             

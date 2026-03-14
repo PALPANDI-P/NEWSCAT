@@ -790,6 +790,22 @@ class CinematicProcessor:
                 'max_file_size': self.MAX_FILE_SIZE
             }
         }
+    
+    def get_installation_instructions(self) -> str:
+        """Get instructions for installing dependencies"""
+        return "Install dependencies: pip install opencv-python-headless moviepy"
+    
+    def get_dependencies_status(self) -> Dict[str, bool]:
+        """Get status of all dependencies"""
+        status = {
+            'opencv': self._cv2_available,
+        }
+        try:
+            import moviepy
+            status['moviepy'] = True
+        except ImportError:
+            status['moviepy'] = False
+        return status
 
 
 # Backward compatibility

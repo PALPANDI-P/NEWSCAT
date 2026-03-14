@@ -1402,9 +1402,13 @@ class OptimizedEnsembleClassifier(BaseNewsClassifier):
                 result['method'] = 'optimized_ensemble_v3.5'
                 
                 # Extract content-specific incident details
+                # Extract content-specific incident details
                 incident_details = self._extract_incident_details(text, category)
                 result['incident_details'] = incident_details
                 result['category_description'] = incident_details.get('description', self.categories.get(category, category))
+                
+            # Generate fast extractive summary
+            result['main_topic_summary'] = self._generate_extractive_summary(text)
             
             processing_time = (time.time() - start_time) * 1000
             result['processing_time_ms'] = round(processing_time, 2)
@@ -1418,6 +1422,24 @@ class OptimizedEnsembleClassifier(BaseNewsClassifier):
             logger.error(f"Classification error: {e}")
             return self._advanced_rule_based_classify(text)
     
+    def _generate_extractive_summary(self, text: str) -> str:
+        """Fast extractive summary generating the most relevant 2 sentences."""
+        import re
+        sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', text) if len(s.strip()) > 20]
+        if not sentences:
+            # Fallback if text has no proper punctuation
+            return text[:150] + "..." if len(text) > 150 else text
+            
+        # Take the first sentence, and potentially a second one
+        summary = sentences[0]
+        if len(sentences) > 1 and len(summary) < 150:
+            summary += " " + sentences[1]
+            
+        if not summary.endswith(('.', '!', '?')):
+            summary += "."
+            
+        return summary
+
     def _advanced_rule_based_classify(self, text: str) -> Dict[str, Any]:
         """Advanced rule-based classification with weighted keyword matching"""
         text_lower = text.lower()

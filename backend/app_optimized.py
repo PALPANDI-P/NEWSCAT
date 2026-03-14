@@ -328,7 +328,7 @@ def _preload_default_model():
     """Preload the default classifier in background"""
     try:
         logger.info("Preloading default classifier...")
-        classifier = get_classifier(use_enhanced=True)
+        classifier = get_classifier(use_enhanced=False)
         if classifier:
             logger.info(f"Preloaded classifier: {classifier.name}")
         else:
@@ -366,17 +366,22 @@ def clear_cache():
 
 
 # ===== HELPER FUNCTIONS =====
-def get_classifier(use_enhanced: bool = True):
+def get_classifier(use_enhanced: bool = False):
     """Get appropriate classifier based on preference - Optimized lazy loading"""
     from backend.models.model_manager import get_model_manager
     manager = get_model_manager()
     
-    if use_enhanced:
-        # Priority: Expert > Optimized > Ensemble > Simple
-        for model_name in ['expert', 'optimized', 'ensemble', 'simple']:
-            model = manager.get(model_name)
-            if model is not None:
-                return model
+    if not use_enhanced:
+        # Use simple classifier for faster results
+        simple_model = manager.get('simple')
+        if simple_model is not None:
+            return simple_model
+    
+    # For enhanced mode: Priority: Expert > Optimized > Ensemble > Simple
+    for model_name in ['expert', 'optimized', 'ensemble', 'simple']:
+        model = manager.get(model_name)
+        if model is not None:
+            return model
     
     # Fallback to simple
     return manager.get('simple')

@@ -10,7 +10,9 @@ import logging
 import traceback
 from pathlib import Path
 from datetime import datetime
-from functools import wraps
+from functools import wraps, lru_cache
+import hashlib
+import json
 
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
@@ -63,17 +65,37 @@ CORS(app, resources={
 _classifier = None
 
 def get_classifier():
-    """Lazy load classifier on first request with error handling"""
+    """Lazy load globally cached classifier on first request with error handling"""
     global _classifier
     if _classifier is None:
         try:
-            from backend.models.lightning_classifier import LightningClassifier
-            _classifier = LightningClassifier()
-            logger.info(f"Classifier loaded: {_classifier.name} v{_classifier.version}")
+            # First try the newly trained models (OptimizedEnsembleClassifier)
+            try:
+                from backend.models.optimized_classifier import OptimizedEnsembleClassifier
+                _classifier = OptimizedEnsembleClassifier()
+                logger.info(f"High-Accuracy Classifier loaded: {_classifier.name} v{_classifier.version}")
+            except Exception as e:
+                logger.warning(f"Failed to load High-Accuracy classifier, falling back to simple... Error: {e}")
+                from backend.models.simple_classifier import SimpleNewsClassifier
+                _classifier = SimpleNewsClassifier()
+                logger.info(f"Simple Classifier loaded: {_classifier.name} v{_classifier.version}")
         except Exception as e:
-            logger.error(f"Failed to load classifier: {e}")
+            logger.error(f"Failed to load any classifier: {e}")
             raise
     return _classifier
+
+@lru_cache(maxsize=1000)
+def cached_classification(text_hash: str, text: str):
+    """LRU Cache for text classification results to maximize performance"""
+    classifier = get_classifier()
+    
+    # Actually classify the text
+    result = classifier.classify(
+        text, 
+        include_confidence=True,
+        include_all_scores=True
+    )
+    return json.dumps(result)  # Serialize to allow saving in cache
 
 def validate_text(text):
     """Validate and sanitize input text"""
@@ -98,6 +120,15 @@ def handle_errors(f):
 
 # ===== ROUTES =====
 
+# Demo credentials (in production, use proper database/hashing)
+DEMO_USER = {
+    'username': 'admin',
+    'password_hash': 'newsai2024'  # Simple hash for demo
+}
+
+# Simple session storage
+sessions = {}
+
 @app.route('/')
 def index():
     """Serve main page"""
@@ -106,6 +137,112 @@ def index():
     except Exception as e:
         logger.error(f"Error serving index: {e}")
         return jsonify({'status': 'error', 'message': 'Failed to load page'}), 500
+
+@app.route('/login.html')
+def login_page():
+    """Serve login page"""
+    try:
+        return send_from_directory(app.static_folder, 'login.html')
+    except Exception as e:
+        logger.error(f"Error serving login: {e}")
+        return jsonify({'status': 'error', 'message': 'Login page not found'}), 404
+
+@app.route('/landing.html')
+def landing_page():
+    """Serve landing page"""
+    try:
+        return send_from_directory(app.static_folder, 'landing.html')
+    except Exception as e:
+        logger.error(f"Error serving landing: {e}")
+        return jsonify({'status': 'error', 'message': 'Landing page not found'}), 404
+
+# ===== AUTH ROUTES =====
+
+@app.route('/api/auth/login', methods=['POST'])
+@handle_errors
+def auth_login():
+    """Authenticate user and create session"""
+    data = request.get_json()
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+    
+    if not username or not password:
+        return jsonify({'status': 'error', 'message': 'Username and password required'}), 400
+    
+    # Check demo credentials
+    if username == DEMO_USER['username'] and password == DEMO_USER['password_hash']:
+        # Create session token
+        import secrets
+        token = secrets.token_hex(32)
+        sessions[token] = {
+            'username': username,
+            'created_at': datetime.now().isoformat(),
+            'last_activity': datetime.now().isoformat()
+        }
+        
+        logger.info(f"User logged in: {username}")
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'token': token,
+                'username': username,
+                'expires_in': 86400  # 24 hours
+            }
+        })
+    
+    logger.warning(f"Failed login attempt for username: {username}")
+    return jsonify({'status': 'error', 'message': 'Invalid credentials'}), 401
+
+@app.route('/api/auth/logout', methods=['POST'])
+@handle_errors
+def auth_logout():
+    """Destroy session"""
+    data = request.get_json()
+    token = data.get('token')
+    
+    if token and token in sessions:
+        del sessions[token]
+        logger.info("User logged out")
+        return jsonify({'status': 'success', 'message': 'Logged out successfully'})
+    
+    return jsonify({'status': 'success', 'message': 'No active session'})
+
+@app.route('/api/auth/validate', methods=['GET'])
+@handle_errors
+def auth_validate():
+    """Validate session token"""
+    token = request.headers.get('Authorization', '').replace('Bearer ', '')
+    
+    if not token:
+        return jsonify({'status': 'error', 'message': 'No token provided'}), 401
+    
+    if token in sessions:
+        session = sessions[token]
+        # Update last activity
+        session['last_activity'] = datetime.now().isoformat()
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'username': session['username'],
+                'valid': True
+            }
+        })
+    
+    return jsonify({'status': 'error', 'message': 'Invalid or expired session'}), 401
+
+@app.route('/api/auth/session', methods=['GET'])
+@handle_errors
+def auth_session():
+    """Get current session info"""
+    # This endpoint is used for client-side session management
+    # In production, this would verify the token
+    return jsonify({
+        'status': 'success',
+        'data': {
+            'authenticated': True,
+            'message': 'Session active'
+        }
+    })
 
 @app.route('/css/<path:path>')
 def serve_css(path):
@@ -203,8 +340,8 @@ def processor_status():
         status['audio'] = {
             'available': audio_proc.is_available(),
             'engine': audio_proc.stt_engine if hasattr(audio_proc, 'stt_engine') and audio_proc.stt_engine != 'none' else None,
-            'ffmpeg_available': audio_proc._check_ffmpeg() if hasattr(audio_proc, '_check_ffmpeg') else None,
-            'installation_instructions': audio_proc.get_installation_instructions() if not audio_proc.is_available() else None
+            'ffmpeg_available': audio_proc.preprocessor.is_ffmpeg_available() if hasattr(audio_proc, 'preprocessor') else None,
+            'installation_instructions': audio_proc.get_installation_instructions() if hasattr(audio_proc, 'get_installation_instructions') and not audio_proc.is_available() else None
         }
     except Exception as e:
         status['audio'] = {
@@ -254,22 +391,17 @@ def classify():
         return jsonify({'status': 'error', 'message': result}), 400
     
     try:
-        # Get classifier and classify
-        classifier = get_classifier()
-        classification_result = classifier.classify(
-            result, 
-            include_confidence=True,
-            include_all_scores=True
-        )
+        # Generate text hash for caching
+        text_hash = hashlib.md5(result.encode('utf-8')).hexdigest()
+        
+        # Get cached result or compute new one
+        cached_result_str = cached_classification(text_hash, result)
+        classification_result = json.loads(cached_result_str)
         
         # Calculate total processing time
         total_time = (time.perf_counter() - start_time) * 1000
         
-        # Format top_predictions to ensure confidence is 0-100 scale
         top_predictions = classification_result.get('top_predictions', [])
-        for pred in top_predictions:
-            if 'confidence' in pred and pred['confidence'] <= 1.0:
-                pred['confidence'] = pred['confidence'] * 100
         
         # Extract keywords
         keywords = extract_keywords(result)
@@ -280,14 +412,16 @@ def classify():
         
         # Use new response formatter
         response = format_classification_result(
-            category=classification_result['category'],
-            confidence=classification_result['confidence'],
+            category=classification_result.get('category', 'unknown'),
+            confidence=classification_result.get('confidence', 0),
             top_predictions=top_predictions,
             keywords=keywords,
-            model_name=classifier.name,
-            model_version=classifier.version,
+            model_name=classification_result.get('model_name', "NewsCAT Optimized"),
+            model_version=classification_result.get('model_version', "7.0"),
             input_type='text',
             processing_time_ms=round(total_time, 2),
+            main_topic_summary=classification_result.get('main_topic_summary', ''),
+            category_display=classification_result.get('category_display', ''),
             content_metrics={
                 'character_count': len(result),
                 'word_count': words,
@@ -395,16 +529,13 @@ def classify_image():
         
         processing_time = round((time.perf_counter() - start_time) * 1000, 2)
         
-        # Format top_predictions to ensure confidence is 0-100 scale
         top_predictions = classification_result.get('top_predictions', [])
-        for pred in top_predictions:
-            if 'confidence' in pred and pred['confidence'] <= 1.0:
-                pred['confidence'] = pred['confidence'] * 100
         
         return jsonify({
             'status': 'success',
             'data': {
                 'category': classification_result['category'],
+                'category_display': classification_result.get('category_display', classification_result['category'].replace('_', ' ').title()),
                 'confidence': classification_result['confidence'],
                 'processing_time_ms': processing_time,
                 'model': classifier.name,
@@ -412,7 +543,8 @@ def classify_image():
                 'extracted_text': extracted_text[:500],
                 'ocr_confidence': result.confidence,
                 'keywords': extract_keywords(extracted_text),
-                'top_predictions': top_predictions
+                'top_predictions': top_predictions,
+                'main_topic_summary': classification_result.get('main_topic_summary', '')
             }
         })
         
@@ -492,8 +624,8 @@ def classify_audio():
             return jsonify({
                 'status': 'error',
                 'message': 'Audio processing not available. Please install Speech-to-Text dependencies.',
-                'ffmpeg_available': processor._check_ffmpeg() if hasattr(processor, '_check_ffmpeg') else None,
-                'installation_instructions': processor.get_installation_instructions()
+                'ffmpeg_available': processor.preprocessor.is_ffmpeg_available() if hasattr(processor, 'preprocessor') else None,
+                'installation_instructions': processor.get_installation_instructions() if hasattr(processor, 'get_installation_instructions') else 'Install: pip install openai-whisper SpeechRecognition'
             }), 503
         
         # Get file extension
@@ -544,16 +676,13 @@ def classify_audio():
         
         processing_time = round((time.perf_counter() - start_time) * 1000, 2)
         
-        # Format top_predictions to ensure confidence is 0-100 scale
         top_predictions = classification_result.get('top_predictions', [])
-        for pred in top_predictions:
-            if 'confidence' in pred and pred['confidence'] <= 1.0:
-                pred['confidence'] = pred['confidence'] * 100
         
         return jsonify({
             'status': 'success',
             'data': {
                 'category': classification_result['category'],
+                'category_display': classification_result.get('category_display', classification_result['category'].replace('_', ' ').title()),
                 'confidence': classification_result['confidence'],
                 'processing_time_ms': processing_time,
                 'model': classifier.name,
@@ -562,7 +691,8 @@ def classify_audio():
                 'transcription_confidence': result.confidence,
                 'duration': result.duration,
                 'keywords': extract_keywords(extracted_text),
-                'top_predictions': top_predictions
+                'top_predictions': top_predictions,
+                'main_topic_summary': classification_result.get('main_topic_summary', '')
             }
         })
         
@@ -693,16 +823,13 @@ def classify_video():
         
         processing_time = round((time.perf_counter() - start_time) * 1000, 2)
         
-        # Format top_predictions to ensure confidence is 0-100 scale
         top_predictions = classification_result.get('top_predictions', [])
-        for pred in top_predictions:
-            if 'confidence' in pred and pred['confidence'] <= 1.0:
-                pred['confidence'] = pred['confidence'] * 100
         
         return jsonify({
             'status': 'success',
             'data': {
                 'category': classification_result['category'],
+                'category_display': classification_result.get('category_display', classification_result['category'].replace('_', ' ').title()),
                 'confidence': classification_result['confidence'],
                 'processing_time_ms': processing_time,
                 'model': classifier.name,
@@ -711,7 +838,8 @@ def classify_video():
                 'frames_processed': result.frames_processed,
                 'duration': result.duration,
                 'keywords': extract_keywords(extracted_text),
-                'top_predictions': top_predictions
+                'top_predictions': top_predictions,
+                'main_topic_summary': classification_result.get('main_topic_summary', '')
             }
         })
         
@@ -794,12 +922,22 @@ def extract_keywords(text: str, max_keywords: int = 10) -> list:
         words = re.findall(r'\b[A-Za-z]{4,}\b', text.lower())
         
         # Filter common words
-        stop_words = {'this', 'that', 'with', 'from', 'they', 'have', 'been', 'were', 'said'}
+        stop_words = {
+            'this', 'that', 'with', 'from', 'they', 'have', 'been', 'were', 'said',
+            'will', 'would', 'could', 'should', 'also', 'more', 'their', 'there',
+            'about', 'which', 'when', 'what', 'where', 'than', 'then', 'them',
+            'some', 'other', 'into', 'most', 'very', 'just', 'over', 'such',
+            'after', 'only', 'many', 'make', 'like', 'each', 'made', 'does',
+            'your', 'being', 'well', 'back', 'much', 'even', 'take', 'come',
+            'these', 'know', 'want', 'because', 'here', 'between', 'both',
+            'under', 'never', 'same', 'another', 'while', 'last', 'might',
+            'before', 'still', 'through', 'those'
+        }
         words = [w for w in words if w not in stop_words]
         
-        # Get most common
+        # Get most common — return as simple strings for frontend compatibility
         counter = Counter(words)
-        return [{'word': word, 'count': count} for word, count in counter.most_common(max_keywords)]
+        return [word for word, count in counter.most_common(max_keywords)]
     except Exception as e:
         logger.warning(f"Keyword extraction failed: {e}")
         return []
@@ -837,14 +975,18 @@ def too_large(error):
 # ===== MAIN =====
 
 if __name__ == '__main__':
-    # Pre-load classifier on startup for faster first request
-    try:
-        get_classifier()
-        logger.info("Classifier pre-loaded successfully")
-    except Exception as e:
-        logger.warning(f"Could not pre-load classifier: {e}")
-        logger.warning("Classifier will be loaded on first request")
+    # Preload classifier in background to avoid slow first request
+    def _preload_model():
+        try:
+            get_classifier()
+            logger.info("Classifier pre-loaded successfully in background thread.")
+        except Exception as e:
+            logger.warning(f"Could not pre-load classifier in background: {e}")
+            
+    import threading
+    threading.Thread(target=_preload_model, daemon=True).start()
     
+    logger.info(f"Starting NEWSCAT API server on {Config.HOST}:{Config.PORT} ({'development' if Config.DEBUG else 'production'} mode)")
     # Run the Flask app
     app.run(
         host=Config.HOST,

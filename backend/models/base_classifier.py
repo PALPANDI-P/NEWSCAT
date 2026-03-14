@@ -4,7 +4,6 @@ Base Classifier - Abstract base class for all classifiers
 
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Optional
-import numpy as np
 from datetime import datetime
 import logging
 

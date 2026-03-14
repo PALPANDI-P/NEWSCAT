@@ -65,279 +65,1212 @@ class CategoryKnowledgeGraph:
     """
     
     CATEGORIES = {
-        # --- TECHNOLOGY BRANCH ---
-        'artificial_intelligence': {
-            'parent': 'technology', 'neural_weight': 1.0,
-            'embeddings': {
-                'core': ['artificial intelligence', 'machine learning', 'deep learning', 'neural network', 'ai', 'ml', 'agi'],
-                'models': ['gpt', 'chatgpt', 'llama', 'claude', 'bert', 'transformer', 'llm', 'foundation model', 'generative ai', 'gen-ai'],
-                'techniques': ['nlp', 'computer vision', 'reinforcement learning', 'gan', 'diffusion', 'prompt engineering'],
-                'companies': ['openai', 'anthropic', 'deepmind', 'meta ai', 'google ai', 'xai', 'midjourney']
-            },
-            'semantic_context': ['algorithm', 'training', 'inference', 'dataset', 'model', 'neural', 'weights', 'parameters'],
-            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
-        },
-        'cybersecurity': {
-            'parent': 'technology', 'neural_weight': 0.95,
-            'embeddings': {
-                'core': ['cybersecurity', 'hacking', 'breach', 'ransomware', 'malware', 'phishing', 'cyberattack', 'hacker'],
-                'threats': ['ddos', 'zero-day', 'exploit', 'vulnerability', 'attack vector', 'spyware', 'trojan'],
-                'defense': ['encryption', 'firewall', 'antivirus', 'penetration testing', 'soc', 'zero trust', 'mfa'],
-            },
-            'semantic_context': ['security', 'protection', 'threat', 'risk', 'password', 'authentication'],
-            'confidence_multipliers': {'high': 4.0, 'medium': 2.2, 'low': 1.0}
-        },
-        'cryptocurrency': {
-            'parent': 'technology', 'neural_weight': 0.92,
-            'embeddings': {
-                'core': ['bitcoin', 'ethereum', 'blockchain', 'cryptocurrency', 'crypto', 'defi', 'web3'],
-                'assets': ['btc', 'eth', 'altcoin', 'token', 'nft', 'stablecoin', 'memecoin'],
-                'mechanisms': ['mining', 'staking', 'yield farming', 'smart contract', 'halving'],
-                'exchanges': ['binance', 'coinbase', 'dex', 'wallet', 'ftx', 'kraken']
-            },
-            'semantic_context': ['decentralized', 'ledger', 'wallet', 'bull run', 'bear market', 'hodl'],
-            'confidence_multipliers': {'high': 3.8, 'medium': 2.0, 'low': 0.9}
-        },
-        'startups': {
-            'parent': 'business', 'neural_weight': 0.90,
-            'embeddings': {
-                'core': ['startup', 'entrepreneur', 'founder', 'silicon valley', 'unicorn', 'seed round'],
-                'funding': ['venture capital', 'vc', 'angel investor', 'series a', 'series b', 'crowdfunding', 'incubator', 'y combinator'],
-                'concepts': ['mvp', 'pivot', 'disruption', 'bootstrapping', 'burn rate']
-            },
-            'semantic_context': ['innovation', 'growth', 'scale', 'pitch', 'launch'],
-            'confidence_multipliers': {'high': 3.4, 'medium': 1.9, 'low': 0.9}
-        },
         'technology': {
             'parent': None, 'neural_weight': 0.9,
             'embeddings': {
-                'core': ['technology', 'tech', 'digital', 'software', 'hardware', 'innovation', 'gadget', 'device'],
-                'companies': ['apple', 'microsoft', 'google', 'amazon', 'meta', 'nvidia', 'tesla'],
-                'domains': ['computing', 'internet', 'cloud', 'data science', 'semiconductor', 'chip'],
-                'concepts': ['algorithm', 'api', 'database', 'framework', 'infrastructure']
+                'core': ["technology"],
+                'related': ["technology news"]
             },
-            'semantic_context': ['computer', 'system', 'network', 'application', 'mobile', 'smartphone', 'laptop', 'screen', 'battery'],
-            'confidence_multipliers': {'high': 3.0, 'medium': 1.8, 'low': 0.8}
+            'semantic_context': ["technology"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
         },
-
-        # --- BUSINESS & FINANCE BRANCH ---
-        'markets': {
-            'parent': 'finance', 'neural_weight': 0.94,
+        'artificial_intelligence': {
+            'parent': 'technology', 'neural_weight': 0.9,
             'embeddings': {
-                'core': ['stock market', 'wall street', 'dow jones', 's&p 500', 'nasdaq', 'bull market', 'bear market'],
-                'instruments': ['stock', 'bond', 'derivative', 'option', 'etf', 'dividend', 'futures'],
-                'actions': ['rally', 'plunge', 'selloff', 'trading', 'investing', 'short squeeze']
+                'core': ["artificial intelligence", "intelligence", "artificial"],
+                'related': ["artificial news", "intelligence news"]
             },
-            'semantic_context': ['shares', 'index', 'portfolio', 'investor', 'equities'],
-            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 0.9}
+            'semantic_context': ["artificial", "intelligence"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
         },
-        'economy': {
-            'parent': 'finance', 'neural_weight': 0.92,
+        'cybersecurity': {
+            'parent': 'technology', 'neural_weight': 0.9,
             'embeddings': {
-                'core': ['economy', 'inflation', 'recession', 'gdp', 'interest rate', 'federal reserve', 'fed'],
-                'metrics': ['cpi', 'unemployment rate', 'job growth', 'manufacturing', 'debt'],
-                'concepts': ['monetary policy', 'fiscal', 'stimulus', 'macroeconomics', 'central bank']
+                'core': ["cybersecurity"],
+                'related': ["cybersecurity news"]
             },
-            'semantic_context': ['economic', 'growth', 'prices', 'consumers', 'spending', 'wages'],
-            'confidence_multipliers': {'high': 3.3, 'medium': 1.9, 'low': 0.9}
+            'semantic_context': ["cybersecurity"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'software_development': {
+            'parent': 'technology', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["software development", "software", "development"],
+                'related': ["software news", "development news"]
+            },
+            'semantic_context': ["software", "development"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'hardware_devices': {
+            'parent': 'technology', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["hardware & devices", "devices", "hardware devices", "hardware"],
+                'related': ["hardware news", "devices news"]
+            },
+            'semantic_context': ["hardware", "devices"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'cloud_computing': {
+            'parent': 'technology', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["computing", "cloud computing", "cloud"],
+                'related': ["cloud news", "computing news"]
+            },
+            'semantic_context': ["cloud", "computing"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'telecommunications': {
+            'parent': 'technology', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["telecommunications"],
+                'related': ["telecommunications news"]
+            },
+            'semantic_context': ["telecommunications"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'robotics': {
+            'parent': 'technology', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["robotics", "robotics & automation", "automation"],
+                'related': ["robotics news", "automation news"]
+            },
+            'semantic_context': ["robotics", "automation"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'internet_of_things': {
+            'parent': 'technology', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["internet", "internet of things", "things"],
+                'related': ["internet news", "things news"]
+            },
+            'semantic_context': ["internet", "things"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'virtual_reality': {
+            'parent': 'technology', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["augmented", "virtual", "virtual & augmented reality", "virtual reality", "reality"],
+                'related': ["virtual news", "augmented news", "reality news"]
+            },
+            'semantic_context': ["virtual", "augmented", "reality"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'data_science': {
+            'parent': 'technology', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["science", "analytics", "data science & analytics", "data science", "data"],
+                'related': ["data news", "science news", "analytics news"]
+            },
+            'semantic_context': ["data", "science", "analytics"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'blockchain_tech': {
+            'parent': 'technology', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["blockchain", "blockchain technology", "technology", "blockchain tech"],
+                'related': ["blockchain news", "technology news"]
+            },
+            'semantic_context': ["blockchain", "technology"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'gaming_tech': {
+            'parent': 'technology', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["gaming technology", "gaming tech", "gaming", "technology"],
+                'related': ["gaming news", "technology news"]
+            },
+            'semantic_context': ["gaming", "technology"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'social_media_tech': {
+            'parent': 'technology', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["social media tech", "media", "social", "tech"],
+                'related': ["social news", "media news", "tech news"]
+            },
+            'semantic_context': ["social", "media", "tech"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'consumer_electronics': {
+            'parent': 'technology', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["consumer", "electronics", "consumer electronics"],
+                'related': ["consumer news", "electronics news"]
+            },
+            'semantic_context': ["consumer", "electronics"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'semiconductors': {
+            'parent': 'technology', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["semiconductors"],
+                'related': ["semiconductors news"]
+            },
+            'semantic_context': ["semiconductors"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'nanotechnology': {
+            'parent': 'technology', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["nanotechnology"],
+                'related': ["nanotechnology news"]
+            },
+            'semantic_context': ["nanotechnology"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'biotechnology': {
+            'parent': 'technology', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["biotechnology"],
+                'related': ["biotechnology news"]
+            },
+            'semantic_context': ["biotechnology"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
         },
         'business': {
-            'parent': None, 'neural_weight': 0.88,
+            'parent': None, 'neural_weight': 0.9,
             'embeddings': {
-                'core': ['business', 'corporate', 'company', 'enterprise', 'industry', 'commercial', 'ceo', 'cfo'],
-                'operations': ['strategy', 'management', 'logistics', 'supply chain', 'merger', 'acquisition', 'm&a'],
-                'metrics': ['revenue', 'profit', 'earnings', 'market share', 'valuation', 'sales', 'quarterly report']
+                'core': ["business", "business & finance", "finance"],
+                'related': ["business news", "finance news"]
             },
-            'semantic_context': ['market', 'trade', 'sector', 'executive', 'board', 'shareholder'],
-            'confidence_multipliers': {'high': 3.2, 'medium': 1.9, 'low': 0.9}
+            'semantic_context': ["business", "finance"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
         },
         'finance': {
-            'parent': 'business', 'neural_weight': 0.93,
+            'parent': 'business', 'neural_weight': 0.9,
             'embeddings': {
-                'core': ['finance', 'financial', 'investment', 'banking', 'capital', 'funding', 'loan', 'mortgage'],
-                'institutions': ['bank', 'hedge fund', 'private equity', 'wall street', 'lender', 'credit union']
+                'core': ["finance", "finance & markets", "markets"],
+                'related': ["finance news", "markets news"]
             },
-            'semantic_context': ['money', 'capital', 'asset', 'debt', 'credit'],
-            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 0.9}
+            'semantic_context': ["finance", "markets"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
         },
-
-        # --- SCIENCE & NATURE BRANCH ---
-        'climate_change': {
-            'parent': 'science', 'neural_weight': 0.95,
+        'startups': {
+            'parent': 'business', 'neural_weight': 0.9,
             'embeddings': {
-                'core': ['climate change', 'global warming', 'emissions', 'carbon footprint', 'greenhouse gas', 'fossil fuel'],
-                'events': ['heatwave', 'drought', 'flood', 'wildfire', 'hurricane', 'extreme weather', 'record temperatures'],
-                'solutions': ['renewable energy', 'solar', 'wind', 'sustainability', 'net zero', 'paris agreement']
+                'core': ["startups & vc", "startups"],
+                'related': ["startups news"]
             },
-            'semantic_context': ['environment', 'pollution', 'warming', 'climate', 'carbon', 'nature'],
-            'confidence_multipliers': {'high': 3.8, 'medium': 2.1, 'low': 1.0}
+            'semantic_context': ["startups"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
         },
-        'space': {
-            'parent': 'science', 'neural_weight': 0.94,
+        'economy': {
+            'parent': 'business', 'neural_weight': 0.9,
             'embeddings': {
-                'core': ['space', 'nasa', 'spacex', 'astronaut', 'rocket', 'satellite', 'mars', 'moon', 'lunar'],
-                'missions': ['artemis', 'apollo', 'iss', 'james webb', 'jwst', 'voyager', 'rover', 'falcon 9', 'starship'],
-                'concepts': ['orbit', 'galaxy', 'planet', 'universe', 'cosmos', 'black hole', 'exoplanet', 'asteroid']
+                'core': ["economy"],
+                'related': ["economy news"]
             },
-            'semantic_context': ['exploration', 'astronomy', 'celestial', 'stellar', 'cosmic', 'launch'],
-            'confidence_multipliers': {'high': 4.0, 'medium': 2.2, 'low': 1.0}
+            'semantic_context': ["economy"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'real_estate': {
+            'parent': 'business', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["estate", "real", "real estate"],
+                'related': ["real news", "estate news"]
+            },
+            'semantic_context': ["real", "estate"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'marketing': {
+            'parent': 'business', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["marketing & advertising", "marketing", "advertising"],
+                'related': ["marketing news", "advertising news"]
+            },
+            'semantic_context': ["marketing", "advertising"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'entrepreneurship': {
+            'parent': 'business', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["entrepreneurship"],
+                'related': ["entrepreneurship news"]
+            },
+            'semantic_context': ["entrepreneurship"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'ecommerce': {
+            'parent': 'business', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["ecommerce", "e-commerce"],
+                'related': ["e-commerce news"]
+            },
+            'semantic_context': ["e-commerce"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'cryptocurrency': {
+            'parent': 'business', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["cryptocurrency"],
+                'related': ["cryptocurrency news"]
+            },
+            'semantic_context': ["cryptocurrency"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'banking': {
+            'parent': 'business', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["banking", "lending", "banking & lending"],
+                'related': ["banking news", "lending news"]
+            },
+            'semantic_context': ["banking", "lending"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'corporate_governance': {
+            'parent': 'business', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["governance", "corporate governance", "corporate"],
+                'related': ["corporate news", "governance news"]
+            },
+            'semantic_context': ["corporate", "governance"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'human_resources': {
+            'parent': 'business', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["resources", "human", "human resources"],
+                'related': ["human news", "resources news"]
+            },
+            'semantic_context': ["human", "resources"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'leadership': {
+            'parent': 'business', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["leadership", "management", "leadership & management"],
+                'related': ["leadership news", "management news"]
+            },
+            'semantic_context': ["leadership", "management"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'supply_chain': {
+            'parent': 'business', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["supply", "logistics", "supply chain", "chain", "supply chain & logistics"],
+                'related': ["supply news", "chain news", "logistics news"]
+            },
+            'semantic_context': ["supply", "chain", "logistics"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'insurance': {
+            'parent': 'business', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["insurance"],
+                'related': ["insurance news"]
+            },
+            'semantic_context': ["insurance"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'accounting': {
+            'parent': 'business', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["accounting & tax", "tax", "accounting"],
+                'related': ["accounting news", "tax news"]
+            },
+            'semantic_context': ["accounting", "tax"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'investments': {
+            'parent': 'business', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["investments & wealth", "investments", "wealth"],
+                'related': ["investments news", "wealth news"]
+            },
+            'semantic_context': ["investments", "wealth"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'international_trade': {
+            'parent': 'business', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["trade", "international trade", "international"],
+                'related': ["international news", "trade news"]
+            },
+            'semantic_context': ["international", "trade"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'health': {
+            'parent': None, 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["health", "wellness", "health & wellness"],
+                'related': ["health news", "wellness news"]
+            },
+            'semantic_context': ["health", "wellness"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
         },
         'medicine': {
-            'parent': 'health', 'neural_weight': 0.93,
+            'parent': 'health', 'neural_weight': 0.9,
             'embeddings': {
-                'core': ['medicine', 'medical', 'clinical trial', 'drug', 'pharmaceutical', 'fda', 'cure', 'treatment'],
-                'fields': ['oncology', 'cancer', 'neurology', 'cardiology', 'vaccine', 'immunology', 'genetics'],
-                'entities': ['doctor', 'physician', 'surgeon', 'hospital', 'patient', 'researcher', 'pfizer', 'moderna']
+                'core': ["clinical", "medicine & clinical", "medicine"],
+                'related': ["medicine news", "clinical news"]
             },
-            'semantic_context': ['disease', 'health', 'therapy', 'symptom', 'diagnosis', 'prescription'],
-            'confidence_multipliers': {'high': 3.6, 'medium': 2.0, 'low': 0.9}
+            'semantic_context': ["medicine", "clinical"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'mental_health': {
+            'parent': 'health', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["mental health", "health", "mental"],
+                'related': ["mental news", "health news"]
+            },
+            'semantic_context': ["mental", "health"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'fitness': {
+            'parent': 'health', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["fitness", "exercise", "fitness & exercise"],
+                'related': ["fitness news", "exercise news"]
+            },
+            'semantic_context': ["fitness", "exercise"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'nutrition': {
+            'parent': 'health', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["nutrition & diet", "nutrition", "diet"],
+                'related': ["nutrition news", "diet news"]
+            },
+            'semantic_context': ["nutrition", "diet"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'public_health': {
+            'parent': 'health', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["health", "public health", "public"],
+                'related': ["public news", "health news"]
+            },
+            'semantic_context': ["public", "health"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'healthcare_policy': {
+            'parent': 'health', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["policy", "healthcare policy", "healthcare"],
+                'related': ["healthcare news", "policy news"]
+            },
+            'semantic_context': ["healthcare", "policy"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'alternative_medicine': {
+            'parent': 'health', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["alternative", "alternative medicine", "medicine"],
+                'related': ["alternative news", "medicine news"]
+            },
+            'semantic_context': ["alternative", "medicine"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'pharmaceuticals': {
+            'parent': 'health', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["pharmaceuticals"],
+                'related': ["pharmaceuticals news"]
+            },
+            'semantic_context': ["pharmaceuticals"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'pediatrics': {
+            'parent': 'health', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["pediatrics"],
+                'related': ["pediatrics news"]
+            },
+            'semantic_context': ["pediatrics"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'aging_geriatrics': {
+            'parent': 'health', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["aging", "geriatrics", "aging & geriatrics", "aging geriatrics"],
+                'related': ["aging news", "geriatrics news"]
+            },
+            'semantic_context': ["aging", "geriatrics"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'womens_health': {
+            'parent': 'health', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["health", "women's", "womens health", "women's health"],
+                'related': ["women's news", "health news"]
+            },
+            'semantic_context': ["women's", "health"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'mens_health': {
+            'parent': 'health', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["health", "mens health", "men's", "men's health"],
+                'related': ["men's news", "health news"]
+            },
+            'semantic_context': ["men's", "health"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'dentistry': {
+            'parent': 'health', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["oral", "dentistry & oral care", "dentistry", "care"],
+                'related': ["dentistry news", "oral news", "care news"]
+            },
+            'semantic_context': ["dentistry", "oral", "care"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'veterinary': {
+            'parent': 'health', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["veterinary", "veterinary medicine", "medicine"],
+                'related': ["veterinary news", "medicine news"]
+            },
+            'semantic_context': ["veterinary", "medicine"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'dermatology': {
+            'parent': 'health', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["dermatology"],
+                'related': ["dermatology news"]
+            },
+            'semantic_context': ["dermatology"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
         },
         'science': {
             'parent': None, 'neural_weight': 0.9,
             'embeddings': {
-                'core': ['science', 'scientific', 'research', 'study', 'discovery', 'breakthrough'],
-                'fields': ['physics', 'chemistry', 'biology', 'neuroscience', 'quantum computing'],
-                'methods': ['experiment', 'hypothesis', 'theory', 'observation', 'analysis', 'peer review']
+                'core': ["environment", "science & environment", "science"],
+                'related': ["science news", "environment news"]
             },
-            'semantic_context': ['evidence', 'data', 'publication', 'journal', 'laboratory', 'scientist'],
-            'confidence_multipliers': {'high': 3.3, 'medium': 1.9, 'low': 0.8}
+            'semantic_context': ["science", "environment"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
         },
-        'health': {
-            'parent': None, 'neural_weight': 0.91,
+        'space': {
+            'parent': 'science', 'neural_weight': 0.9,
             'embeddings': {
-                'core': ['health', 'healthcare', 'wellness', 'fitness', 'nutrition', 'diet', 'mental health'],
-                'conditions': ['pandemic', 'virus', 'infection', 'covid-19', 'flu', 'outbreak', 'epidemic'],
-                'institutions': ['clinic', 'who', 'cdc', 'nhs', 'medicare']
+                'core': ["astronomy", "space & astronomy", "space"],
+                'related': ["space news", "astronomy news"]
             },
-            'semantic_context': ['wellbeing', 'exercise', 'prevention', 'public health', 'care'],
-            'confidence_multipliers': {'high': 3.2, 'medium': 1.8, 'low': 0.9}
+            'semantic_context': ["space", "astronomy"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
         },
-
-        # --- POLITICS & WORLD BRANCH ---
-        'geopolitics': {
-            'parent': 'world', 'neural_weight': 0.94,
+        'climate_change': {
+            'parent': 'science', 'neural_weight': 0.9,
             'embeddings': {
-                'core': ['geopolitics', 'international relations', 'diplomacy', 'foreign policy', 'alliance', 'sanctions'],
-                'actors': ['un', 'united nations', 'nato', 'eu', 'g7', 'g20', 'ambassador', 'diplomat'],
-                'events': ['summit', 'treaty', 'negotiation', 'peace talks', 'escalation', 'ceasefire']
+                'core': ["climate", "change", "climate change"],
+                'related': ["climate news", "change news"]
             },
-            'semantic_context': ['global', 'border', 'territory', 'sovereignty', 'tensions', 'foreign'],
-            'confidence_multipliers': {'high': 3.6, 'medium': 2.1, 'low': 0.9}
+            'semantic_context': ["climate", "change"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
         },
-        'war_conflict': {
-            'parent': 'world', 'neural_weight': 0.96,
+        'environment': {
+            'parent': 'science', 'neural_weight': 0.9,
             'embeddings': {
-                'core': ['war', 'conflict', 'military', 'invasion', 'combat', 'battle', 'troops', 'army', 'navy', 'air force'],
-                'weapons': ['missile', 'drone', 'artillery', 'nuclear', 'bomb', 'tank', 'fighter jet'],
-                'consequences': ['casualties', 'refugees', 'destruction', 'civilian', 'crimes', 'humanitarian']
+                'core': ["environment", "environment & ecology", "ecology"],
+                'related': ["environment news", "ecology news"]
             },
-            'semantic_context': ['attack', 'strike', 'forces', 'defense', 'armed', 'soldiers', 'violence'],
-            'confidence_multipliers': {'high': 3.8, 'medium': 2.2, 'low': 1.1}
+            'semantic_context': ["environment", "ecology"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
         },
-        'elections': {
-            'parent': 'politics', 'neural_weight': 0.93,
+        'physics': {
+            'parent': 'science', 'neural_weight': 0.9,
             'embeddings': {
-                'core': ['election', 'vote', 'voting', 'ballot', 'poll', 'voter', 'campaign', 'debate'],
-                'processes': ['primary', 'caucus', 'midterms', 'presidential race', 'electoral college', 'referendum'],
-                'outcomes': ['victory', 'landslide', 'defeat', 'concede', 'turnout', 'swing state']
+                'core': ["physics"],
+                'related': ["physics news"]
             },
-            'semantic_context': ['candidate', 'race', 'polled', 'elect', 'majority', 'seat'],
-            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 0.9}
+            'semantic_context': ["physics"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'biology': {
+            'parent': 'science', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["biology"],
+                'related': ["biology news"]
+            },
+            'semantic_context': ["biology"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'chemistry': {
+            'parent': 'science', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["chemistry"],
+                'related': ["chemistry news"]
+            },
+            'semantic_context': ["chemistry"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'genetics': {
+            'parent': 'science', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["dna", "genetics", "genetics & dna"],
+                'related': ["genetics news", "dna news"]
+            },
+            'semantic_context': ["genetics", "dna"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'archaeology': {
+            'parent': 'science', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["archaeology & anthropology", "anthropology", "archaeology"],
+                'related': ["archaeology news", "anthropology news"]
+            },
+            'semantic_context': ["archaeology", "anthropology"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'oceanography': {
+            'parent': 'science', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["oceanography"],
+                'related': ["oceanography news"]
+            },
+            'semantic_context': ["oceanography"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'geology': {
+            'parent': 'science', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["geology & earth sciences", "earth", "geology", "sciences"],
+                'related': ["geology news", "earth news", "sciences news"]
+            },
+            'semantic_context': ["geology", "earth", "sciences"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'paleontology': {
+            'parent': 'science', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["paleontology"],
+                'related': ["paleontology news"]
+            },
+            'semantic_context': ["paleontology"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'meteorology': {
+            'parent': 'science', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["weather", "meteorology & weather", "meteorology"],
+                'related': ["meteorology news", "weather news"]
+            },
+            'semantic_context': ["meteorology", "weather"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'zoology': {
+            'parent': 'science', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["animals", "zoology & animals", "zoology"],
+                'related': ["zoology news", "animals news"]
+            },
+            'semantic_context': ["zoology", "animals"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'botany': {
+            'parent': 'science', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["plants", "botany", "botany & plants"],
+                'related': ["botany news", "plants news"]
+            },
+            'semantic_context': ["botany", "plants"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'energy': {
+            'parent': 'science', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["energy", "power", "energy & power"],
+                'related': ["energy news", "power news"]
+            },
+            'semantic_context': ["energy", "power"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'renewable_energy': {
+            'parent': 'science', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["renewable", "energy", "renewable energy"],
+                'related': ["renewable news", "energy news"]
+            },
+            'semantic_context': ["renewable", "energy"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'materials_science': {
+            'parent': 'science', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["materials", "science", "materials science"],
+                'related': ["materials news", "science news"]
+            },
+            'semantic_context': ["materials", "science"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
         },
         'politics': {
-            'parent': None, 'neural_weight': 0.89,
+            'parent': None, 'neural_weight': 0.9,
             'embeddings': {
-                'core': ['politics', 'government', 'policy', 'legislation', 'lawmaker', 'senate', 'congress', 'parliament'],
-                'roles': ['president', 'prime minister', 'senator', 'governor', 'mayor', 'minister', 'politician'],
-                'parties': ['democrat', 'republican', 'conservative', 'liberal', 'labour', 'tory', 'bipartisan']
+                'core': ["politics", "government", "politics & government"],
+                'related': ["politics news", "government news"]
             },
-            'semantic_context': ['political', 'governance', 'administration', 'regime', 'bill', 'law'],
-            'confidence_multipliers': {'high': 3.4, 'medium': 2.0, 'low': 0.9}
+            'semantic_context': ["politics", "government"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
         },
-        'world': {
-            'parent': None, 'neural_weight': 0.87,
+        'elections': {
+            'parent': 'politics', 'neural_weight': 0.9,
             'embeddings': {
-                'core': ['world', 'international', 'global', 'nation', 'country', 'continent', 'worldwide'],
-                'regions': ['europe', 'asia', 'africa', 'middle east', 'latin america', 'north america']
+                'core': ["elections & campaigns", "campaigns", "elections"],
+                'related': ["elections news", "campaigns news"]
             },
-            'semantic_context': ['foreign', 'abroad', 'domestic', 'crisis', 'national'],
-            'confidence_multipliers': {'high': 3.0, 'medium': 1.8, 'low': 0.8}
+            'semantic_context': ["elections", "campaigns"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
         },
-
-        # --- SPORTS BRANCH ---
-        'soccer': {
-            'parent': 'sports', 'neural_weight': 0.92,
+        'geopolitics': {
+            'parent': 'politics', 'neural_weight': 0.9,
             'embeddings': {
-                'core': ['soccer', 'football', 'fifa', 'premier league', 'la liga', 'champions league', 'world cup'],
-                'terms': ['goal', 'penalty', 'red card', 'yellow card', 'striker', 'midfielder', 'goalkeeper', 'manager'],
-                'teams': ['real madrid', 'barcelona', 'manchester united', 'arsenal', 'chelsea', 'liverpool', 'psg', 'bayern']
+                'core': ["geopolitics"],
+                'related': ["geopolitics news"]
             },
-            'semantic_context': ['match', 'pitch', 'club', 'league', 'tournament', 'cup'],
-            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 0.9}
+            'semantic_context': ["geopolitics"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
         },
-        'basketball': {
-            'parent': 'sports', 'neural_weight': 0.91,
+        'international_relations': {
+            'parent': 'politics', 'neural_weight': 0.9,
             'embeddings': {
-                'core': ['basketball', 'nba', 'wnba', 'hoops', 'march madness', 'fiba', 'euroleague'],
-                'terms': ['dunk', 'three-pointer', 'rebound', 'assist', 'point guard', 'playoffs', 'finals', 'mvp'],
-                'teams': ['lakers', 'warriors', 'celtics', 'bulls', 'knicks', 'heat']
+                'core': ["international relations", "relations", "international"],
+                'related': ["international news", "relations news"]
             },
-            'semantic_context': ['court', 'game', 'draft', 'roster', 'coach', 'season'],
-            'confidence_multipliers': {'high': 3.4, 'medium': 1.9, 'low': 0.9}
+            'semantic_context': ["international", "relations"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
         },
-        'sports': {
-            'parent': None, 'neural_weight': 0.88,
+        'public_policy': {
+            'parent': 'politics', 'neural_weight': 0.9,
             'embeddings': {
-                'core': ['sports', 'athlete', 'game', 'match', 'tournament', 'championship', 'olympics', 'medal'],
-                'actions': ['win', 'defeat', 'score', 'victory', 'record', 'champion', 'title'],
-                'types': ['tennis', 'cricket', 'baseball', 'golf', 'rugby', 'hockey', 'boxing', 'mma', 'f1']
+                'core': ["policy", "public", "public policy"],
+                'related': ["public news", "policy news"]
             },
-            'semantic_context': ['team', 'player', 'coach', 'stadium', 'competition', 'fan'],
-            'confidence_multipliers': {'high': 3.2, 'medium': 1.9, 'low': 0.9}
+            'semantic_context': ["public", "policy"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
         },
-
-        # --- MEDIA & ENTERTAINMENT BRANCH ---
-        'pop_culture': {
-            'parent': 'entertainment', 'neural_weight': 0.90,
+        'law_justice': {
+            'parent': 'politics', 'neural_weight': 0.9,
             'embeddings': {
-                'core': ['pop culture', 'celebrity', 'influencer', 'viral', 'trend', 'social media', 'tiktok', 'instagram'],
-                'people': ['kardashian', 'taylor swift', 'beyonce', 'mrbeast', 'youtuber', 'streamer'],
-                'events': ['met gala', 'fashion week', 'red carpet', 'scandal', 'gossip', 'paparazzi']
+                'core': ["law justice", "law & justice", "justice", "law"],
+                'related': ["law news", "justice news"]
             },
-            'semantic_context': ['famous', 'star', 'trending', 'followers', 'fans', 'internet'],
-            'confidence_multipliers': {'high': 3.3, 'medium': 1.9, 'low': 0.9}
+            'semantic_context': ["law", "justice"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
         },
-        'movies_tv': {
-            'parent': 'entertainment', 'neural_weight': 0.91,
+        'war_conflict': {
+            'parent': 'politics', 'neural_weight': 0.9,
             'embeddings': {
-                'core': ['movie', 'film', 'television', 'tv show', 'series', 'cinema', 'hollywood', 'box office'],
-                'platforms': ['netflix', 'disney+', 'hbo', 'amazon prime', 'hulu', 'streaming'],
-                'awards': ['oscar', 'emmy', 'golden globe', 'academy award', 'bafta'],
-                'roles': ['actor', 'actress', 'director', 'producer', 'cast', 'script', 'screenplay']
+                'core': ["war conflict", "war & conflict", "war", "conflict"],
+                'related': ["war news", "conflict news"]
             },
-            'semantic_context': ['premiere', 'trailer', 'blockbuster', 'review', 'season', 'episode'],
-            'confidence_multipliers': {'high': 3.4, 'medium': 2.0, 'low': 0.9}
+            'semantic_context': ["war", "conflict"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
         },
-        'gaming': {
-            'parent': 'entertainment', 'neural_weight': 0.92,
+        'human_rights': {
+            'parent': 'politics', 'neural_weight': 0.9,
             'embeddings': {
-                'core': ['gaming', 'video game', 'esports', 'gamer', 'gameplay', 'game developer'],
-                'platforms': ['playstation', 'xbox', 'nintendo switch', 'pc gaming', 'steam', 'steam deck', 'console'],
-                'companies': ['ea', 'ubisoft', 'activision', 'blizzard', 'epic games', 'sony', 'nintendo'],
-                'genres': ['rpg', 'fps', 'mmo', 'battle royale', 'open world', 'indie game']
+                'core': ["human", "rights", "human rights"],
+                'related': ["human news", "rights news"]
             },
-            'semantic_context': ['multiplayer', 'dlc', 'patch', 'update', 'release', 'trailer', 'engine'],
-            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 0.9}
+            'semantic_context': ["human", "rights"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'immigration': {
+            'parent': 'politics', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["immigration", "borders", "immigration & borders"],
+                'related': ["immigration news", "borders news"]
+            },
+            'semantic_context': ["immigration", "borders"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'civil_rights': {
+            'parent': 'politics', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["civil rights", "civil", "rights"],
+                'related': ["civil news", "rights news"]
+            },
+            'semantic_context': ["civil", "rights"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'diplomacy': {
+            'parent': 'politics', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["diplomacy"],
+                'related': ["diplomacy news"]
+            },
+            'semantic_context': ["diplomacy"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'national_security': {
+            'parent': 'politics', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["security", "national security", "national"],
+                'related': ["national news", "security news"]
+            },
+            'semantic_context': ["national", "security"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'political_scandals': {
+            'parent': 'politics', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["political", "political scandals", "scandals"],
+                'related': ["political news", "scandals news"]
+            },
+            'semantic_context': ["political", "scandals"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'local_government': {
+            'parent': 'politics', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["local government", "local", "government"],
+                'related': ["local news", "government news"]
+            },
+            'semantic_context': ["local", "government"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'global_organizations': {
+            'parent': 'politics', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["global", "global organizations", "organizations"],
+                'related': ["global news", "organizations news"]
+            },
+            'semantic_context': ["global", "organizations"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'activism': {
+            'parent': 'politics', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["protests", "activism", "activism & protests"],
+                'related': ["activism news", "protests news"]
+            },
+            'semantic_context': ["activism", "protests"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
         },
         'entertainment': {
-            'parent': None, 'neural_weight': 0.86,
+            'parent': None, 'neural_weight': 0.9,
             'embeddings': {
-                'core': ['entertainment', 'music', 'concert', 'album', 'song', 'artist', 'band', 'tour'],
-                'events': ['festival', 'grammy', 'billboard', 'performance', 'show', 'theater']
+                'core': ["entertainment & arts", "arts", "entertainment"],
+                'related': ["entertainment news", "arts news"]
             },
-            'semantic_context': ['stage', 'audience', 'live', 'track', 'release', 'listen'],
-            'confidence_multipliers': {'high': 3.0, 'medium': 1.8, 'low': 0.8}
-        }
+            'semantic_context': ["entertainment", "arts"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'film_tv': {
+            'parent': 'entertainment', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["film tv", "television", "film", "film & television"],
+                'related': ["film news", "television news"]
+            },
+            'semantic_context': ["film", "television"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'music': {
+            'parent': 'entertainment', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["music"],
+                'related': ["music news"]
+            },
+            'semantic_context': ["music"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'celebrity': {
+            'parent': 'entertainment', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["celebrity news", "celebrity", "news"],
+                'related': ["celebrity news", "news news"]
+            },
+            'semantic_context': ["celebrity", "news"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'pop_culture': {
+            'parent': 'entertainment', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["culture", "pop culture", "pop"],
+                'related': ["pop news", "culture news"]
+            },
+            'semantic_context': ["pop", "culture"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'video_games': {
+            'parent': 'entertainment', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["video", "video games", "games"],
+                'related': ["video news", "games news"]
+            },
+            'semantic_context': ["video", "games"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'books_literature': {
+            'parent': 'entertainment', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["books", "literature", "books & literature", "books literature"],
+                'related': ["books news", "literature news"]
+            },
+            'semantic_context': ["books", "literature"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'performing_arts': {
+            'parent': 'entertainment', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["performing arts", "arts", "performing"],
+                'related': ["performing news", "arts news"]
+            },
+            'semantic_context': ["performing", "arts"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'fine_arts': {
+            'parent': 'entertainment', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["fine arts", "fine", "arts"],
+                'related': ["fine news", "arts news"]
+            },
+            'semantic_context': ["fine", "arts"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'photography': {
+            'parent': 'entertainment', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["photography"],
+                'related': ["photography news"]
+            },
+            'semantic_context': ["photography"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'fashion': {
+            'parent': 'entertainment', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["fashion & style", "style", "fashion"],
+                'related': ["fashion news", "style news"]
+            },
+            'semantic_context': ["fashion", "style"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'anime_manga': {
+            'parent': 'entertainment', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["anime & manga", "anime", "manga", "anime manga"],
+                'related': ["anime news", "manga news"]
+            },
+            'semantic_context': ["anime", "manga"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'podcasts': {
+            'parent': 'entertainment', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["podcasts & radio", "radio", "podcasts"],
+                'related': ["podcasts news", "radio news"]
+            },
+            'semantic_context': ["podcasts", "radio"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'awards_shows': {
+            'parent': 'entertainment', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["awards shows", "shows", "awards"],
+                'related': ["awards news", "shows news"]
+            },
+            'semantic_context': ["awards", "shows"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'streaming': {
+            'parent': 'entertainment', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["streaming platforms", "platforms", "streaming"],
+                'related': ["streaming news", "platforms news"]
+            },
+            'semantic_context': ["streaming", "platforms"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'comics': {
+            'parent': 'entertainment', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["comics & graphic novels", "novels", "graphic", "comics"],
+                'related': ["comics news", "graphic news", "novels news"]
+            },
+            'semantic_context': ["comics", "graphic", "novels"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'sports': {
+            'parent': None, 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["sports"],
+                'related': ["sports news"]
+            },
+            'semantic_context': ["sports"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'football_soccer': {
+            'parent': 'sports', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["football soccer", "football", "football (soccer)", "soccer"],
+                'related': ["football news", "soccer news"]
+            },
+            'semantic_context': ["football", "soccer"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'american_football': {
+            'parent': 'sports', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["american", "football", "american football"],
+                'related': ["american news", "football news"]
+            },
+            'semantic_context': ["american", "football"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'basketball': {
+            'parent': 'sports', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["basketball"],
+                'related': ["basketball news"]
+            },
+            'semantic_context': ["basketball"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'baseball': {
+            'parent': 'sports', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["baseball"],
+                'related': ["baseball news"]
+            },
+            'semantic_context': ["baseball"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'tennis': {
+            'parent': 'sports', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["tennis"],
+                'related': ["tennis news"]
+            },
+            'semantic_context': ["tennis"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'golf': {
+            'parent': 'sports', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["golf"],
+                'related': ["golf news"]
+            },
+            'semantic_context': ["golf"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'motorsports': {
+            'parent': 'sports', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["motorsports"],
+                'related': ["motorsports news"]
+            },
+            'semantic_context': ["motorsports"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'combat_sports': {
+            'parent': 'sports', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["combat", "combat sports", "sports"],
+                'related': ["combat news", "sports news"]
+            },
+            'semantic_context': ["combat", "sports"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'athletics_olympics': {
+            'parent': 'sports', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["olympics", "athletics olympics", "athletics", "olympics & athletics"],
+                'related': ["olympics news", "athletics news"]
+            },
+            'semantic_context': ["olympics", "athletics"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'hockey': {
+            'parent': 'sports', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["hockey"],
+                'related': ["hockey news"]
+            },
+            'semantic_context': ["hockey"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'cricket': {
+            'parent': 'sports', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["cricket"],
+                'related': ["cricket news"]
+            },
+            'semantic_context': ["cricket"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'extreme_sports': {
+            'parent': 'sports', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["extreme sports", "extreme", "sports"],
+                'related': ["extreme news", "sports news"]
+            },
+            'semantic_context': ["extreme", "sports"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'cycling': {
+            'parent': 'sports', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["cycling"],
+                'related': ["cycling news"]
+            },
+            'semantic_context': ["cycling"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'rugby': {
+            'parent': 'sports', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["rugby"],
+                'related': ["rugby news"]
+            },
+            'semantic_context': ["rugby"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'esports': {
+            'parent': 'sports', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["e-sports", "esports"],
+                'related': ["e-sports news"]
+            },
+            'semantic_context': ["e-sports"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'lifestyle': {
+            'parent': None, 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["lifestyle & society", "society", "lifestyle"],
+                'related': ["lifestyle news", "society news"]
+            },
+            'semantic_context': ["lifestyle", "society"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'travel': {
+            'parent': 'lifestyle', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["travel & tourism", "tourism", "travel"],
+                'related': ["travel news", "tourism news"]
+            },
+            'semantic_context': ["travel", "tourism"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'food_dining': {
+            'parent': 'lifestyle', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["food & dining", "food", "food dining", "dining"],
+                'related': ["food news", "dining news"]
+            },
+            'semantic_context': ["food", "dining"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'education': {
+            'parent': 'lifestyle', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["education & learning", "learning", "education"],
+                'related': ["education news", "learning news"]
+            },
+            'semantic_context': ["education", "learning"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'parenting': {
+            'parent': 'lifestyle', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["parenting", "family", "parenting & family"],
+                'related': ["parenting news", "family news"]
+            },
+            'semantic_context': ["parenting", "family"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'relationships': {
+            'parent': 'lifestyle', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["relationships"],
+                'related': ["relationships news"]
+            },
+            'semantic_context': ["relationships"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'home_garden': {
+            'parent': 'lifestyle', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["home garden", "garden", "home", "home & garden"],
+                'related': ["home news", "garden news"]
+            },
+            'semantic_context': ["home", "garden"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'pets_animals': {
+            'parent': 'lifestyle', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["animals", "pets", "pets animals", "pets & animals"],
+                'related': ["pets news", "animals news"]
+            },
+            'semantic_context': ["pets", "animals"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'religion_spirituality': {
+            'parent': 'lifestyle', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["religion & spirituality", "religion spirituality", "spirituality", "religion"],
+                'related': ["religion news", "spirituality news"]
+            },
+            'semantic_context': ["religion", "spirituality"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'crime': {
+            'parent': 'lifestyle', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["crime", "true", "crime & true crime"],
+                'related': ["crime news", "true news", "crime news"]
+            },
+            'semantic_context': ["crime", "true", "crime"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'culture_trends': {
+            'parent': 'lifestyle', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["culture", "culture & trends", "trends", "culture trends"],
+                'related': ["culture news", "trends news"]
+            },
+            'semantic_context': ["culture", "trends"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'social_issues': {
+            'parent': 'lifestyle', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["social", "social issues", "issues"],
+                'related': ["social news", "issues news"]
+            },
+            'semantic_context': ["social", "issues"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'personal_finance': {
+            'parent': 'lifestyle', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["personal", "finance", "personal finance"],
+                'related': ["personal news", "finance news"]
+            },
+            'semantic_context': ["personal", "finance"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'diy_crafts': {
+            'parent': 'lifestyle', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["diy & crafts", "diy", "crafts", "diy crafts"],
+                'related': ["diy news", "crafts news"]
+            },
+            'semantic_context': ["diy", "crafts"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'automotive': {
+            'parent': 'lifestyle', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["automotive & cars", "cars", "automotive"],
+                'related': ["automotive news", "cars news"]
+            },
+            'semantic_context': ["automotive", "cars"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
+        'beauty': {
+            'parent': 'lifestyle', 'neural_weight': 0.9,
+            'embeddings': {
+                'core': ["cosmetics", "beauty & cosmetics", "beauty"],
+                'related': ["beauty news", "cosmetics news"]
+            },
+            'semantic_context': ["beauty", "cosmetics"],
+            'confidence_multipliers': {'high': 3.5, 'medium': 2.0, 'low': 1.0}
+        },
     }    
 
     
@@ -743,13 +1676,16 @@ class QuantumClassifier(BaseNewsClassifier):
         
         # Extract main topic from lineage
         lineage = CategoryKnowledgeGraph.get_category_lineage(top_category)
-        main_topic = lineage[-1] if lineage else top_category
+        # subtopic is the specific category (first in lineage), main_topic is the root (last)
+        main_topic = lineage[-1] if len(lineage) > 1 else top_category
+        subtopic = lineage[0] if lineage else top_category
         
         # Build result
         result = {
             'category': top_category,
             'category_display': top_category.replace('_', ' ').title(),
             'main_topic': main_topic,
+            'subtopic': subtopic,
             'confidence': round(confidence, 2),
             'processing_time_ms': round(processing_time, 4),
             'model': self.name,
@@ -786,7 +1722,7 @@ class QuantumClassifier(BaseNewsClassifier):
                 'embedding_dimensions': self.EMBEDDING_DIM,
                 'semantic_tokens': list(text_embedding.semantic_tokens)[:20],
                 'token_count': len(text_embedding.semantic_tokens),
-                'key_matches': dict(semantic_matches.get(top_category, []))[:10]
+                'key_matches': dict(list(semantic_matches.get(top_category, []))[:10])
             }
 
         # ---------------------------------------------------------

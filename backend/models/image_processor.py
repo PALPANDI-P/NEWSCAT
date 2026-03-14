@@ -754,7 +754,7 @@ class VisionProcessor:
             'available': self.is_available(),
             'ocr_available': self.ocr.is_available(),
             'pil_available': self._pil_available,
-            'cv2_available': self._cv2_available,
+            'cv2_available': self.cv._cv2_available,
             'features': [
                 'text_extraction',
                 'clip_embeddings',

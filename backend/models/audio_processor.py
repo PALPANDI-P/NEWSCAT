@@ -417,7 +417,7 @@ class NeuralAudioProcessor:
         try:
             self._initialize()
             return True
-        except:
+        except Exception:
             return False
     
     def get_audio_info(self, audio_path: str) -> Dict[str, Any]:
@@ -688,6 +688,10 @@ class NeuralAudioProcessor:
                 'streaming'
             ]
         }
+    
+    def get_installation_instructions(self) -> str:
+        """Get instructions for installing dependencies"""
+        return _get_ffmpeg_install_instructions()
 
 
 # Backward compatibility
