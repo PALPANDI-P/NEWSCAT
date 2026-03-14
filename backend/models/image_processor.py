@@ -499,7 +499,7 @@ class VisionProcessor:
     version = "10.0.0"
     
     MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10MB
-    MAX_DIMENSION = 4096
+    MAX_DIMENSION = 1024
     
     def __init__(self, lazy_init: bool = True):
         self.ocr = AdvancedOCREngine()

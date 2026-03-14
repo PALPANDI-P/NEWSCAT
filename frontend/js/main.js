@@ -996,6 +996,9 @@ const resultsManager = {
         const howItWorks = document.getElementById('how-it-works-section');
         if (howItWorks) howItWorks.style.display = 'none';
         
+        // Apply clean horizontal layout consistently
+        resultsEl.classList.add('result-horizontal-layout');
+        
         // Smooth scroll to results after a tiny delay to ensure DOM is updated
         setTimeout(() => {
             resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1036,29 +1039,36 @@ const resultsManager = {
         const style = categoryStyles[category] || categoryStyles.unknown;
         const icon = this.getCategoryIcon(category);
         
-        const mainIconEl = document.getElementById('result-main-icon');
-        const iconContainerEl = document.getElementById('result-icon-container');
-        const subtopicHeaderEl = document.getElementById('result-subtopic-header');
-        const mainTopicBadgeEl = document.getElementById('result-main-topic-badge');
+        const coreTopicEl = document.getElementById('result-core-topic');
+        const mainTopicsListEl = document.getElementById('result-main-topics-list');
         
-        mainIconEl.className = `fas ${icon}`;
-        iconContainerEl.style.backgroundColor = `${style.color}33`; // 20% opacity
-        iconContainerEl.style.color = style.color;
-        iconContainerEl.style.borderColor = `${style.color}50`;
+        const coreTopic = data.subtopic || data.category || 'General';
+        const mainTopics = data.main_topics || [data.main_topic || data.category || 'General'];
         
-        // Set subtopic as primary header, main topic as secondary badge
-        const mainTopic = data.main_topic || data.category || 'unknown';
-        const subtopic = data.subtopic || data.category || 'unknown';
-        const categoryDisplay = data.category_display || data.category || 'unknown';
-        
-        if (subtopicHeaderEl) {
-            subtopicHeaderEl.textContent = utils.capitalizeFirst(subtopic.replace(/_/g, ' '));
+        if (coreTopicEl) {
+            // Style: Matching the professional blue gradient from the image
+            const userImageBlue = 'linear-gradient(135deg, #4A90E2 0%, #357ABD 100%)';
+            coreTopicEl.innerHTML = `<span style="background: ${userImageBlue}; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; filter: drop-shadow(0 0 10px rgba(74, 144, 226, 0.3));">${utils.capitalizeFirst(coreTopic.replace(/_/g, ' '))}</span>`;
         }
-        if (mainTopicBadgeEl) {
-            if (mainTopic.toLowerCase() !== categoryDisplay.toLowerCase()) {
-                mainTopicBadgeEl.textContent = `${utils.capitalizeFirst(mainTopic.replace(/_/g, ' '))} > ${utils.capitalizeFirst(categoryDisplay)}`;
-            } else {
-                mainTopicBadgeEl.textContent = utils.capitalizeFirst(mainTopic.replace(/_/g, ' '));
+        
+        const mainTopicTextEl = document.getElementById('result-main-topic-text');
+        const mainTopicIconEl = document.getElementById('result-main-topic-icon');
+        
+        if (mainTopicTextEl) {
+            // Only show the single top main topic as requested
+            const topMainTopic = Array.isArray(mainTopics) ? mainTopics[0] : mainTopics.split(',')[0].trim();
+            mainTopicTextEl.textContent = utils.capitalizeFirst(topMainTopic.replace(/_/g, ' '));
+            
+            // Set a contextual icon for the main topic if available, otherwise use default
+            if (mainTopicIconEl) {
+                // If the main topic matches a known category, use its icon
+                const mainTopicKey = topMainTopic.toLowerCase().replace(/ /g, '_');
+                const mainTopicStyle = categoryStyles[mainTopicKey];
+                if (mainTopicStyle && mainTopicStyle.icon) {
+                    mainTopicIconEl.className = `fas ${mainTopicStyle.icon} text-[#f6b93b] text-sm shadow-glow`;
+                } else {
+                    mainTopicIconEl.className = 'fas fa-dot-circle text-[#f6b93b] text-sm shadow-glow';
+                }
             }
         }
         
@@ -1067,7 +1077,8 @@ const resultsManager = {
         const confidenceCircle = document.getElementById('confidence-circle');
         const confidenceText = document.getElementById('confidence-text');
         
-        const circumference = 2 * Math.PI * 40; // r=40
+        // Updated circumference for r=20: 2 * PI * 20 = 125.6
+        const circumference = 2 * Math.PI * 20;
         const offset = circumference - (confidence / 100) * circumference;
         
         confidenceCircle.style.strokeDashoffset = offset;

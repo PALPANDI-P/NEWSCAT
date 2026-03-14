@@ -456,6 +456,47 @@ body {
     background-clip: text;
 }
 
+/* ==========================================================================
+   RESULT TOPIC BOX - Core and Main Topic Display
+   ========================================================================== */
+
+/* Core Topic - Expert Responsive Sizing (Matching v5.0 visual) */
+#result-core-topic {
+    font-size: clamp(1.5rem, 5vw, 2.5rem); /* Responsive fluid typography */
+    font-weight: 2.00rem;
+    color: #259aee;
+    text-transform: capitalize;
+    letter-spacing: -0.04em; /* Ultra-tight for professional look */
+    line-height: 1.05;
+    margin-bottom: 0.25rem;
+    position: relative;
+    text-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* Main Topic Display - Single focused line */
+#result-main-topic-container {
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    background: rgb(156, 137, 231); /* Very subtle gold tint */
+    border-radius: 12px;
+    width: fit-content;
+}
+
+#result-main-topic-text {
+    font-size: clamp(1rem, 2.5vw, 1.25rem);
+    color: #4d099c; 
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.shadow-glow {
+    filter: drop-shadow(0 0 5px rgba(55, 5, 116, 0.6));
+}
+
 /* Main Topic Badge - Prominent */
 #result-main-topic {
     font-size: 0.75rem;
@@ -731,3 +772,5 @@ body {
 .notification-info i {
     color: #3b82f6;
 }
+
+/* Removed Media Mode Cyber Aesthetics to maintain clean horizontal UI */

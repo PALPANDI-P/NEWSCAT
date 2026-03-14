@@ -1729,22 +1729,34 @@ class QuantumClassifier(BaseNewsClassifier):
         # GENERATE MAIN TOPIC SUMMARY (Contextual human-readable text)
         # ---------------------------------------------------------
         summary = ""
+        main_topics_list = []
         try:
             display_cat = top_category.replace('_', ' ').title()
             top_tokens = list(text_embedding.semantic_tokens)
-            # Find salient words related to category
-            relevant_words = [w for w in top_tokens if len(w) > 4][:3]
-            if len(relevant_words) >= 2:
-                summary = f"This content discusses {display_cat}, specifically focusing on {relevant_words[0]} and {relevant_words[1]}."
-            elif len(relevant_words) == 1:
-                summary = f"This content is primarily about {display_cat}, with a strong focus on {relevant_words[0]}."
+            # Filter for meaningful words > 4 chars and avoid repeating category
+            relevant_words = [w for w in top_tokens if len(w) > 4 and w.lower() != top_category.lower()]
+            unique_relevant = []
+            for w in relevant_words:
+                if w.lower() not in [x.lower() for x in unique_relevant]:
+                    unique_relevant.append(w)
+            
+            top_relevant = unique_relevant[:5]
+            main_topics_list = [display_cat] + [w.title() for w in top_relevant]
+            
+            # Use contextual summary phrases to make it sound more professional (2-3 sentences)
+            if len(top_relevant) >= 3:
+                summary = f"This content has been analyzed and categorized under **{display_cat}**. The primary subjects revolve around '{top_relevant[0]}', '{top_relevant[1]}', and '{top_relevant[2]}'. It indicates a significant focus within the broader {CategoryKnowledgeGraph.get_category_lineage(top_category)[-1]} sector."
+            elif len(top_relevant) >= 1:
+                summary = f"This content primarily focuses on **{display_cat}** with significant emphasis on aspects related to '{top_relevant[0]}'. The analysis confirms high relevance to the {CategoryKnowledgeGraph.get_category_lineage(top_category)[-1]} domain."
             else:
-                summary = f"This content represents topics related to {display_cat} and general {CategoryKnowledgeGraph.get_category_lineage(top_category)[-1]}."
+                summary = f"This content has been classified as **{display_cat}**, belonging to the general {CategoryKnowledgeGraph.get_category_lineage(top_category)[-1]} domain. No additional specific sub-topics were identified."
         except Exception as e:
             logger.error(f"Failed to generate summary: {e}")
-            summary = f"This text is evaluated as belonging to the {top_category.replace('_', ' ').title()} dataset category."
+            summary = f"This content has been evaluated as belonging to the **{top_category.replace('_', ' ').title()}** category."
+            main_topics_list = [top_category.replace('_', ' ').title()]
 
         result['main_topic_summary'] = summary
+        result['main_topics'] = main_topics_list
         
         return result
     

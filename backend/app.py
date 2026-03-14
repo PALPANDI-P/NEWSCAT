@@ -69,10 +69,10 @@ def get_classifier():
     global _classifier
     if _classifier is None:
         try:
-            # First try the newly trained models (OptimizedEnsembleClassifier)
+            # First try the newly trained models (QuantumClassifier for max accuracy)
             try:
-                from backend.models.optimized_classifier import OptimizedEnsembleClassifier
-                _classifier = OptimizedEnsembleClassifier()
+                from backend.models.lightning_classifier import QuantumClassifier
+                _classifier = QuantumClassifier()
                 logger.info(f"High-Accuracy Classifier loaded: {_classifier.name} v{_classifier.version}")
             except Exception as e:
                 logger.warning(f"Failed to load High-Accuracy classifier, falling back to simple... Error: {e}")

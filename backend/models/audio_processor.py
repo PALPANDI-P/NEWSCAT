@@ -441,7 +441,7 @@ class NeuralAudioProcessor:
     
     def process_audio_file(self, audio_path: str, 
                           language: Optional[str] = None,
-                          preprocess: bool = True,
+                          preprocess: bool = False,
                           return_segments: bool = True) -> AudioProcessingResult:
         """
         Process audio file with full pipeline

@@ -89,6 +89,7 @@ def create_success_response(
             "category_display": data.get("category_display", category),
             "main_topic": main_topic,
             "subtopic": subtopic,
+            "main_topics": data.get("main_topics") or [main_topic] + [pred.get("category") for pred in data.get("top_predictions", [])[:5]],
             "confidence": min(100, max(0, data.get("confidence", 0))),  # Ensure 0-100
             "confidence_level": get_confidence_level(data.get("confidence", 0)),
             

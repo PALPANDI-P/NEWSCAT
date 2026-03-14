@@ -26,6 +26,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from enum import Enum
 import time
+import concurrent.futures
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -507,7 +508,7 @@ class CinematicProcessor:
     def process_video_file(self, video_path: str,
                           extract_scenes: bool = True,
                           extract_audio: bool = True,
-                          max_scenes: int = 3) -> VideoProcessingResult:
+                          max_scenes: int = 1) -> VideoProcessingResult:
         """
         Process video with full cinematic analysis
         
@@ -599,36 +600,49 @@ class CinematicProcessor:
                     if scene_keyframes:
                         scene.keyframe_path = scene_keyframes[0].image_path
             
-            # Extract text from keyframes (OCR)
+            # -----------------------------------------------------------------
+            # PARALLEL EXECUTION OF OCR AND STT
+            # -----------------------------------------------------------------
             visual_text = ""
-            if keyframes and self._image_processor:
-                logger.info("Extracting text from keyframes...")
-                texts = []
-                for keyframe in keyframes:
-                    try:
-                        result = self._image_processor.process_image_file(
-                            keyframe.image_path,
-                            extract_regions=False
-                        )
-                        if result.success and result.extracted_text:
-                            texts.append(result.extracted_text)
-                            keyframe.extracted_text = result.extracted_text
-                    except Exception as e:
-                        logger.debug(f"Keyframe OCR failed: {e}")
-                
-                visual_text = ' '.join(texts)
-            
-            # Extract audio
             audio_text = ""
-            if extract_audio and self._audio_processor and duration < 300:  # Only for shorter videos
-                logger.info("Extracting audio...")
-                try:
-                    audio_result = self._extract_audio_text(video_path)
-                    if audio_result:
-                        audio_text = audio_result
-                except Exception as e:
-                    logger.debug(f"Audio extraction failed: {e}")
+            texts = []
             
+            def process_keyframes():
+                if keyframes and self._image_processor:
+                    logger.info("Extracting text from keyframes (Parallel OCR)...")
+                    for keyframe in keyframes:
+                        try:
+                            result = self._image_processor.process_image_file(
+                                keyframe.image_path,
+                                extract_regions=False
+                            )
+                            if result.success and result.extracted_text:
+                                texts.append(result.extracted_text)
+                                keyframe.extracted_text = result.extracted_text
+                        except Exception as e:
+                            logger.debug(f"Keyframe OCR failed: {e}")
+                    return ' '.join(texts)
+                return ""
+                
+            def process_audio():
+                if extract_audio and self._audio_processor and duration < 300:
+                    logger.info("Extracting audio (Parallel STT)...")
+                    try:
+                        audio_result = self._extract_audio_text(video_path)
+                        if audio_result:
+                            return audio_result
+                    except Exception as e:
+                        logger.debug(f"Audio extraction failed: {e}")
+                return ""
+            
+            # Execute both heavyweight tasks concurrently
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                future_visual = executor.submit(process_keyframes)
+                future_audio = executor.submit(process_audio)
+                
+                visual_text = future_visual.result()
+                audio_text = future_audio.result()
+                
             # Combine texts
             combined_text = self._merge_texts([visual_text, audio_text])
             

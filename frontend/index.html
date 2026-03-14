@@ -584,79 +584,59 @@
                 </div>
             </div>
 
-            <!-- Results State (Hidden by default) - Centered Display -->
-                <div id="results-state" class="w-full max-w-4xl mx-auto hidden animate-fade-in flex flex-col items-center gap-6 py-8 transition-all duration-500">
-                    <div class="flex flex-col gap-2 w-full">
-                        <div class="flex items-center justify-center gap-2 text-gray-300">
-                            <i class="fas fa-chart-pie text-indigo-400"></i>
-                            <span class="text-sm font-bold uppercase tracking-wider text-center">Classification Results</span>
-                        </div>
-                        
-                        <!-- Input Summary -->
-                        <div class="w-full bg-dark-800/40 backdrop-blur-md rounded-xl border border-white/5 p-4 flex items-center justify-between shadow-[inset_0_1px_5px_rgba(0,0,0,0.2)]">
-                            <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-lg bg-dark-900 border border-white/5 flex items-center justify-center text-gray-400 shadow-inner" id="summary-icon-container">
-                                    <i class="fas fa-keyboard" id="summary-icon"></i>
-                                </div>
-                                <div class="flex flex-col">
-                                    <span class="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-0.5">Content Classified</span>
-                                    <span id="summary-text" class="text-gray-200 text-sm font-medium line-clamp-1 break-all pr-4">Validating input...</span>
-                                </div>
-                            </div>
-                            <div class="text-[10px] text-indigo-400 font-bold uppercase tracking-widest bg-indigo-500/10 px-3 py-1.5 rounded-full border border-indigo-500/20 shadow-[0_0_10px_rgba(99,102,241,0.1)] whitespace-nowrap" id="summary-badge">
-                                TEXT MODE
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Main Result Card -->
-                    <div class="w-full bg-dark-800/60 backdrop-blur-md rounded-2xl border border-white/5 p-6 flex flex-col md:flex-row items-center justify-between shadow-[0_0_20px_rgba(0,0,0,0.2)] card-hover mb-4">
-                        <div class="flex items-center gap-6">
-                            <div id="result-icon-container" class="w-16 h-16 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-3xl border border-purple-500/30">
-                                <i id="result-main-icon" class="fas fa-university"></i>
-                            </div>
-                            <div class="flex flex-col">
-                                <h3 id="result-subtopic-header" class="text-3xl font-extrabold text-white uppercase tracking-wider mb-1 leading-tight">SUBTOPIC</h3>
-                                <div class="flex items-center gap-2 flex-wrap mt-1">
-                                    <span id="result-main-topic-badge" class="text-xs font-bold text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20 shadow-[0_0_10px_rgba(99,102,241,0.1)]">Main Topic</span>
-                                    <span class="text-gray-600 text-[10px] font-bold uppercase tracking-widest">(Parent Category)</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex flex-col items-center mt-6 md:mt-0">
-                            <!-- Circular Progress for Confidence -->
-                            <div class="relative w-24 h-24 flex items-center justify-center">
-                                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                                    <circle cx="50" cy="50" r="40" stroke="rgba(255,255,255,0.1)" stroke-width="8" fill="none" />
-                                    <circle id="confidence-circle" cx="50" cy="50" r="40" stroke="#22c55e" stroke-width="8" fill="none" stroke-dasharray="251.2" stroke-dashoffset="37.68" stroke-linecap="round" class="transition-all duration-1000 ease-out" />
-                                </svg>
-                                <div class="absolute inset-0 flex items-center justify-center">
-                                    <span id="confidence-text" class="text-xl font-bold text-white">85.4%</span>
-                                </div>
-                            </div>
-                            <span class="text-[10px] text-gray-500 uppercase tracking-widest font-bold mt-2">Confidence</span>
-                        </div>
-                    </div>
-
-                    <!-- Lower Split Section -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
-                        
-                        <!-- Main Topic Summary Panel -->
-                        <div class="flex flex-col gap-3">
-                            <div class="flex items-center gap-2 text-gray-300">
-                                <i class="fas fa-layer-group text-indigo-400"></i>
-                                <span class="text-sm font-bold uppercase tracking-wider">Content Summary</span>
+            <!-- Results State (Hidden by default) - Minimal Horizontal Display -->
+            <div id="results-state" class="w-full mx-auto hidden animate-fade-in py-8 transition-all duration-500">
+                
+                <!-- 1. RESULT TOPIC BOX -->
+                <div class="w-full bg-dark-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-8 mb-8 shadow-2xl relative overflow-hidden group">
+                    <div class="relative z-10 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+                        <div class="flex-1">
+                            <div class="text-[10px] text-indigo-400 font-bold uppercase tracking-[0.2em] mb-4">
+                                <i class="fas fa-tags mr-2"></i>Result Topic
                             </div>
                             
-                            <div class="bg-dark-800/80 backdrop-blur-xl rounded-2xl border border-white/10 p-5 h-full flex flex-col justify-center shadow-[inset_0_2px_15px_rgba(0,0,0,0.3)] hover:shadow-[0_0_25px_rgba(99,102,241,0.15)] transition-all duration-300">
-                                <div class="flex gap-4">
-                                    <div class="w-1" id="topic-summary-indicator" style="background: linear-gradient(to bottom, #6366f1, #a855f7); border-radius: 4px;"></div>
-                                    <p id="topic-summary-text" class="text-gray-300 text-sm md:text-base leading-relaxed font-medium italic">
-                                        Generating comprehensive context summary...
-                                    </p>
-                                </div>
+                            <!-- Core Topic - Bold and colored -->
+                            <h2 id="result-core-topic" class="text-5xl font-black text-white mb-4 leading-tight">
+                                Loading...
+                            </h2>
+                        
+                            <!-- Main Topic - Single prominent display below Core Topic -->
+                            <div id="result-main-topic-container" class="mt-4 flex items-center gap-3 animate-fade-in">
+                                <i id="result-main-topic-icon" class="fas fa-dot-circle text-[#f6b93b] text-sm shadow-glow"></i>
+                                <span id="result-main-topic-text" class="text-xl font-bold text-[#f6b93b] tracking-wide">
+                                    Analyzing content...
+                                </span>
                             </div>
                         </div>
+                        
+                        <!-- Confidence inside Result Topic Box - No icon -->
+                        <div class="flex items-center gap-4 bg-white/5 px-6 py-4 rounded-xl border border-white/10 shrink-0">
+                            <div class="flex flex-col items-end">
+                                <span class="text-[9px] text-gray-500 uppercase tracking-widest font-bold">Confidence</span>
+                                <span id="confidence-text" class="text-3xl font-black text-green-400">99%</span>
+                            </div>
+                            <div class="w-12 h-12 relative">
+                                <svg class="w-full h-full transform -rotate-90">
+                                    <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="4" fill="transparent" class="text-white/10" />
+                                    <circle id="confidence-circle" cx="24" cy="24" r="20" stroke="currentColor" stroke-width="4" fill="transparent" stroke-dasharray="125.6" stroke-dashoffset="0" class="text-green-500 transition-all duration-1000" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. SUMMARY SECTION -->
+                <div class="w-full bg-dark-900/40 border-l-4 border-indigo-500 rounded-r-2xl p-8 mb-8">
+                    <div class="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] mb-4">[SUMMARY]</div>
+                    <p id="topic-summary-text" class="text-lg text-gray-200 leading-relaxed font-medium italic">
+                        The AI is synthesizing a concise summary of your content. This usually takes less than 2 seconds...
+                    </p>
+                </div>
+
+                <!-- Lower Section (Metrics & Analysis - Minimalist) -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full mt-6 opacity-80 hover:opacity-100 transition-opacity">
+                        
+
 
                         <!-- Text Analysis Panel -->
                         <div class="flex flex-col gap-3" id="text-analysis-panel">
