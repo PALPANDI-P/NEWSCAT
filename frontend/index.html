@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="description" content="NEWSCAT - AI-Powered Multi-Modal News Classification Platform">
     <meta name="theme-color" content="#1a1b25">
     <title>NEWSCAT v5.0 | Multi-Modal AI Classification</title>
@@ -661,6 +661,53 @@
                                 <div class="bg-dark-800/60 backdrop-blur-md rounded-xl border border-white/5 p-4 flex flex-col items-center justify-center text-center">
                                     <span class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold mb-2">Readability</span>
                                     <span id="analysis-readability" class="text-2xl font-bold text-white">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Parallel Model Results Panel -->
+                        <div class="flex flex-col gap-3" id="parallel-models-panel">
+                            <div class="flex items-center gap-2 text-gray-300">
+                                <i class="fas fa-layer-group text-purple-400"></i>
+                                <span class="text-sm font-bold uppercase tracking-wider">Parallel Model Results</span>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <!-- Text Model -->
+                                <div class="bg-dark-800/60 backdrop-blur-md rounded-xl border border-white/5 p-3 flex flex-col">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <i class="fas fa-font text-indigo-400 text-xs"></i>
+                                        <span class="text-[10px] text-gray-400 uppercase">Text</span>
+                                    </div>
+                                    <span id="model-text-category" class="text-sm font-bold text-white">-</span>
+                                    <span id="model-text-confidence" class="text-xs text-gray-500">0%</span>
+                                </div>
+                                <!-- Audio Model -->
+                                <div class="bg-dark-800/60 backdrop-blur-md rounded-xl border border-white/5 p-3 flex flex-col">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <i class="fas fa-microphone text-green-400 text-xs"></i>
+                                        <span class="text-[10px] text-gray-400 uppercase">Audio</span>
+                                    </div>
+                                    <span id="model-audio-category" class="text-sm font-bold text-white">-</span>
+                                    <span id="model-audio-confidence" class="text-xs text-gray-500">0%</span>
+                                </div>
+                                <!-- Image Model -->
+                                <div class="bg-dark-800/60 backdrop-blur-md rounded-xl border border-white/5 p-3 flex flex-col">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <i class="fas fa-image text-purple-400 text-xs"></i>
+                                        <span class="text-[10px] text-gray-400 uppercase">Image</span>
+                                    </div>
+                                    <span id="model-image-category" class="text-sm font-bold text-white">-</span>
+                                    <span id="model-image-confidence" class="text-xs text-gray-500">0%</span>
+                                </div>
+                                <!-- Video Model -->
+                                <div class="bg-dark-800/60 backdrop-blur-md rounded-xl border border-white/5 p-3 flex flex-col">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <i class="fas fa-video text-cyan-400 text-xs"></i>
+                                        <span class="text-[10px] text-gray-400 uppercase">Video</span>
+                                    </div>
+                                    <span id="model-video-category" class="text-sm font-bold text-white">-</span>
+                                    <span id="model-video-confidence" class="text-xs text-gray-500">0%</span>
                                 </div>
                             </div>
                         </div>

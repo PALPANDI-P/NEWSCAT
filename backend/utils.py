@@ -369,6 +369,145 @@ _smart_cache = SmartCache()
 _metrics_collector = MetricsCollector()
 
 
+# =============================================================================
+# CONTENT SUMMARIZATION - Fast extractive summarization
+# =============================================================================
+
+class ContentSummarizer:
+    """
+    Fast extractive content summarizer - creates short summary from input text
+    Creates actual sentence-based summaries of the content, not keyword summaries
+    """
+    
+    # Words to skip in summary
+    SKIP_WORDS = {
+        'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+        'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
+        'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
+        'could', 'should', 'may', 'might', 'must', 'shall', 'can', 'need',
+        'this', 'that', 'these', 'those', 'it', 'its', 'they', 'them', 'their',
+        'we', 'our', 'you', 'your', 'he', 'she', 'him', 'her', 'his', 'hers',
+        'what', 'which', 'who', 'whom', 'where', 'when', 'why', 'how',
+        'about', 'after', 'before', 'during', 'between', 'into', 'through'
+    }
+    
+    @staticmethod
+    def summarize(text: str, max_sentences: int = 3, max_words: int = 50) -> str:
+        """
+        Create a SHORT SENTENCE-BASED summary of the input content
+        NOT a keyword summary - actual content summary
+        
+        Args:
+            text: Input text to summarize
+            max_sentences: Maximum number of sentences in summary (default: 3)
+            max_words: Maximum number of words in summary (default: 50)
+            
+        Returns:
+            Short sentence summary like: "This article discusses X happening in Y location..."
+        """
+        if not text or len(text.strip()) < 30:
+            return text.strip() if text else ""
+        
+        try:
+            # Split into sentences
+            sentences = ContentSummarizer._split_into_sentences(text)
+            
+            if not sentences:
+                return text[:max_words * 5] + "..." if len(text) > max_words * 5 else text
+            
+            # Score each sentence - prefer complete, informative sentences
+            scored = []
+            for sentence in sentences:
+                score = ContentSummarizer._score_for_summary(sentence)
+                if score > 0:
+                    scored.append((score, sentence))
+            
+            # Sort by score and take top sentences
+            scored.sort(key=lambda x: x[0], reverse=True)
+            
+            # Get top sentences but keep them in original order for coherence
+            top_indices = [s[0] for s in scored[:max_sentences]]
+            selected = []
+            for i, sent in enumerate(sentences):
+                if i in top_indices:
+                    selected.append(sent)
+            
+            # Build summary
+            summary = ' '.join(selected[:max_sentences])
+            
+            # Trim to max words
+            words = summary.split()
+            if len(words) > max_words:
+                # Find a good breaking point (end of sentence)
+                summary_words = words[:max_words]
+                summary = ' '.join(summary_words)
+                # Try to end at a sentence boundary
+                for i in range(len(summary_words)-1, -1, -1):
+                    if summary_words[i] in ['.', '!', '?']:
+                        summary = ' '.join(summary_words[:i+1])
+                        break
+                if not summary.endswith('.') and not summary.endswith('?') and not summary.endswith('!'):
+                    summary += "..."
+            
+            return summary.strip() if summary.strip() else text[:100] + "..."
+            
+        except Exception as e:
+            logger.warning(f"Summarization failed: {e}")
+            # Fallback: return first sentence
+            sentences = text.split('.')
+            return (sentences[0] if sentences else text[:100]) + "..."
+    
+    @staticmethod
+    def _split_into_sentences(text: str) -> list:
+        """Split text into meaningful sentences"""
+        import re
+        # Split on sentence endings
+        sentences = re.split(r'(?<=[.!?])\s+', text)
+        # Filter: keep sentences with at least 10 words and less than 80
+        return [s.strip() for s in sentences if 10 <= len(s.split()) <= 80]
+    
+    @staticmethod
+    def _score_for_summary(sentence: str) -> float:
+        """Score a sentence for being a good summary - prefers complete statements"""
+        words = sentence.split()
+        word_count = len(words)
+        
+        if word_count < 10 or word_count > 80:
+            return 0
+        
+        score = 1.0
+        
+        # Prefer sentences with proper nouns (likely key info)
+        has_proper_noun = any(w[0].isupper() for w in words if len(w) > 1)
+        if has_proper_noun:
+            score += 2.0
+        
+        # Prefer sentences with action verbs
+        action_words = ['said', 'announced', 'reported', 'stated', 'revealed', 'discovered',
+                       'launched', 'introduced', 'unveiled', 'confirmed', 'ordered', 'decided',
+                       'increased', 'decreased', 'grew', 'declined', 'approved', 'rejected']
+        lower = sentence.lower()
+        for aw in action_words:
+            if aw in lower:
+                score += 1.5
+        
+        # Prefer sentences with numbers (likely key data)
+        if any(c.isdigit() for c in sentence):
+            score += 1.0
+        
+        # Prefer mid-length sentences (15-40 words)
+        if 15 <= word_count <= 40:
+            score += 2.0
+        elif 10 <= word_count < 15:
+            score += 1.0
+        
+        # Avoid sentences that are too promotional or general
+        if 'click' in lower or 'subscribe' in lower or 'follow us' in lower:
+            score -= 5.0
+        
+        return max(0, score)
+
+
 def get_text_validator() -> TextValidator:
     """Get global text validator instance"""
     return _text_validator

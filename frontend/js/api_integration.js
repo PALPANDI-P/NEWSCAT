@@ -19,7 +19,9 @@
 class ResponseHandler {
     /**
      * Handle successful classification response
-     * Backend returns flat structure - extract classification data directly
+     * Backend returns data nested under 'data' key for text classification
+     * But returns flat structure for image/audio/video classification
+     * Handle both formats for backward compatibility
      */
     static handleSuccess(response) {
         if (!response || response.status !== 'success') {
@@ -31,30 +33,36 @@ class ResponseHandler {
             });
         }
 
-        // Backend returns flat structure - extract classification fields directly
-        // Extract all classification-related data from the flat response
+        // Handle nested response format (text classification uses response.data)
+        // and flat format (image/audio/video classification)
+        const classificationData = response.data || response;
+
+        // Backend returns classification data either nested or flat - handle both
         const data = {
-            category: response.category,
-            category_display: response.category_display,
-            confidence: response.confidence,
-            confidence_level: response.confidence_level,
-            processing_time_ms: response.processing_time_ms,
-            model_name: response.model,
-            model_version: response.model_version,
-            input_type: response.input_type,
-            subcategory: response.subcategory,
-            summary: response.summary,
-            keywords: response.keywords,
-            entities: response.entities,
-            topics: response.topics,
-            analysis: response.analysis,
-            content_length: response.content_length,
-            word_count: response.word_count,
-            cached: response.cached,
-            enhanced: response.enhanced
+            category: classificationData.category,
+            category_display: classificationData.category_display,
+            confidence: classificationData.confidence,
+            confidence_level: classificationData.confidence_level,
+            processing_time_ms: classificationData.processing_time_ms,
+            model_name: classificationData.model_name || classificationData.model,
+            model_version: classificationData.model_version,
+            input_type: classificationData.input_type,
+            subcategory: classificationData.subcategory,
+            summary: classificationData.summary,
+            keywords: classificationData.keywords,
+            entities: classificationData.entities,
+            topics: classificationData.topics,
+            analysis: classificationData.analysis,
+            content_length: classificationData.content_length,
+            word_count: classificationData.word_count,
+            cached: classificationData.cached,
+            enhanced: classificationData.enhanced,
+            main_topic: classificationData.main_topic,
+            subtopic: classificationData.subtopic,
+            main_topic_summary: classificationData.main_topic_summary
         };
 
-        const html = ResponseHandler.buildResultHTML(data, response);
+        const html = ResponseHandler.buildResultHTML(data, classificationData);
 
         return {
             success: true,

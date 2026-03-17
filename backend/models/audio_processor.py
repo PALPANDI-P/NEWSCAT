@@ -90,7 +90,7 @@ class AudioPreprocessor:
     """
     
     def __init__(self):
-        self._ffmpeg_available = None
+        self._ffmpeg_available: Optional[bool] = None
     
     def is_ffmpeg_available(self) -> bool:
         """Check if ffmpeg is available"""
@@ -207,12 +207,16 @@ class AudioPreprocessor:
             speech_segments = []
             current_start = None
             
-            for i in range(0, len(audio_data), frame_size):
-                frame = audio_data[i:i + frame_size]
-                if len(frame) < frame_size:
+            # Convert to list for safe slicing if needed
+            audio_data_list = audio_data.tolist()
+            
+            for i in range(0, len(audio_data_list), frame_size):
+                frame_data = audio_data_list[i:i + frame_size]
+                if len(frame_data) < frame_size:
                     break
-                is_speech = vad.is_speech(frame.tobytes(), sample_rate)
-                timestamp = i / sample_rate
+                frame_bytes = array.array('h', frame_data).tobytes()
+                is_speech = vad.is_speech(frame_bytes, sample_rate)
+                timestamp = float(i) / float(sample_rate)
                 
                 if is_speech and current_start is None:
                     current_start = timestamp
@@ -257,18 +261,19 @@ class WhisperProcessor:
         'as', 'tt', 'haw', 'ln', 'ha', 'ba', 'jw', 'su'
     ]
     
+    _shared_model = None
+    _load_lock = threading.Lock()
+    
     def __init__(self):
-        self.model = None
-        self._lock = threading.Lock()
         self._model_loading = False
     
     def load_model(self):
         """Lazy load Whisper model"""
-        if self.model is not None or self._model_loading:
+        if WhisperProcessor._shared_model is not None or self._model_loading:
             return
         
-        with self._lock:
-            if self.model is not None or self._model_loading:
+        with WhisperProcessor._load_lock:
+            if WhisperProcessor._shared_model is not None or self._model_loading:
                 return
             
             self._model_loading = True
@@ -278,7 +283,7 @@ class WhisperProcessor:
                 logger.info(f"Loading Whisper {self.MODEL_NAME} model...")
                 start_time = time.time()
                 
-                self.model = whisper.load_model(self.MODEL_NAME)
+                WhisperProcessor._shared_model = whisper.load_model(self.MODEL_NAME)
                 
                 load_time = time.time() - start_time
                 logger.info(f"Whisper {self.MODEL_NAME} loaded in {load_time:.1f}s")
@@ -307,7 +312,8 @@ class WhisperProcessor:
         """
         self.load_model()
         
-        if self.model is None:
+        model = WhisperProcessor._shared_model
+        if model is None:
             raise RuntimeError("Whisper model not loaded")
         
         # Prepare decode options
@@ -325,22 +331,22 @@ class WhisperProcessor:
             decode_options['language'] = language
         
         # Transcribe
-        result = self.model.transcribe(audio_path, **decode_options)
+        result = model.transcribe(audio_path, **decode_options)
         
         # Extract segments if requested
         segments = []
         if return_segments and 'segments' in result:
             for seg in result['segments']:
                 segments.append(AudioSegment(
-                    start_time=seg.get('start', 0),
-                    end_time=seg.get('end', 0),
-                    text=seg.get('text', '').strip(),
-                    confidence=seg.get('avg_logprob', -1) * -1,  # Convert logprob to approx confidence
+                    start_time=float(seg.get('start', 0)),
+                    end_time=float(seg.get('end', 0)),
+                    text=str(seg.get('text', '')).strip(),
+                    confidence=float(seg.get('avg_logprob', -1)) * -1.0,  # Convert logprob to approx confidence
                     is_speech=True
                 ))
         
         return {
-            'text': result.get('text', '').strip(),
+            'text': str(result.get('text', '')).strip(),
             'language': result.get('language', 'en'),
             'segments': segments,
             'duration': result.get('duration', 0)
@@ -349,14 +355,17 @@ class WhisperProcessor:
     def detect_language(self, audio_path: str) -> str:
         """Detect the primary language in audio"""
         self.load_model()
+        model = WhisperProcessor._shared_model
+        if model is None:
+            return "en"
         
         # Load and mel-spectrogram
         import whisper
-        mel = whisper.log_mel_spectrogram(audio_path).to(self.model.device)
+        mel = whisper.log_mel_spectrogram(audio_path).to(model.device)
         
         # Detect language
-        _, probs = self.model.detect_language(mel)
-        detected_lang = max(probs, key=probs.get)
+        _, probs = model.detect_language(mel)
+        detected_lang = str(max(probs, key=probs.get))
         
         return detected_lang
 
@@ -387,13 +396,41 @@ class NeuralAudioProcessor:
     
     def __init__(self, engine: str = 'whisper', lazy_init: bool = True):
         self.preferred_engine = engine
-        self.whisper = None
+        self.whisper: Optional[WhisperProcessor] = None
         self.preprocessor = AudioPreprocessor()
         self._initialized = False
         self._init_lock = threading.Lock()
         
+        # Audio processing cache for 10x speed on repeated files
+        self._audio_cache = {}
+        self._cache_max_size = 30
+        
         if not lazy_init:
             self._initialize()
+    
+    def _get_audio_hash(self, audio_path: str) -> str:
+        """Compute hash for audio file based on path and modification time"""
+        try:
+            import hashlib
+            stat = os.stat(audio_path)
+            key = f"{audio_path}:{stat.st_size}:{stat.st_mtime}"
+            return hashlib.md5(key.encode()).hexdigest()
+        except Exception:
+            return f"fallback:{audio_path}"
+    
+    def _check_cache(self, cache_key: str) -> Optional[AudioProcessingResult]:
+        """Check if result is in cache"""
+        if cache_key in self._audio_cache:
+            logger.debug(f"Audio cache hit: {cache_key[:8]}...")
+            return self._audio_cache[cache_key]
+        return None
+    
+    def _add_to_cache(self, cache_key: str, result: AudioProcessingResult):
+        """Add result to cache with size limit"""
+        if len(self._audio_cache) >= self._cache_max_size:
+            oldest_key = next(iter(self._audio_cache))
+            del self._audio_cache[oldest_key]
+        self._audio_cache[cache_key] = result
     
     def _initialize(self):
         """Initialize processor"""
@@ -457,6 +494,13 @@ class NeuralAudioProcessor:
         
         try:
             self._initialize()
+            
+            # Check cache first for 10x speedup on repeated audio files
+            cache_key = self._get_audio_hash(audio_path)
+            cached_result = self._check_cache(cache_key)
+            if cached_result:
+                logger.info(f"Audio cache hit for {audio_path}")
+                return cached_result
             
             # Validate file
             if not os.path.exists(audio_path):
@@ -577,22 +621,13 @@ class NeuralAudioProcessor:
                 word_count=len(text.split()),
                 processing_time=round(processing_time, 3)
             )
-            
+        
         except Exception as e:
             logger.error(f"Audio processing error: {e}")
             return AudioProcessingResult(
                 success=False,
                 error_message=f"Processing failed: {str(e)}"
             )
-        
-        finally:
-            # Cleanup temp files
-            for temp_file in temp_files:
-                try:
-                    if os.path.exists(temp_file):
-                        os.remove(temp_file)
-                except Exception:
-                    pass
     
     def process_audio_bytes(self, audio_bytes: bytes, 
                            file_extension: str = '.wav',

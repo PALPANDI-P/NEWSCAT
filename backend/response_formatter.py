@@ -340,7 +340,7 @@ def format_model_info(
             "type": model_type,
             "status": "ready" if trained else "untrained",
             "trained": trained,
-            "accuracy_score": round(accuracy, 3) if accuracy > 0 else None,
+            "accuracy_score": round(accuracy, 3) if accuracy and accuracy > 0 else None,
             "average_inference_time_ms": round(avg_inference_time_ms, 2),
             "supported_categories": len(categories),
             "categories_sample": sorted(categories)[:5]

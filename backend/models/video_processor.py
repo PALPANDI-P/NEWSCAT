@@ -468,6 +468,48 @@ class CinematicProcessor:
         self._initialized = True
         logger.info("CinematicProcessor initialized")
     
+    def _process_as_audio(self, media_path: str) -> VideoProcessingResult:
+        """
+        Process media file as audio when video processing fails.
+        This handles cases where the file is actually audio with wrong extension.
+        """
+        import os
+        import tempfile
+        
+        logger.info(f"Processing {media_path} as audio")
+        
+        # Initialize if needed
+        if not self._initialized:
+            self._initialize()
+        
+        # Use audio processor if available
+        if self._audio_processor and self._audio_processor.is_available():
+            try:
+                audio_result = self._audio_processor.process_audio_file(media_path)
+                if audio_result.success:
+                    return VideoProcessingResult(
+                        success=True,
+                        category=audio_result.category,
+                        confidence=audio_result.confidence,
+                        transcription=audio_result.transcription,
+                        summary=audio_result.summary,
+                        metadata={
+                            'processed_as': 'audio_fallback',
+                            'original_error': 'Video could not be opened'
+                        }
+                    )
+            except Exception as e:
+                logger.warning(f"Audio fallback failed: {e}")
+        
+        # If audio processing also fails, return error with suggestion
+        return VideoProcessingResult(
+            success=False,
+            category='unknown',
+            confidence=0.0,
+            error_message='Could not process media file. Please ensure it is a valid video or audio file.',
+            metadata={'processed_as': 'audio_fallback_failed'}
+        )
+    
     def is_available(self) -> bool:
         """Check if video processing is available"""
         return self._cv2_available
@@ -511,6 +553,7 @@ class CinematicProcessor:
                           max_scenes: int = 1) -> VideoProcessingResult:
         """
         Process video with full cinematic analysis
+        Falls back to audio extraction if video processing fails
         
         Args:
             video_path: Path to video file
@@ -518,6 +561,26 @@ class CinematicProcessor:
             extract_audio: Whether to extract audio text
             max_scenes: Maximum number of scenes to process
         """
+        # First try video processing
+        import cv2
+        import os
+        
+        cap = None
+        try:
+            cap = cv2.VideoCapture(video_path)
+            if not cap.isOpened():
+                # Video cannot be opened - try extracting audio
+                logger.warning(f"Video cannot be opened: {video_path}, trying audio extraction")
+                return self._process_as_audio(video_path)
+        except Exception as e:
+            # If video processing fails, try audio extraction
+            logger.warning(f"Video processing error: {e}, trying audio extraction")
+            if cap:
+                cap.release()
+            return self._process_as_audio(video_path)
+        finally:
+            if cap:
+                cap.release()
         start_time = time.time()
         temp_files = []
         
@@ -539,12 +602,18 @@ class CinematicProcessor:
                 )
             
             # Get video info
-            video_info = self.get_video_info(video_path)
-            if 'error' in video_info:
-                return VideoProcessingResult(
-                    success=False,
-                    error_message=video_info['error']
-                )
+            try:
+                video_info = self.get_video_info(video_path)
+                if 'error' in video_info:
+                    logger.warning(f"Video info error: {video_info['error']}")
+                    return VideoProcessingResult(
+                        success=False,
+                        error_message=f"Could not read video file: {video_info['error']}"
+                    )
+            except Exception as e:
+                logger.warning(f"Could not get video info: {e}")
+                # Continue with default values
+                video_info = {'duration': 60, 'fps': 30}
             
             duration = video_info.get('duration', 0)
             fps = video_info.get('fps', 0)
@@ -560,45 +629,55 @@ class CinematicProcessor:
             # Scene detection
             scenes = []
             keyframes = []
+            scene_boundaries = []
             
             if extract_scenes:
                 logger.info("Detecting scenes...")
-                scene_boundaries = self.scene_detector.detect_scenes(video_path)
-                
-                # Limit scenes
-                if len(scene_boundaries) > max_scenes:
-                    # Keep first, last, and evenly distributed middle scenes
-                    indices = [0] + [
-                        int(i * (len(scene_boundaries) - 1) / (max_scenes - 1))
-                        for i in range(1, max_scenes - 1)
-                    ] + [len(scene_boundaries) - 1]
-                    scene_boundaries = [scene_boundaries[i] for i in sorted(set(indices))]
-                
-                # Create scene objects
-                for start, end in scene_boundaries:
-                    scenes.append(VideoScene(
-                        start_time=start,
-                        end_time=end,
-                        scene_type=SceneType.UNKNOWN,
-                        confidence=0.8
-                    ))
-                
-                # Extract keyframes
-                if scenes:
-                    logger.info("Extracting keyframes...")
+                try:
+                    scene_boundaries = self.scene_detector.detect_scenes(video_path)
+                    logger.info(f"Detected {len(scene_boundaries)} scenes")
+                except Exception as e:
+                    logger.warning(f"Scene detection failed: {e}. Using entire video as one scene.")
+                    # Fallback: use entire video as one scene
+                    scene_boundaries = [(0, duration)]
+            
+            # Limit scenes
+            if len(scene_boundaries) > max_scenes:
+                # Keep first, last, and evenly distributed middle scenes
+                indices = [0] + [
+                    int(i * (len(scene_boundaries) - 1) / (max_scenes - 1))
+                    for i in range(1, max_scenes - 1)
+                ] + [len(scene_boundaries) - 1]
+                scene_boundaries = [scene_boundaries[i] for i in sorted(set(indices))]
+            
+            # Create scene objects
+            for start, end in scene_boundaries:
+                scenes.append(VideoScene(
+                    start_time=start,
+                    end_time=end,
+                    scene_type=SceneType.UNKNOWN,
+                    confidence=0.8
+                ))
+            
+            # Extract keyframes
+            if scenes:
+                logger.info("Extracting keyframes...")
+                try:
                     keyframes = self.keyframe_extractor.extract_keyframes(
                         video_path, 
                         scene_boundaries,
                         frames_per_scene=1
                     )
                     temp_files.extend([k.image_path for k in keyframes])
-                
-                # Classify scenes using keyframes
-                for i, scene in enumerate(scenes):
-                    scene_keyframes = [k for k in keyframes 
-                                     if scene.start_time <= k.timestamp < scene.end_time]
-                    if scene_keyframes:
-                        scene.keyframe_path = scene_keyframes[0].image_path
+                except Exception as e:
+                    logger.warning(f"Keyframe extraction failed: {e}")
+            
+            # Classify scenes using keyframes
+            for i, scene in enumerate(scenes):
+                scene_keyframes = [k for k in keyframes 
+                                 if scene.start_time <= k.timestamp < scene.end_time]
+                if scene_keyframes:
+                    scene.keyframe_path = scene_keyframes[0].image_path
             
             # -----------------------------------------------------------------
             # PARALLEL EXECUTION OF OCR AND STT

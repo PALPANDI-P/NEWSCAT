@@ -30,6 +30,7 @@ python run_verification.py
 ```
 
 This script will:
+
 - ✓ Check Python version compatibility
 - ✓ Verify all dependencies are installed
 - ✓ Start the server automatically
@@ -37,6 +38,7 @@ This script will:
 - ✓ Show you exactly how to access the application
 
 **Options**:
+
 ```bash
 python run_verification.py --verbose    # Show detailed output
 python run_verification.py --skip-start # Only check, don't start server
@@ -47,16 +49,19 @@ python run_verification.py --skip-start # Only check, don't start server
 If you prefer to start manually:
 
 **Option A: Using PowerShell (Windows)**
+
 ```powershell
 .\run.ps1
 ```
 
 **Option B: Direct Python**
+
 ```bash
 python backend/app.py
 ```
 
 **Option C: Using server.py**
+
 ```bash
 python server.py
 ```
@@ -81,43 +86,54 @@ curl -X POST http://localhost:5000/api/classify ^
 ## Project Structure
 
 ```
-NEWSCAT_VSCODE/
+NEWSCAT/
 ├── backend/
 │   ├── app.py                 # Flask application and routes
 │   ├── config.py              # Configuration settings
+│   ├── requirements.txt       # Python dependencies
+│   ├── utils.py               # Common utilities and helpers
+│   ├── response_formatter.py  # API response formatting
 │   └── models/
+│       ├── __init__.py
 │       ├── base_classifier.py # Abstract base class
 │       ├── simple_classifier.py # TF-IDF + SVM (active)
-│       ├── enhanced_classifier.py # Stub for future use
-│       ├── text_processor.py  # Text preprocessing
-│       └── keyword_extractor.py # Keyword extraction
+│       ├── lightning_classifier.py # Advanced neural classifier
+│       ├── image_processor.py  # Image processing & OCR
+│       ├── audio_processor.py  # Audio processing & STT
+│       ├── video_processor.py  # Video processing
+│       └── [multiple optimized models...]
 ├── frontend/
 │   ├── index.html             # Main UI
-│   ├── css/style.css          # Styling
-│   └── js/main.js             # API client
-├── logs/newscat.log           # Application logs
-├── data/
+│   ├── landing.html           # Landing page
+│   ├── css/
+│   │   └── results-styles.css # Result styling
+│   └── js/
+│       ├── main.js            # Main application logic
+│       └── api_integration.js # API integration handlers
+├── backend/data/
 │   ├── models/pretrained/     # Saved models
 │   └── training/              # Training datasets
+├── scripts/
+│   └── setup.ps1              # Setup script
 ├── run.ps1                    # PowerShell startup script
-├── run_verification.py        # ⭐ Comprehensive verification & startup
+├── start.bat                  # Batch startup script
 ├── server.py                  # Simple server launcher
-├── SETUP_GUIDE.md             # Detailed setup instructions
-└── requirements.txt           # Python dependencies
+└── README.md                  # This file
 ```
 
 ## API Endpoints
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/` | GET | Serve frontend UI |
-| `/api/health` | GET | Service status & classifier availability |
-| `/api/categories` | GET | List all 10 categories |
-| `/api/classify` | POST | Classify news text |
-| `/api/model/info` | GET | Classifier metadata |
-| `/api/keywords` | POST | Extract keywords |
+| Endpoint          | Method | Purpose                                  |
+| ----------------- | ------ | ---------------------------------------- |
+| `/`               | GET    | Serve frontend UI                        |
+| `/api/health`     | GET    | Service status & classifier availability |
+| `/api/categories` | GET    | List all 10 categories                   |
+| `/api/classify`   | POST   | Classify news text                       |
+| `/api/model/info` | GET    | Classifier metadata                      |
+| `/api/keywords`   | POST   | Extract keywords                         |
 
 ### Example: Classify Text
+
 ```bash
 POST /api/classify
 {
@@ -127,6 +143,7 @@ POST /api/classify
 ```
 
 Response:
+
 ```json
 {
   "status": "success",
@@ -138,7 +155,10 @@ Response:
   "features": {
     "word_count": 25,
     "char_count": 150,
-    "keywords": [["apple", 0.8], ["earnings", 0.7]]
+    "keywords": [
+      ["apple", 0.8],
+      ["earnings", 0.7]
+    ]
   }
 }
 ```
@@ -146,6 +166,7 @@ Response:
 ## Classification Models
 
 ### SimpleClassifier (Active)
+
 - **Algorithm**: TF-IDF Vectorizer + SVM with Probability Calibration
 - **Status**: Production-ready
 - **Accuracy**: ~80-90% on test sets
@@ -153,6 +174,7 @@ Response:
 - **Fallback**: Rule-based classification if model not trained
 
 ### EnhancedClassifier (Stub)
+
 - **Status**: Placeholder, returns mock results
 - **Future**: Ensemble of SVM, Naive Bayes, Random Forest
 - **Usage**: Set `"enhanced": true` in API calls (falls back to SimpleClassifier)
@@ -160,6 +182,7 @@ Response:
 ## Configuration
 
 Edit `backend/config.py`:
+
 ```python
 # Text validation
 MIN_TEXT_LENGTH = 20              # Minimum characters required
@@ -179,21 +202,25 @@ CORS_ORIGINS = ['http://localhost:5000', 'http://127.0.0.1:5000']
 ## Troubleshooting
 
 ### Port 5000 Already in Use
+
 ```powershell
 netstat -ano | findstr :5000          # Find process
 taskkill /PID <PID> /F               # Kill process
 ```
 
 ### Low Classification Accuracy
+
 - The classifier uses rule-based fallback if not trained
 - To train with your own data: Update training data in `backend/data/training/`
 - Accuracy improves with labeled domain-specific data
 
 ### NLTK Not Available
+
 - App gracefully handles missing NLTK (uses basic stemming instead)
 - To install: `python -m nltk.downloader punkt stopwords wordnet`
 
 ### Frontend Not Loading
+
 - Check that `frontend/index.html` exists
 - Verify static folder path in `backend/config.py`
 - Check browser console for JavaScript errors
@@ -201,11 +228,13 @@ taskkill /PID <PID> /F               # Kill process
 ## Development
 
 ### View Logs (Real-time)
+
 ```powershell
 Get-Content -Path logs/newscat.log -Tail 100 -Wait
 ```
 
 ### Run Code Quality Checks
+
 ```bash
 pylint backend/
 black backend/
@@ -213,6 +242,7 @@ flake8 backend/
 ```
 
 ### Run Unit Tests
+
 ```bash
 pytest backend/ -v --cov
 ```
@@ -237,6 +267,7 @@ pytest backend/ -v --cov
 ## Dependencies
 
 Core packages (all pre-installed):
+
 - Flask 3.0.0 - Web framework
 - scikit-learn 1.3.2 - ML algorithms
 - NLTK 3.8.1 - NLP processing
@@ -252,7 +283,7 @@ See `requirements.txt` for complete list.
 ✅ Simple Classifier: Production-ready  
 ⏳ Enhanced Classifier: Stub (awaiting implementation)  
 ✅ API: All endpoints working  
-✅ Configuration: Centralized in config.py  
+✅ Configuration: Centralized in config.py
 
 ## 📚 Additional Documentation
 
@@ -263,6 +294,7 @@ See `requirements.txt` for complete list.
 ## Support
 
 For issues:
+
 1. Run verification: `python run_verification.py --verbose`
 2. Check `logs/newscat.log`
 3. Verify imports: `python -c "from backend.app import app; print('OK')"`

@@ -32,7 +32,8 @@ from backend.response_formatter import (
 )
 from backend.utils import (
     TextValidator, PerformanceMonitor, SmartCache, DataFormatter,
-    FileUtils, ErrorHandler, get_smart_cache, get_metrics_collector
+    FileUtils, ErrorHandler, get_smart_cache, get_metrics_collector,
+    ContentSummarizer
 )
 
 # Configuration
@@ -69,33 +70,35 @@ def get_classifier():
     global _classifier
     if _classifier is None:
         try:
-            # First try the newly trained models (QuantumClassifier for max accuracy)
+            # Use SimpleNewsClassifier as primary - it's more reliable for keyword-based classification
+            from backend.models.simple_classifier import SimpleNewsClassifier
+            _classifier = SimpleNewsClassifier()
+            logger.info(f"Primary Classifier loaded: {_classifier.name} v{_classifier.version}")
+        except Exception as e:
+            logger.error(f"Failed to load SimpleNewsClassifier: {e}")
+            # Fallback to QuantumClassifier if SimpleNewsClassifier fails
             try:
                 from backend.models.lightning_classifier import QuantumClassifier
                 _classifier = QuantumClassifier()
-                logger.info(f"High-Accuracy Classifier loaded: {_classifier.name} v{_classifier.version}")
-            except Exception as e:
-                logger.warning(f"Failed to load High-Accuracy classifier, falling back to simple... Error: {e}")
-                from backend.models.simple_classifier import SimpleNewsClassifier
-                _classifier = SimpleNewsClassifier()
-                logger.info(f"Simple Classifier loaded: {_classifier.name} v{_classifier.version}")
-        except Exception as e:
-            logger.error(f"Failed to load any classifier: {e}")
-            raise
+                logger.warning(f"Fallback Classifier loaded: {_classifier.name} v{_classifier.version}")
+            except Exception as e2:
+                logger.error(f"Failed to load any classifier: {e2}")
+                raise
     return _classifier
 
 @lru_cache(maxsize=1000)
 def cached_classification(text_hash: str, text: str):
     """LRU Cache for text classification results to maximize performance"""
     classifier = get_classifier()
-    
+
     # Actually classify the text
     result = classifier.classify(
-        text, 
+        text,
         include_confidence=True,
         include_all_scores=True
     )
-    return json.dumps(result)  # Serialize to allow saving in cache
+    # Ensure result is JSON serializable
+    return json.dumps(result, default=str)  # Serialize to allow saving in cache
 
 def validate_text(text):
     """Validate and sanitize input text"""
@@ -122,8 +125,8 @@ def handle_errors(f):
 
 # Demo credentials (in production, use proper database/hashing)
 DEMO_USER = {
-    'username': 'admin',
-    'password_hash': 'newsai2024'  # Simple hash for demo
+    'username': os.getenv('DEMO_USERNAME', 'admin'),
+    'password_hash': os.getenv('DEMO_PASSWORD', 'newsai2024')  # Simple hash for demo
 }
 
 # Simple session storage
@@ -406,11 +409,17 @@ def classify():
         # Extract keywords
         keywords = extract_keywords(result)
         
+        # Generate content summary - short summary of the input content
+        content_summary = ContentSummarizer.summarize(result, max_sentences=2, max_words=30)
+        
         # Calculate content metrics
         words = len(result.split())
         sentences = len([s for s in result.split('.') if s.strip()])
         
         # Use new response formatter
+        # Set main_topic to match category for accurate results
+        main_topic = classification_result.get('category', 'unknown')
+        
         response = format_classification_result(
             category=classification_result.get('category', 'unknown'),
             confidence=classification_result.get('confidence', 0),
@@ -420,8 +429,12 @@ def classify():
             model_version=classification_result.get('model_version', "7.0"),
             input_type='text',
             processing_time_ms=round(total_time, 2),
-            main_topic_summary=classification_result.get('main_topic_summary', ''),
+            main_topic=main_topic,
+            main_topics=[main_topic],
+            subtopic=main_topic,
+            main_topic_summary=classification_result.get('main_topic_summary', content_summary),
             category_display=classification_result.get('category_display', ''),
+            content_summary=content_summary,  # Add content summary
             content_metrics={
                 'character_count': len(result),
                 'word_count': words,
@@ -790,12 +803,22 @@ def classify_video():
         temp_file.close()
         
         # Process video
-        result = processor.process_video_file(temp_file.name, extract_audio=True)
-        
-        if not result.success:
+        try:
+            result = processor.process_video_file(temp_file.name, extract_audio=True)
+        except Exception as e:
+            logger.error(f"Video processing failed with exception: {e}")
             return jsonify({
                 'status': 'error',
-                'message': result.error_message
+                'message': f'Video processing failed: {str(e)}',
+                'installation_instructions': 'Install dependencies: pip install opencv-python-headless Pillow numpy'
+            }), 500
+        
+        if not result.success:
+            logger.warning(f"Video processing returned failure: {result.error_message}")
+            return jsonify({
+                'status': 'error',
+                'message': result.error_message or 'Video processing failed',
+                'extracted_text_preview': result.extracted_text[:200] if result.extracted_text else None
             }), 400
         
         extracted_text = result.extracted_text
@@ -971,6 +994,80 @@ def too_large(error):
         'status': 'error',
         'message': 'File too large. Maximum size: 10MB for images, 50MB for audio, 100MB for video.'
     }), 413
+
+# ===== PARALLEL CLASSIFICATION ENDPOINT =====
+
+@app.route('/api/classify/all', methods=['POST'])
+@handle_errors
+def classify_all():
+    """
+    Parallel classification endpoint that processes text, audio, image, and video
+    simultaneously using the parallel processor.
+    """
+    start_time = time.perf_counter()
+    
+    # Parse request
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': 'Invalid JSON'}), 400
+    
+    text = data.get('text', '').strip()
+    models = data.get('models', ['text', 'audio', 'image', 'video'])
+    
+    # Validate models list
+    valid_models = ['text', 'audio', 'image', 'video']
+    if isinstance(models, str):
+        models = [models]
+    models = [m for m in models if m in valid_models]
+    
+    if not models:
+        return jsonify({'status': 'error', 'message': 'No valid models specified'}), 400
+    
+    try:
+        # Import and use parallel processor
+        from backend.models.parallel_processor import ParallelProcessor
+        
+        processor = ParallelProcessor()
+        result = processor.process(text=text, models=models)
+        
+        # Calculate total processing time
+        total_time = (time.perf_counter() - start_time) * 1000
+        
+        # Build response
+        response = {
+            'status': 'success',
+            'data': {
+                'primary_category': result.primary_category,
+                'confidence': result.confidence,
+                'confidence_level': get_confidence_level(result.confidence),
+                'processing_time_ms': round(result.total_processing_time * 1000, 2),
+                'model_name': 'NewsCAT Parallel Processor',
+                'model_version': '1.0.0',
+                'input_type': 'multi-modal',
+                'successful_models': [m for m, r in result.model_results.items() if r.success],
+                'failed_models': result.partial_failures,
+                'individual_results': {
+                    model: {
+                        'category': res.primary_category,
+                        'confidence': res.confidence,
+                        'success': res.success
+                    }
+                    for model, res in result.model_results.items()
+                }
+            }
+        }
+        
+        return jsonify(response)
+        
+    except Exception as e:
+        logger.error(f"Parallel classification error: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({
+            'status': 'error',
+            'message': 'Parallel classification failed',
+            'error': str(e) if ENV == 'development' else None
+        }), 500
 
 # ===== MAIN =====
 

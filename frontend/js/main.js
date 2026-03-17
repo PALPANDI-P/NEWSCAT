@@ -140,6 +140,7 @@ const state = {
     classificationHistory: [],
     modelInfo: null,
     abortController: null,
+    fileAbortController: null,  // For aborting file uploads
     pendingRequests: new Map(),
     domElements: {}
 };
@@ -719,10 +720,28 @@ const api = {
     },
 
     async classifyText(text, enhanced = true) {
-        return this.request('/classify', {
-            method: 'POST',
-            body: JSON.stringify({ text: text.trim(), enhanced })
-        });
+        // Use the abort controller from state for cancellation support
+        const textAbortController = state.abortController || new AbortController();
+        state.abortController = textAbortController;
+        
+        // Set timeout for text requests (2 minutes)
+        const timeoutId = setTimeout(() => {
+            console.log('[API classifyText] Timeout reached, aborting request');
+            textAbortController.abort();
+        }, 120000); // 2 minutes
+        
+        try {
+            const result = await this.request('/classify', {
+                method: 'POST',
+                body: JSON.stringify({ text: text.trim(), enhanced }),
+                signal: textAbortController.signal
+            });
+            clearTimeout(timeoutId);
+            return result;
+        } catch (error) {
+            clearTimeout(timeoutId);
+            throw error;
+        }
     },
 
     async classifyFile(file, type) {
@@ -744,7 +763,9 @@ const api = {
         }
 
         // Use a separate AbortController for file uploads with longer timeout
+        // Store in state so cancel button can access it
         const fileAbortController = new AbortController();
+        state.fileAbortController = fileAbortController;
 
         // Set a longer timeout for file uploads (10 minutes for large files/video processing)
         const timeoutId = setTimeout(() => {
@@ -820,69 +841,161 @@ const loadingManager = {
     stepEl: null,
     progressEl: null,
     dynamicMsgEl: null,
+    stepDots: null,
     _interval: null,
     _stepIndex: 0,
     _isVisible: false,
+    _initialized: false,
 
-    // Enhanced loading messages for professional AI platform feel
+    // Mode-specific loading steps
+    _modeSteps: {
+        text: [
+            { title: 'Analyzing Text', sub: 'Processing text content...', step: 'Step 1/4', message: 'Analyzing text content...' },
+            { title: 'Classifying Content', sub: 'Running classification model...', step: 'Step 2/4', message: 'Classifying content...' },
+            { title: 'Scoring Results', sub: 'Computing confidence scores...', step: 'Step 3/4', message: 'Scoring results...' },
+            { title: 'Complete', sub: 'Finalizing results...', step: 'Step 4/4', message: 'Finalizing...' }
+        ],
+        image: [
+            { title: 'Extracting Features', sub: 'Processing image features...', step: 'Step 1/4', message: 'Extracting image features...' },
+            { title: 'Analyzing Content', sub: 'Analyzing visual data...', step: 'Step 2/4', message: 'Analyzing content...' },
+            { title: 'Classifying Image', sub: 'Running classification model...', step: 'Step 3/4', message: 'Classifying image...' },
+            { title: 'Complete', sub: 'Finalizing results...', step: 'Step 4/4', message: 'Finalizing...' }
+        ],
+        audio: [
+            { title: 'Extracting Audio', sub: 'Processing audio data...', step: 'Step 1/4', message: 'Extracting audio...' },
+            { title: 'Processing Audio', sub: 'Analyzing audio features...', step: 'Step 2/4', message: 'Processing audio...' },
+            { title: 'Classifying Audio', sub: 'Running classification model...', step: 'Step 3/4', message: 'Classifying audio...' },
+            { title: 'Complete', sub: 'Finalizing results...', step: 'Step 4/4', message: 'Finalizing...' }
+        ],
+        video: [
+            { title: 'Extracting Frames', sub: 'Processing video frames...', step: 'Step 1/4', message: 'Extracting frames...' },
+            { title: 'Analyzing Video', sub: 'Analyzing visual data...', step: 'Step 2/4', message: 'Analyzing video...' },
+            { title: 'Classifying Video', sub: 'Running classification model...', step: 'Step 3/4', message: 'Classifying video...' },
+            { title: 'Complete', sub: 'Finalizing results...', step: 'Step 4/4', message: 'Finalizing...' }
+        ]
+    },
+
+    // Default text steps for backward compatibility
     _steps: [
         { 
-            title: 'Classifying Content', 
-            sub: 'Initializing classification pipeline...', 
+            title: 'Running Text Analysis', 
+            sub: 'Processing text content with ML classifier...', 
             step: 'Step 1/4',
-            message: 'Running classification models...'
+            message: 'Running text classification model...'
         },
         { 
-            title: 'Analyzing Content', 
-            sub: 'Extracting semantic features...', 
+            title: 'Running Audio Analysis', 
+            sub: 'Processing audio content...', 
             step: 'Step 2/4',
-            message: 'Analyzing content patterns...'
+            message: 'Running audio classification model...'
         },
         { 
-            title: 'Processing Classification', 
-            sub: 'Neural network scoring categories...', 
+            title: 'Running Image Analysis', 
+            sub: 'Processing image content...', 
             step: 'Step 3/4',
-            message: 'Processing AI classification...'
+            message: 'Running image classification model...'
         },
         { 
-            title: 'Generating Summary', 
-            sub: 'Preparing results for display...', 
+            title: 'Running Video Analysis', 
+            sub: 'Processing video content...', 
             step: 'Step 4/4',
-            message: 'Finalizing results...'
+            message: 'Running video classification model...'
         }
     ],
 
     // Additional cycling messages for variety
     _cyclingMessages: [
-        'Running classification models...',
+        'Running text classification...',
+        'Running audio classification...',
+        'Running image classification...',
+        'Running video classification...',
         'Analyzing content patterns...',
-        'Processing AI classification...',
-        'Extracting semantic features...',
         'Evaluating category scores...',
-        'Generating content summary...',
         'Computing confidence metrics...',
-        'Matching against taxonomy...',
+        'Merging model results...',
         'Applying ensemble voting...',
         'Finalizing classification results...'
     ],
 
     init() {
+        // Prevent multiple initializations
+        if (this._initialized) {
+            // Re-fetch elements in case DOM was modified
+            this.overlay = document.getElementById('loading-overlay');
+            this.dynamicMsgEl = this.overlay ? this.overlay.querySelector('.loading-text') : null;
+            this.subTextEl = this.overlay ? this.overlay.querySelector('.loading-subtext') : null;
+            this.progressEl = this.overlay ? this.overlay.querySelector('.loading-progress') : null;
+            this.stepEl = this.overlay ? this.overlay.querySelector('#loading-step') : null;
+            this.stepDots = this.overlay ? this.overlay.querySelectorAll('.step-dot') : [];
+            return;
+        }
+        
         this.overlay = document.getElementById('loading-overlay');
         this.dynamicMsgEl = this.overlay ? this.overlay.querySelector('.loading-text') : null;
         this.subTextEl = this.overlay ? this.overlay.querySelector('.loading-subtext') : null;
         this.progressEl = this.overlay ? this.overlay.querySelector('.loading-progress') : null;
+        this.stepEl = this.overlay ? this.overlay.querySelector('#loading-step') : null;
+        // Get all step dots
+        this.stepDots = this.overlay ? this.overlay.querySelectorAll('.step-dot') : [];
+        
+        this._initialized = true;
     },
 
-    show() {
-        if (!this.overlay) this.init();
+    // Update the step dots to reflect current progress
+    _updateStepDots(step) {
+        if (!this.stepDots || this.stepDots.length === 0) return;
+        
+        this.stepDots.forEach((dot, index) => {
+            const dotStep = index + 1;
+            if (dotStep <= step) {
+                dot.classList.add('active');
+                dot.classList.remove('bg-dark-700');
+                dot.classList.add('bg-indigo-500');
+            } else {
+                dot.classList.remove('active');
+                dot.classList.remove('bg-indigo-500');
+                dot.classList.add('bg-dark-700');
+            }
+        });
+        
+        // Update step text
+        if (this.stepEl) {
+            this.stepEl.textContent = `Step ${step}/4`;
+        }
+    },
+
+    show(title, subTitle, inputType = 'text') {
+        // Ensure DOM elements are initialized before use
+        if (!this._initialized) this.init();
         this._stepIndex = 0;
         this._isVisible = true;
+        
+        // Get mode-specific steps and messages
+        const modeKey = inputType && this._modeSteps[inputType] ? inputType : 'text';
+        const currentModeSteps = this._modeSteps[modeKey];
+
+        if (title && this.dynamicMsgEl) {
+            this.dynamicMsgEl.textContent = title;
+        } else if (currentModeSteps && currentModeSteps[0] && this.dynamicMsgEl) {
+            // Use mode-specific title if no custom title provided
+            this.dynamicMsgEl.textContent = currentModeSteps[0].message;
+        }
+        if (subTitle && this.subTextEl) {
+            this.subTextEl.textContent = subTitle;
+        } else if (currentModeSteps && currentModeSteps[0] && this.subTextEl) {
+            // Use mode-specific subtitle
+            this.subTextEl.textContent = currentModeSteps[0].sub;
+        }
+
         if (this.overlay) {
             this.overlay.style.display = 'flex';
             this.overlay.style.flexDirection = 'column';
             this.overlay.style.alignItems = 'center';
             this.overlay.style.justifyContent = 'center';
         }
+        
+        // Initialize step dots to step 1
+        this._updateStepDots(1);
         
         // Reset progress with animation
         if (this.progressEl) {
@@ -894,12 +1007,25 @@ const loadingManager = {
         
         document.body.style.overflow = 'hidden';
         
-        // Cycle through messages for visual interest based on DOM elements available
+        // Cycle through messages and update step dots based on elapsed time
+        let messageIndex = 0;
         this._messageInterval = setInterval(() => {
-            if (!this._isVisible || !this.dynamicMsgEl) return;
-            const randomMsg = this._cyclingMessages[Math.floor(Math.random() * this._cyclingMessages.length)];
-            this._animateMessageChange(this.dynamicMsgEl, randomMsg);
-        }, 1500);
+            if (!this._isVisible) return;
+            
+            // Update step dots every 900ms (cycling through 4 steps in ~3.6s) - slower for better UX
+            messageIndex++;
+            const currentStep = Math.min(messageIndex, 4);
+            this._updateStepDots(currentStep);
+            
+            if (this.dynamicMsgEl) {
+                // Use mode-specific cycling messages if available
+                const modeMsgIndex = (messageIndex - 1) % currentModeSteps.length;
+                const modeMessage = currentModeSteps[modeMsgIndex]?.message;
+                const randomMsg = this._cyclingMessages[Math.floor(Math.random() * this._cyclingMessages.length)];
+                // Prefer mode-specific message, fall back to cycling messages
+                this._animateMessageChange(this.dynamicMsgEl, modeMessage || randomMsg);
+            }
+        }, 900);
     },
 
     hide() {
@@ -913,9 +1039,14 @@ const loadingManager = {
             this.progressEl.style.width = '100%';
         }
         
+        // Reset step dots to all active (complete)
+        this._updateStepDots(4);
+        
         setTimeout(() => {
             if (this.overlay) this.overlay.style.display = 'none';
             document.body.style.overflow = '';
+            // Reset dots for next time
+            this._updateStepDots(0);
         }, 300); // Wait for progress bar to finish CSS transition
     },
 
@@ -1153,6 +1284,51 @@ const resultsManager = {
         } else {
             panel.classList.add('hidden'); // Hide text analysis metrics if not text mode
         }
+        
+        // Update parallel model results
+        this.updateParallelModelResults(data);
+    },
+    
+    updateParallelModelResults(data) {
+        const panel = document.getElementById('parallel-models-panel');
+        if (!panel) return;
+        
+        // Get model_results from the API response
+        const modelResults = data.model_results || {};
+        
+        // Update each model's result
+        const models = ['text', 'audio', 'image', 'video'];
+        models.forEach(model => {
+            const modelData = modelResults[model];
+            const categoryEl = document.getElementById(`model-${model}-category`);
+            const confidenceEl = document.getElementById(`model-${model}-confidence`);
+            
+            if (categoryEl && confidenceEl) {
+                if (modelData && modelData.success) {
+                    categoryEl.textContent = this.capitalizeFirst(modelData.primary_category || '-');
+                    const confidence = (modelData.confidence || 0) * 100;
+                    confidenceEl.textContent = `${confidence.toFixed(0)}%`;
+                    
+                    // Color based on confidence
+                    if (confidence >= 70) {
+                        confidenceEl.className = 'text-xs text-green-400';
+                    } else if (confidence >= 40) {
+                        confidenceEl.className = 'text-xs text-yellow-400';
+                    } else {
+                        confidenceEl.className = 'text-xs text-red-400';
+                    }
+                } else {
+                    categoryEl.textContent = 'Failed';
+                    confidenceEl.textContent = '0%';
+                    confidenceEl.className = 'text-xs text-gray-500';
+                }
+            }
+        });
+    },
+    
+    capitalizeFirst(str) {
+        if (!str) return '';
+        return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
     },
     
     animateValue(id, start, end, duration) {
@@ -1307,7 +1483,7 @@ async function analyzeContent() {
     state.isAnalyzing = true;
     uiManager.updateAnalyzeButton();
 
-    loadingManager.show('Analyzing Data', 'Ensemble ML models processing content...');
+    loadingManager.show('Analyzing Data', 'Ensemble ML models processing content...', state.currentInputType);
 
     try {
         let result;
@@ -1656,6 +1832,28 @@ function initEventListeners() {
     if (openBtn) openBtn.addEventListener('click', () => toggleHistorySidebar(true));
     if (closeBtn) closeBtn.addEventListener('click', () => toggleHistorySidebar(false));
     if (overlay) overlay.addEventListener('click', () => toggleHistorySidebar(false));
+
+    // Cancel button
+    const cancelBtn = document.getElementById('cancel-classify-btn');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => {
+            // Abort text classification request
+            if (state.abortController) {
+                state.abortController.abort();
+                state.abortController = null;
+            }
+            // Abort file upload requests (image, audio, video)
+            if (state.fileAbortController) {
+                state.fileAbortController.abort();
+                state.fileAbortController = null;
+            }
+            // Hide loading
+            loadingManager.hide();
+            // Show notification
+            notificationManager.show('Classification cancelled', 'info');
+            console.log('[Cancel] Classification cancelled by user');
+        });
+    }
 
     // Analyze button
     const analyzeBtn = document.getElementById('analyze-btn');
