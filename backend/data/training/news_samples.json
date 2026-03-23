@@ -623,5 +623,630 @@
         "id": 125,
         "text": "Organic farming has grown 300% in the past decade as consumers demand pesticide-free produce. Certification requirements ensure products meet strict standards. Conventional farmers are transitioning to organic methods to capture premium prices.",
         "category": "agriculture"
+    },
+    {
+        "id": 126,
+        "text": "BREAKING: Major earthquake strikes off the coast of Japan, tsunami warnings issued. The magnitude 7.8 quake hit at 2:30 PM local time. Emergency services are mobilizing. More details to follow.",
+        "category": "breaking_news"
+    },
+    {
+        "id": 127,
+        "text": "JUST IN: President announces emergency press conference on economic policy. Market volatility expected. The announcement comes amid ongoing trade negotiations. Details emerging.",
+        "category": "breaking_news"
+    },
+    {
+        "id": 128,
+        "text": "LIVE COVERAGE: Hurricane Alpha makes landfall in Florida. Sustained winds of 120 mph. Emergency evacuations underway in coastal counties. Follow our live blog for real-time updates.",
+        "category": "live_updates"
+    },
+    {
+        "id": 129,
+        "text": "Live updates: Senate impeachment trial enters third day. Witness testimony ongoing. The proceedings are being broadcast live. Check back for minute-by-minute coverage.",
+        "category": "live_updates"
+    },
+    {
+        "id": 130,
+        "text": "MARKET MOVERS: Tech stocks surge 5% after earnings beat. Apple and Microsoft lead gains. The rally extends to other sectors. Trading volume hits 2 billion shares.",
+        "category": "market_movers"
+    },
+    {
+        "id": 131,
+        "text": "Stock market plunge continues as Fed signals rate hike. Dow falls 500 points. Investors flee to safety. Trading halted briefly after circuit breaker triggered.",
+        "category": "market_movers"
+    },
+    {
+        "id": 132,
+        "text": "WEATHER ALERT: Tornado warning issued for Oklahoma City metro area. Take shelter immediately. The storm is moving northeast at 30 mph. Duration: 45 minutes.",
+        "category": "weather_alerts"
+    },
+    {
+        "id": 133,
+        "text": "Flood alert in effect for Houston area. Up to 10 inches of rain expected. Evacuation orders issued for low-lying neighborhoods. Emergency shelters opened.",
+        "category": "weather_alerts"
+    },
+    {
+        "id": 134,
+        "text": "OFFICIAL ANNOUNCEMENT: Tech giant unveils revolutionary AI assistant. The company press conference revealed new product line. Stock jumps 8% in after-hours trading.",
+        "category": "press_releases"
+    },
+    {
+        "id": 135,
+        "text": "Company announces major acquisition in $10 billion deal. Official statement released this morning. The merger will reshape the industry. Press conference scheduled for noon.",
+        "category": "press_releases"
+    },
+    {
+        "id": 136,
+        "text": "TRENDING NOW: Video of rescue dog goes viral online. The heartwarming clip has 10 million views in 24 hours. Social media is buzzing about this story.",
+        "category": "trending_topics"
+    },
+    {
+        "id": 137,
+        "text": "This celebrity news is trending everywhere. The story is going viral across all platforms. Twitter trending with 500K posts. Most talked about topic today.",
+        "category": "trending_topics"
+    },
+    {
+        "id": 138,
+        "text": "LIVE SCORE: Lakers 98 - Celtics 95 (Q4 2:00). LeBron with 30 points. Game关键时刻. Follow our live score updates for every play.",
+        "category": "sports_live"
+    },
+    {
+        "id": 139,
+        "text": "Final Score: Manchester United 3 - Liverpool 1. Rashford scores twice. Full time whistle blows. Check back for match report and player ratings.",
+        "category": "sports_live"
+    },
+    {
+        "id": 140,
+        "text": "INVESTIGATION: Exposé reveals corruption in city government. Months-long investigation uncovers kickback scheme. Officials under scrutiny. Read our special report.",
+        "category": "investigative_journalism"
+    },
+    {
+        "id": 141,
+        "text": "Exclusive investigation: Inside the company's hidden environmental violations. Whistleblower provides documents. Our in-depth report exposes years of illegal dumping.",
+        "category": "investigative_journalism"
+    },
+    {
+        "id": 142,
+        "text": "OPINION: Why we need to rethink our approach to education. The current system is failing our children. Here's what should change.",
+        "category": "opinion_editorial"
+    },
+    {
+        "id": 143,
+        "text": "Editorial: The case for renewable energy is now undeniable. Our viewpoint is that policy must change. Commentary on the climate crisis.",
+        "category": "opinion_editorial"
+    },
+    {
+        "id": 144,
+        "text": "FACT CHECK: Viral claim about vaccines is false. Our verification shows misinformation. The truth is verified by medical experts.",
+        "category": "fact_check"
+    },
+    {
+        "id": 145,
+        "text": "Fact check: Did the politician make this statement? Our investigation reveals the claim is misleading. Verified as inaccurate.",
+        "category": "fact_check"
+    },
+    {
+        "id": 146,
+        "text": "BREAKING: Plane crashes on landing at O'Hare Airport. Emergency crews responding. Reports of multiple casualties. Flight was arriving from Miami. More details to follow.",
+        "category": "breaking_news"
+    },
+    {
+        "id": 147,
+        "text": "JUST IN: Major earthquake strikes Turkey-Syria border. At least 7.5 magnitude. Buildings collapsed. Tsunami warning issued for eastern Mediterranean. International rescue teams mobilizing.",
+        "category": "breaking_news"
+    },
+    {
+        "id": 148,
+        "text": "DEVELOPING: Cyberattack disrupts major banking systems. ATMs offline across multiple states. Financial institutions scramble to restore services. FBI investigating.",
+        "category": "breaking_news"
+    },
+    {
+        "id": 149,
+        "text": "URGENT: Mass shooting reported at shopping mall in Dallas. Multiple victims. Police have suspect in custody. Area lockdown continues. Follow live updates.",
+        "category": "breaking_news"
+    },
+    {
+        "id": 150,
+        "text": "FLASH: Stock market circuit breaker triggered after 7% drop. Trading halted for 15 minutes. Largest single-day decline in two years. Investors panic selling.",
+        "category": "breaking_news"
+    },
+    {
+        "id": 151,
+        "text": "LIVE COVERAGE: Congressional hearing on tech antitrust begins. CEOs testifying remotely. Watch live as key executives face questions about market dominance.",
+        "category": "live_updates"
+    },
+    {
+        "id": 152,
+        "text": "Live updates: Protests continue in capital for third consecutive day. Over 100,000 participants. Police presence increased. Streets closed in downtown area.",
+        "category": "live_updates"
+    },
+    {
+        "id": 153,
+        "text": "Real-time updates: Olympic marathon in progress. Current leader Kenya at 30km mark. Ethiopian challenger 45 seconds behind. Track conditions excellent.",
+        "category": "live_updates"
+    },
+    {
+        "id": 154,
+        "text": "LIVE BLOG: Tech earnings week kicks off. Apple reporting in 30 minutes. Analysts expect record revenue. Follow our minute-by-minute coverage.",
+        "category": "live_updates"
+    },
+    {
+        "id": 155,
+        "text": "Ongoing coverage: International climate summit enters final day. Negotiations on emissions targets continue. World leaders meeting for closing session.",
+        "category": "live_updates"
+    },
+    {
+        "id": 156,
+        "text": "CRISIS: Wildfire spreads to 50,000 acres. Evacuation orders expanded to 5 more counties. Firefighters battling extreme conditions. Red flag warning in effect.",
+        "category": "crisis_response"
+    },
+    {
+        "id": 157,
+        "text": "Emergency response: Building collapse in Miami. At least 20 people trapped. Rescue teams working through debris. Search dogs deployed. Casualties expected.",
+        "category": "crisis_response"
+    },
+    {
+        "id": 158,
+        "text": "Flooding crisis: Dam failure imminent in Louisiana. Mandatory evacuations for 50,000 residents. National Guard deployed. Shelters opening across state.",
+        "category": "crisis_response"
+    },
+    {
+        "id": 159,
+        "text": "Public health emergency declared. Outbreak of foodborne illness linked to contaminated lettuce. 200 cases reported across 15 states. CDC investigating.",
+        "category": "crisis_response"
+    },
+    {
+        "id": 160,
+        "text": "WEATHER ALERT: Extreme heat warning for Phoenix. Temperatures expected to reach 120°F. Cooling centers open. Stay hydrated, check on elderly neighbors.",
+        "category": "weather_alerts"
+    },
+    {
+        "id": 161,
+        "text": "Winter storm warning: Blizzard expected to dump 2 feet of snow. Travel advisory issued. Schools closed. Power outages anticipated. Stock up on supplies.",
+        "category": "weather_alerts"
+    },
+    {
+        "id": 162,
+        "text": "Tropical storm watch: Hurricane Delta strengthening in Atlantic. Projected path shows potential Category 4 landfall. Coastal residents should prepare evacuation plans.",
+        "category": "weather_alerts"
+    },
+    {
+        "id": 163,
+        "text": "Severe thunderstorm warning: Large hail and damaging winds expected. Take shelter now. Baseball-sized hail possible. Stay away from windows.",
+        "category": "weather_alerts"
+    },
+    {
+        "id": 164,
+        "text": "MARKET: Bitcoin surges past $100,000 for first time. Cryptocurrency market cap hits $3 trillion. Institutional adoption accelerating.",
+        "category": "crypto"
+    },
+    {
+        "id": 165,
+        "text": "Ethereum upgrade completes successfully. Network fees drop 90%. DeFi protocols celebrate. Gas prices at historic lows.",
+        "category": "crypto"
+    },
+    {
+        "id": 166,
+        "text": "Major bank announces cryptocurrency trading platform. JPMorgan enters crypto space. Traditional finance embraces digital assets.",
+        "category": "crypto"
+    },
+    {
+        "id": 167,
+        "text": "NFT sales hit $25 billion in 2024. Digital collectibles mainstream. Major brands launch NFT campaigns. Art world debates value.",
+        "category": "crypto"
+    },
+    {
+        "id": 168,
+        "text": "Central banks accelerate digital currency pilots. 90% of G20 countries exploring CBDCs. Digital yuan trials expand. Fed studies digital dollar.",
+        "category": "crypto"
+    },
+    {
+        "id": 169,
+        "text": "MARKET MOVERS: Oil prices jump 5% on supply concerns. OPEC+ production cut announcement. Energy stocks rally. Gas prices expected to rise.",
+        "category": "market_movers"
+    },
+    {
+        "id": 170,
+        "text": "Banking sector: JPMorgan reports record quarterly profit. CEO Jamie Dimon optimistic. Stock up 3%. Regional banks also post strong earnings.",
+        "category": "banking"
+    },
+    {
+        "id": 171,
+        "text": "Federal Reserve signals interest rate pause. Bond yields fall. Dollar weakens against major currencies. Stock market rallies on news.",
+        "category": "economy"
+    },
+    {
+        "id": 172,
+        "text": "GDP growth exceeds expectations at 3.2%. Consumer spending strong. Inflation moderates. Economy showing resilience despite headwinds.",
+        "category": "economy"
+    },
+    {
+        "id": 173,
+        "text": "Jobless claims fall to historic lows. Labor market tight. Employers adding 300,000 jobs monthly. Wage growth accelerates.",
+        "category": "economy"
+    },
+    {
+        "id": 174,
+        "text": "LIVE SCORE: Real Madrid 2 - Barcelona 1 (75'). Benzema with the equalizer. Clasico tension building. All to play for in final 15 minutes.",
+        "category": "soccer"
+    },
+    {
+        "id": 175,
+        "text": "Champions League final: Manchester City vs Inter Milan. Guardiola's side dominant. 1-0 at halftime. Haaland with the opener.",
+        "category": "soccer"
+    },
+    {
+        "id": 176,
+        "text": "World Cup qualifier: USA defeats Mexico 2-0. Pulisic scores both goals. Historic win at Azteca. Big three points for qualification hopes.",
+        "category": "soccer"
+    },
+    {
+        "id": 177,
+        "text": "Premier League title race intensifies. Arsenal and Manchester City level on points. Goal difference may decide. Final matches crucial.",
+        "category": "soccer"
+    },
+    {
+        "id": 178,
+        "text": "Transfer news: Mega deal as PSG signs Mbappe for record fee. French striker joins from Monaco. Contract worth $300 million.",
+        "category": "soccer"
+    },
+    {
+        "id": 179,
+        "text": "LIVE SCORE: Lakers 112 - Warriors 108 (OT). LeBron with triple-double. Epic overtime battle. Finals-bound winner takes all.",
+        "category": "basketball"
+    },
+    {
+        "id": 180,
+        "text": "NBA Finals: Celtics win championship. Tatum named MVP. Historic 18th title for Boston. Parade scheduled for Thursday.",
+        "category": "basketball"
+    },
+    {
+        "id": 181,
+        "text": "March Madness: UConn repeats as champions. Dominant run through tournament. Five-star recruit announces commitment.",
+        "category": "basketball"
+    },
+    {
+        "id": 182,
+        "text": "Trade deadline: Lakers acquire superstar. Three-team deal sends shockwaves. Championship odds shift dramatically.",
+        "category": "basketball"
+    },
+    {
+        "id": 183,
+        "text": "Wimbledon final: Djokovic defeats Alcaraz in five-set thriller. Fifth title at SW19. Epic battle lasts nearly 5 hours.",
+        "category": "tennis"
+    },
+    {
+        "id": 184,
+        "text": "US Open: Sinner wins first Grand Slam. Italian star defeats Djokovic. Rising star announces arrival.",
+        "category": "tennis"
+    },
+    {
+        "id": 185,
+        "text": "French Open: Swiatek dominates for third consecutive title. 35-match winning streak. Polish star in a class of her own.",
+        "category": "tennis"
+    },
+    {
+        "id": 186,
+        "text": "F1: Verstappen wins Monaco Grand Prix. Dominant performance. Red Bull takes constructor championship lead. Drama in pit lane.",
+        "category": "motorsports"
+    },
+    {
+        "id": 187,
+        "text": "Daytona 500: Logano wins pole position. Team Penske driver fastest in qualifying. Historic speeds expected in race.",
+        "category": "motorsports"
+    },
+    {
+        "id": 188,
+        "text": "MotoGP: Bagnaia crashes out of lead. Championship fight wide open. Ducati teammate inherits victory. Title race intensifies.",
+        "category": "motorsports"
+    },
+    {
+        "id": 189,
+        "text": "NASCAR: Championship battle goes to final race. Four drivers mathematically alive. Phoenix showdown set. History in making.",
+        "category": "motorsports"
+    },
+    {
+        "id": 190,
+        "text": "GAMING: PlayStation 6 announced with groundbreaking specs. 8K gaming, ray tracing, instant loading. Release planned for holiday 2025.",
+        "category": "gaming"
+    },
+    {
+        "id": 191,
+        "text": "Esports: Team Liquid wins World Championship. $5 million prize. World's best gamers crowned. Record viewership.",
+        "category": "gaming"
+    },
+    {
+        "id": 192,
+        "text": "Gaming industry faces layoffs despite record profits. Over 10,000 jobs cut this year. Crunch culture controversy continues.",
+        "category": "gaming"
+    },
+    {
+        "id": 193,
+        "text": "Virtual reality gaming headset sales surge. Meta Quest 3 best-seller. Immersive gaming goes mainstream.",
+        "category": "gaming"
+    },
+    {
+        "id": 194,
+        "text": "STREAMING: Netflix adds 15 million subscribers. Password sharing crackdown success. Stock at all-time high.",
+        "category": "streaming"
+    },
+    {
+        "id": 195,
+        "text": "Disney+ surpasses 200 million subscribers. Streaming wars heat up. Original content budget increased to $30 billion.",
+        "category": "streaming"
+    },
+    {
+        "id": 196,
+        "text": "Spotify reaches 600 million users. Podcast investment pays off. Audio streaming dominates. Competition intensifies.",
+        "category": "streaming"
+    },
+    {
+        "id": 197,
+        "text": "YouTube TV surpasses 5 million subscribers. Live sports driving growth. Cord-cutting trend accelerates.",
+        "category": "streaming"
+    },
+    {
+        "id": 198,
+        "text": "CELEBRITY: Taylor Swift announces new stadium tour. 50 dates across North America. Ticket demand breaks records. Presale chaos.",
+        "category": "celebrity"
+    },
+    {
+        "id": 199,
+        "text": "Hollywood scandal: A-list actor enters rehab. Publicist confirms. Fans express support. Industry colleagues rally around.",
+        "category": "celebrity"
+    },
+    {
+        "id": 200,
+        "text": "Oscar predictions: Front-runners emerge for awards season. Critics' favorites clear. Awards campaign in full swing.",
+        "category": "celebrity"
+    },
+    {
+        "id": 201,
+        "text": "AI: GPT-5 release date announced. OpenAI reveals groundbreaking capabilities. Industry rivals scramble to compete.",
+        "category": "AI"
+    },
+    {
+        "id": 202,
+        "text": "Artificial intelligence creates breakthrough in drug discovery. New molecule developed in weeks. Clinical trials begin.",
+        "category": "AI"
+    },
+    {
+        "id": 203,
+        "text": "Google unveils Gemini Ultra. Most capable AI model yet. Benchmarks shatter records. Competition heating up.",
+        "category": "AI"
+    },
+    {
+        "id": 204,
+        "text": "AI regulation: Congress debates sweeping legislation. Tech CEOs testify. Privacy concerns dominate debate.",
+        "category": "AI"
+    },
+    {
+        "id": 205,
+        "text": "Autonomous vehicles: Waymo expands robotaxi service. 10 more cities. No safety driver required. Public adoption grows.",
+        "category": "AI"
+    },
+    {
+        "id": 206,
+        "text": "CYBERSECURITY: Massive data breach affects 500 million users. Passwords compromised. Immediate security update recommended.",
+        "category": "cybersecurity"
+    },
+    {
+        "id": 207,
+        "text": "Ransomware attack paralizes hospital systems. Patient data stolen. Demands unpaid. FBI investigating.",
+        "category": "cybersecurity"
+    },
+    {
+        "id": 208,
+        "text": "Zero-day vulnerability discovered in popular software. Immediate patch released. Security researchers urge updates.",
+        "category": "cybersecurity"
+    },
+    {
+        "id": 209,
+        "text": "Nation-state hackers target critical infrastructure. Intelligence agencies on high alert. Defenses strengthened.",
+        "category": "cybersecurity"
+    },
+    {
+        "id": 210,
+        "text": "BLOCKCHAIN: Ethereum ETF approved by SEC. Historic decision. Crypto mainstream adoption accelerates.",
+        "category": "blockchain"
+    },
+    {
+        "id": 211,
+        "text": "Enterprise blockchain adoption surges. Major banks and corporations implement distributed ledger technology.",
+        "category": "blockchain"
+    },
+    {
+        "id": 212,
+        "text": "Smart contracts revolutionize insurance industry. Automated claims processing. Fraud reduced by 90%.",
+        "category": "blockchain"
+    },
+    {
+        "id": 213,
+        "text": "ROBOTICS: Boston Dynamics unveils new Atlas robot. Fully electric. Enhanced capabilities. Warehouse deployment begins.",
+        "category": "robotics"
+    },
+    {
+        "id": 214,
+        "text": "Surgical robot performs autonomous procedure. First of its kind. Precision exceeds human surgeon. Future of medicine.",
+        "category": "robotics"
+    },
+    {
+        "id": 215,
+        "text": "Amazon deploys 1 million robots in fulfillment centers. Automation accelerates. Job displacement concerns.",
+        "category": "robotics"
+    },
+    {
+        "id": 216,
+        "text": "Humanoid robots enter workforce at major corporations. Customer service roles. Human-robot collaboration increases.",
+        "category": "robotics"
+    },
+    {
+        "id": 217,
+        "text": "VIRAL: Dog reunited with owner after 10 years goes viral. 50 million views. Heartwarming story spreads worldwide.",
+        "category": "trending_topics"
+    },
+    {
+        "id": 218,
+        "text": "This dance challenge is breaking the internet. 100 million views. Celebrities participating. Trending globally.",
+        "category": "trending_topics"
+    },
+    {
+        "id": 219,
+        "text": "Controversial opinion piece sparks debate. Shared 1 million times. Twitter explodes. Everyone has takes.",
+        "category": "trending_topics"
+    },
+    {
+        "id": 220,
+        "text": "Behind-the-scenes celebrity video goes viral. Unexpected moment captured. Internet cannot stop talking.",
+        "category": "trending_topics"
+    },
+    {
+        "id": 221,
+        "text": "SENTIMENT: Markets rally on positive economic data. Investor confidence grows. Bullish sentiment dominates.",
+        "category": "sentiment"
+    },
+    {
+        "id": 222,
+        "text": "Consumer sentiment reaches 5-year high. Spending expected to increase. Economic outlook improves.",
+        "category": "sentiment"
+    },
+    {
+        "id": 223,
+        "text": "Negative sentiment surrounds tech layoffs. Workers anxious. Industry faces criticism. Unionization efforts grow.",
+        "category": "sentiment"
+    },
+    {
+        "id": 224,
+        "text": "Optimism surrounds AI adoption. Business leaders bullish. Productivity gains expected. Stock prices rise.",
+        "category": "sentiment"
+    },
+    {
+        "id": 225,
+        "text": "BREAKING: Prime Minister resigns amid scandal. Snap election called. Political uncertainty grips nation.",
+        "category": "breaking_news"
+    },
+    {
+        "id": 226,
+        "text": "LIVE: World leaders gather for emergency summit. Climate action top agenda. Protests outside venue.",
+        "category": "live_updates"
+    },
+    {
+        "id": 227,
+        "text": "Hurricane watch: Category 5 storm approaching Caribbean. Islands prepare. Evacuation orders issued.",
+        "category": "weather_alerts"
+    },
+    {
+        "id": 228,
+        "text": "Bank failure: Regional bank collapses. FDIC seized. Depositors protected. Systemic risk assessed.",
+        "category": "banking"
+    },
+    {
+        "id": 229,
+        "text": "World Cup: Host nation upset in opening match. Shock result. Tournament wide open.",
+        "category": "soccer"
+    },
+    {
+        "id": 230,
+        "text": "NFL Draft: Quarterback selected first overall. Team builds around new star. Fans excited.",
+        "category": "sports_live"
+    },
+    {
+        "id": 231,
+        "text": "VR gaming revenue exceeds traditional gaming for first time. Immersive experiences drive growth. Industry transformation.",
+        "category": "gaming"
+    },
+    {
+        "id": 232,
+        "text": "Meta announces revolutionary VR headset. Price drops significantly. Mass adoption expected.",
+        "category": "streaming"
+    },
+    {
+        "id": 233,
+        "text": "Royal wedding announced. Global media prepares. Historic occasion expected. Viewership record.",
+        "category": "celebrity"
+    },
+    {
+        "id": 234,
+        "text": "Claude AI reaches 1 billion users. Anthropic announces. Privacy-focused assistant gains popularity.",
+        "category": "AI"
+    },
+    {
+        "id": 235,
+        "text": "North Korea linked to cryptocurrency hack. $100 million stolen. International investigation launched.",
+        "category": "cybersecurity"
+    },
+    {
+        "id": 236,
+        "text": "DeFi protocol hacked. $200 million lost. Smart contract vulnerability exploited. Industry shaken.",
+        "category": "crypto"
+    },
+    {
+        "id": 237,
+        "text": "Mars colonization: SpaceX Starship successfully lands. Historic moment. Human multi-planetary species.",
+        "category": "robotics"
+    },
+    {
+        "id": 238,
+        "text": "This simple hack changed everything. 10 million shares. Everyone trying it. Experts warn.",
+        "category": "trending_topics"
+    },
+    {
+        "id": 239,
+        "text": "Fear dominates market sentiment. Selloff continues. Investors seek safety. Volatility high.",
+        "category": "sentiment"
+    },
+    {
+        "id": 240,
+        "text": "JUST IN: Major tech company announces surprise merger. Stock jumps 15%. Industry reshapes.",
+        "category": "breaking_news"
+    },
+    {
+        "id": 241,
+        "text": "LIVE COVERAGE: Supreme Court hears landmark case. Decision expected in weeks. Arguments conclude.",
+        "category": "live_updates"
+    },
+    {
+        "id": 242,
+        "text": "Tornado outbreak: Multiple twisters reported in Midwest. Massive destruction. Search and rescue ongoing.",
+        "category": "weather_alerts"
+    },
+    {
+        "id": 243,
+        "text": "Cryptocurrency exchange goes bankrupt. Customers lose billions. Regulatory scrutiny intensifies.",
+        "category": "crypto"
+    },
+    {
+        "id": 244,
+        "text": "Central bank digital currency pilot launches. Digital dollar tested. Public trial begins.",
+        "category": "banking"
+    },
+    {
+        "id": 245,
+        "text": "Super Bowl halftime show announced. Superstar performers. Historic collaboration. Ticket prices soar.",
+        "category": "sports_live"
+    },
+    {
+        "id": 246,
+        "text": "Formula 1 race stopped due to massive crash. Driver okay. Safety car deployed. Race to resume.",
+        "category": "motorsports"
+    },
+    {
+        "id": 247,
+        "text": "Gaming platform Steam hits 30 million concurrent users. Record numbers. PC gaming dominates.",
+        "category": "gaming"
+    },
+    {
+        "id": 248,
+        "text": "Live streaming shopping revolutionizes retail. Billions in sales. Influencers become merchants.",
+        "category": "streaming"
+    },
+    {
+        "id": 249,
+        "text": "Oscar winner announces surprise retirement. Emotional farewell. Career spanning decades.",
+        "category": "celebrity"
+    },
+    {
+        "id": 250,
+        "text": "Apple unveils revolutionary AI features. Siri transformed. Integration across devices. Privacy emphasized.",
+        "category": "AI"
     }
 ]

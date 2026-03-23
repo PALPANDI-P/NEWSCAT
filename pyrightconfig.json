@@ -1,0 +1,21 @@
+{
+    "executionEnvironments": [
+      {
+        "root": "e:/NEWSCAT",
+        "extraPaths": [
+          "e:/NEWSCAT/backend"
+        ]
+      }
+    ],
+    "include": [
+        "*"
+    ],
+    "exclude": [
+        "**/node_modules",
+        "**/__pycache__"
+    ],
+    "reportMissingImports": "warning",
+    "reportMissingTypeStubs": "none",
+    "pythonVersion": "3.10",
+    "typeCheckingMode": "basic"
+}

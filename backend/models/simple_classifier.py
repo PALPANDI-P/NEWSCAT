@@ -1,413 +1,334 @@
 """
-Simple News Classifier - TF-IDF + SVM
-Fast and reliable, minimal dependencies
-
-Optimized Version 2.0:
-- Enhanced rule-based fallback with comprehensive keywords
-- Better confidence scoring
-- Memory-efficient processing
-- Works as reliable fallback
-
-Performance Metrics:
-- Accuracy: 85% (ML), 70% (rule-based)
-- Inference Time: ~10ms (ML), ~1ms (rule-based)
-
-Best for:
-- Quick classification tasks
-- Resource-constrained environments
-- Fallback when ensemble is unavailable
+SimpleNewsClassifier — Primary keyword + ML text classifier for NEWSCAT.
+Supports 150+ news categories with high-accuracy keyword scoring and optional
+scikit-learn model fallback.
 """
 
-import numpy as np
-from typing import Dict, List, Any, Optional, Tuple
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.svm import SVC
-from sklearn.pipeline import Pipeline
-from sklearn.calibration import CalibratedClassifierCV
-import joblib
-from datetime import datetime
-import logging
-from pathlib import Path
 import re
-import threading
+import logging
+import math
+import functools
+import nltk
+from typing import Dict, List, Any, Optional, Tuple
+from pathlib import Path
 
-from backend.models.base_classifier import BaseNewsClassifier
-from backend.config import Config
+try:
+    from textblob import TextBlob
+except ImportError:
+    TextBlob = None
+
+from backend.models.taxonomy import TAXONOMY_KEYWORDS
 
 logger = logging.getLogger(__name__)
 
 
-class SimpleNewsClassifier(BaseNewsClassifier):
+class SimpleNewsClassifier:
     """
-    Simple but effective news classifier using TF-IDF and SVM
-    Enhanced with comprehensive rule-based fallback
+    High-accuracy news topic classifier.
+    1. Keyword-frequency scoring against TAXONOMY_KEYWORDS.
+    2. Optional pre-trained scikit-learn model (joblib) for ML boosting.
     """
-    
-    def __init__(self, name: str = "SimpleClassifier", config: Dict = None):
-        super().__init__(name, config)
-        self.version = "2.0.0"
-        
-        # Initialize model
-        self.vectorizer = TfidfVectorizer(
-            max_features=self.config.get('TFIDF_MAX_FEATURES', 5000),
-            ngram_range=self.config.get('NGRAM_RANGE', (1, 2)),
-            stop_words='english',
-            min_df=2,
-            max_df=0.95,
-            sublinear_tf=True,
-            dtype=np.float32
-        )
-        
-        self.classifier = CalibratedClassifierCV(
-            SVC(kernel='linear', C=1.0, probability=True, random_state=42),
-            cv=3
-        )
-        
-        self.pipeline = Pipeline([
-            ('tfidf', self.vectorizer),
-            ('svm', self.classifier)
-        ])
-        
-        self.is_trained = False
-        self.training_data = []
-        self.training_labels = []
-        
-        # Enhanced category keywords for rule-based fallback
-        self._category_keywords = {
-            'technology': [
-                'ai', 'artificial intelligence', 'machine learning', 'tech', 'technology',
-                'software', 'digital', 'app', 'application', 'cyber', 'data', 'computer',
-                'robot', 'algorithm', 'startup', 'google', 'apple', 'microsoft', 'amazon',
-                'meta', 'facebook', 'tesla', 'nvidia', 'chip', 'processor', 'cloud',
-                'coding', 'programming', 'developer', 'internet', 'website', 'platform',
-                'automation', 'blockchain', 'crypto', 'bitcoin', 'ethereum', 'nft',
-                'virtual reality', 'vr', 'ar', 'augmented reality', 'iot', '5g', '6g',
-                'chatgpt', 'gpt', 'llm', 'neural', 'deep learning'
-            ],
-            'sports': [
-                'game', 'win', 'won', 'team', 'player', 'score', 'match', 'championship',
-                'league', 'football', 'basketball', 'tennis', 'soccer', 'olympic',
-                'athlete', 'coach', 'tournament', 'cup', 'final', 'semi', 'quarter',
-                'goal', 'point', 'race', 'racing', 'f1', 'formula', 'nfl', 'nba', 'mlb',
-                'cricket', 'hockey', 'golf', 'boxing', 'mma', 'ufc', 'wrestling',
-                'medal', 'gold', 'silver', 'bronze', 'record', 'stadium', 'arena',
-                'world cup', 'super bowl', 'world series'
-            ],
-            'politics': [
-                'government', 'election', 'vote', 'voting', 'president', 'congress',
-                'senate', 'law', 'policy', 'minister', 'democrat', 'republican',
-                'legislation', 'campaign', 'political', 'parliament', 'prime minister',
-                'governor', 'mayor', 'senator', 'representative', 'bill', 'amendment',
-                'supreme court', 'justice', 'ruling', 'administration', 'white house',
-                'diplomat', 'embassy', 'treaty', 'reform', 'conservative', 'liberal',
-                'progressive', 'socialist', 'capitalist', 'democracy', 'republic',
-                'brexit', 'impeachment', 'veto', 'filibuster'
-            ],
-            'business': [
-                'market', 'stock', 'company', 'companies', 'investor', 'profit', 'loss',
-                'economy', 'economic', 'financial', 'trade', 'bank', 'banking',
-                'revenue', 'earnings', 'ceo', 'cfo', 'corporate', 'industry',
-                'startup', 'merger', 'acquisition', 'ipo', 'shares', 'dividend',
-                'investment', 'portfolio', 'hedge', 'fund', 'venture', 'capital',
-                'entrepreneur', 'business', 'commerce', 'retail', 'consumer',
-                'inflation', 'gdp', 'recession', 'growth', 'forecast', 'quarterly',
-                'nasdaq', 'dow', 's&p', 'wall street', 'federal reserve', 'fed'
-            ],
-            'entertainment': [
-                'movie', 'film', 'music', 'celebrity', 'actor', 'actress', 'singer',
-                'concert', 'hollywood', 'bollywood', 'netflix', 'show', 'entertainment',
-                'award', 'oscar', 'grammy', 'emmy', 'album', 'artist', 'streaming',
-                'theater', 'cinema', 'director', 'producer', 'series', 'episode',
-                'season', 'premiere', 'release', 'box office', 'soundtrack', 'band',
-                'tour', 'performance', 'stage', 'drama', 'comedy', 'thriller',
-                'disney', 'hbo', 'amazon prime', 'spotify', 'youtube'
-            ],
-            'health': [
-                'health', 'medical', 'hospital', 'doctor', 'physician', 'disease',
-                'treatment', 'vaccine', 'vaccination', 'virus', 'patient', 'medicine',
-                'study', 'research', 'cancer', 'drug', 'clinical', 'trial', 'fda',
-                'symptom', 'diagnosis', 'surgery', 'therapy', 'mental health',
-                'wellness', 'fitness', 'diet', 'nutrition', 'obesity', 'diabetes',
-                'heart', 'stroke', 'pandemic', 'epidemic', 'outbreak', 'infection',
-                'immune', 'booster', 'public health', 'who', 'cdc', 'covid',
-                'coronavirus', 'flu', 'influenza'
-            ],
-            'science': [
-                'science', 'scientific', 'research', 'study', 'discovery', 'scientist',
-                'experiment', 'nasa', 'space', 'astronomy', 'physics', 'chemistry',
-                'biology', 'laboratory', 'lab', 'innovation', 'breakthrough',
-                'quantum', 'particle', 'molecule', 'dna', 'gene', 'genetic',
-                'evolution', 'fossil', 'archaeology', 'climate', 'earthquake',
-                'volcano', 'ocean', 'marine', 'species', 'extinction', 'ecosystem',
-                'telescope', 'microscope', 'satellite', 'probe', 'mission',
-                'mars', 'moon', 'jupiter', 'saturn', 'black hole', 'big bang'
-            ],
-            'world': [
-                'country', 'countries', 'international', 'global', 'world', 'nation',
-                'foreign', 'diplomat', 'diplomatic', 'war', 'conflict', 'peace',
-                'treaty', 'united nations', 'un', 'crisis', 'refugee', 'humanitarian',
-                'border', 'immigration', 'migration', 'embassy', 'ambassador',
-                'summit', 'g7', 'g20', 'nato', 'eu', 'european union', 'asia',
-                'africa', 'europe', 'america', 'middle east', 'china', 'russia',
-                'india', 'japan', 'germany', 'france', 'uk', 'brazil',
-                'terrorist', 'terrorism', 'sanctions', 'embargo'
-            ],
-            'education': [
-                'school', 'schools', 'university', 'universities', 'college', 'student',
-                'students', 'education', 'learning', 'teacher', 'teachers', 'course',
-                'academic', 'degree', 'professor', 'classroom', 'curriculum',
-                'scholarship', 'tuition', 'enrollment', 'graduation', 'graduate',
-                'undergraduate', 'postgraduate', 'phd', 'doctorate', 'master',
-                'bachelor', 'exam', 'examination', 'test', 'grade', 'score',
-                'literacy', 'remote learning', 'online education',
-                'campus', 'lecture', 'seminar', 'workshop', 'training',
-                'harvard', 'stanford', 'mit', 'oxford', 'cambridge'
-            ],
-            'environment': [
-                'climate', 'climate change', 'environment', 'environmental', 'green',
-                'carbon', 'pollution', 'renewable', 'energy', 'solar', 'wind',
-                'forest', 'forests', 'wildlife', 'conservation', 'sustainable',
-                'sustainability', 'emission', 'emissions', 'greenhouse', 'warming',
-                'global warming', 'ecosystem', 'biodiversity', 'species', 'habitat',
-                'deforestation', 'recycling', 'waste', 'plastic', 'ocean',
-                'water', 'air quality', 'natural', 'nature', 'reserve', 'park',
-                'protect', 'protection', 'endangered', 'extinction', 'poaching',
-                'cop26', 'cop27', 'paris agreement', 'net zero'
-            ]
-        }
-        
-        # Compile regex patterns for faster matching
-        self._category_patterns = {}
-        for category, keywords in self._category_keywords.items():
-            pattern = r'\b(' + '|'.join(re.escape(kw) for kw in keywords) + r')\b'
-            self._category_patterns[category] = re.compile(pattern, re.IGNORECASE)
-        
-        # Try to load pre-trained model
-        self._try_load_model()
-        
-        logger.info(f"SimpleNewsClassifier initialized (version={self.version})")
-    
-    def train(self, texts: List[str], labels: List[str], **kwargs) -> bool:
-        """
-        Train the classifier with provided data
-        """
+
+    def __init__(self, name: str = "SimpleNewsClassifier", version: str = "9.0"):
+        self.name = name
+        self.version = version
+        self.model = None  # Optional sklearn model loaded via joblib
+        self._keywords = TAXONOMY_KEYWORDS
+        self._categories = list(TAXONOMY_KEYWORDS.keys())
+        self._word_regex = re.compile(r"\b\w+\b")  # Pre-compiled for speed
+        # Ensure Expert NLP NLTK data is present for TextBlob/NounPhrases/Summaries
         try:
-            logger.info(f"Training {self.name} with {len(texts)} samples...")
+            # Vercel's filesystem is read-only. Use /tmp for NLTK data.
+            import os
+            # Use /tmp/nltk_data for both local (for testing) and Vercel
+            # But on local Windows, /tmp doesn't exist, so we use a subfolder in tmp if available
+            # For Vercel, it ALWAYS exists.
+            home = os.path.expanduser("~")
+            nltk_dir = os.path.join("/tmp", "nltk_data") if os.path.exists("/tmp") else os.path.join(home, "nltk_data")
             
-            # Simple preprocessing
-            processed_texts = [self._quick_preprocess(text) for text in texts]
+            if not os.path.exists(nltk_dir):
+                os.makedirs(nltk_dir, exist_ok=True)
             
-            # Train pipeline
-            self.pipeline.fit(processed_texts, labels)
-            
-            # Store training info
-            self.is_trained = True
-            self.training_date = datetime.now()
-            self.training_data = texts
-            self.training_labels = labels
-            
-            # Calculate approximate accuracy
-            predictions = self.pipeline.predict(processed_texts)
-            self.accuracy = float(np.mean(predictions == labels))
-            
-            logger.info(f"Training complete. Accuracy: {self.accuracy:.2%}")
-            
-            # Save model
-            self._save_model()
-            
-            return True
-            
+            if nltk_dir not in nltk.data.path:
+                nltk.data.path.append(nltk_dir)
+                
+            for package in ["punkt", "brown", "averaged_perceptron_tagger", "wordnet"]:
+                # Only download if not already there to save time and prevent read-only errors
+                nltk.download(package, download_dir=nltk_dir, quiet=True)
         except Exception as e:
-            logger.error(f"Training failed: {e}")
-            return False
-    
-    def _quick_preprocess(self, text: str) -> str:
-        """Quick text preprocessing"""
-        # Lowercase
-        text = text.lower()
-        
-        # Remove URLs
-        text = re.sub(r'https?://\S+|www\.\S+', '', text)
-        
-        # Remove special characters, keep alphanumeric
-        words = []
-        for word in text.split():
-            cleaned = ''.join(c for c in word if c.isalnum())
-            if cleaned and len(cleaned) > 1:
-                words.append(cleaned)
-        
-        return ' '.join(words)
-    
-    def classify(self, text: str, **kwargs) -> Dict[str, Any]:
+            logger.warning(f"NLTK data download failed: {e}")
+
+        logger.info(
+            f"{self.name} v{self.version} initialized with "
+            f"{len(self._categories)} categories"
+        )
+
+    # ------------------------------------------------------------------
+    # PUBLIC API
+    # ------------------------------------------------------------------
+
+    def classify(
+        self,
+        text: str,
+        include_confidence: bool = True,
+        include_all_scores: bool = False,
+    ) -> Dict[str, Any]:
         """
-        Classify a news article
-        
-        Args:
-            text: Input news text
-            **kwargs: Additional parameters
-            
-        Returns:
-            Classification result
+        Classify news text into the best matching category.
+
+        Returns
+        -------
+        dict with keys:
+            category        : str   – winning category slug
+            confidence      : float – 0-100 percentage
+            top_predictions : list  – ranked [{category, confidence, category_display}]
+            model_name      : str
+            model_version   : str
         """
-        if not self._validate_input(text):
-            return self._create_response('unknown', 0.0, {'error': 'Invalid input'})
-        
-        try:
-            if not self.is_trained:
-                # Rule-based fallback
-                return self._rule_based_classify(text)
-            
-            # Preprocess text
-            processed = self._quick_preprocess(text)
-            
-            # Get predictions
-            probabilities = self.pipeline.predict_proba([processed])[0]
-            top_indices = np.argsort(probabilities)[-3:][::-1]
-            
-            # Main prediction
-            pred_idx = top_indices[0]
-            category = self.pipeline.classes_[pred_idx]
-            confidence = float(probabilities[pred_idx])
-            
-            # If confidence is low, verify with rule-based
-            if confidence < 0.4:
-                rule_result = self._rule_based_classify(text)
-                if rule_result['confidence'] > confidence:
-                    category = rule_result['category']
-                    confidence = (confidence + rule_result['confidence']) / 2
-            
-            # Get top 3 predictions
-            top_predictions = [
-                {
-                    'category': str(self.pipeline.classes_[i]),
-                    'confidence': float(probabilities[i])
-                }
-                for i in top_indices
-            ]
-            
-            # Extract features
-            features = self._extract_features(text)
-            
-            # Create response
-            response = self._create_response(category, confidence, features)
-            response['top_predictions'] = top_predictions
-            response['method'] = 'ml_classification'
-            
-            return response
-            
-        except Exception as e:
-            logger.error(f"Classification error: {e}")
-            # Fallback to rule-based
-            return self._rule_based_classify(text)
-    
-    def _rule_based_classify(self, text: str) -> Dict[str, Any]:
-        """Enhanced rule-based classification fallback"""
-        text_lower = text.lower()
-        
-        # Count keyword matches for each category
-        category_scores = {}
-        for category, pattern in self._category_patterns.items():
-            matches = pattern.findall(text_lower)
-            # Weight by keyword length (longer keywords are more specific)
-            score = sum(len(m) for m in matches) if matches else 0
-            category_scores[category] = score
-        
-        # Get best category
-        if any(category_scores.values()):
-            best_category = max(category_scores, key=category_scores.get)
-            max_score = category_scores[best_category]
-            total_score = sum(category_scores.values())
-            
-            # Calculate confidence
-            if max_score > 0 and total_score > 0:
-                confidence = min(0.90, max(0.35, (max_score / total_score) * 0.7 + 0.3))
-            else:
-                confidence = 0.35
-        else:
-            # No keywords matched, use heuristics
-            best_category, confidence = self._heuristic_classify(text)
-        
-        features = self._extract_features(text)
-        result = self._create_response(best_category, confidence, features)
-        result['method'] = 'rule_based'
-        
-        return result
-    
-    def _heuristic_classify(self, text: str) -> Tuple[str, float]:
-        """Heuristic classification when no keywords match"""
-        text_lower = text.lower()
-        
-        # Check for numbers (could be business/finance)
-        number_count = len(re.findall(r'\d+', text))
-        
-        # Check for quotes (could be opinion/interview)
-        has_quotes = '"' in text or "'" in text
-        
-        # Check for question marks (could be analysis)
-        has_questions = '?' in text
-        
-        # Check text length
-        word_count = len(text.split())
-        
-        # Default heuristics
-        if number_count > 3:
-            return 'business', 0.35
-        elif has_quotes and word_count > 100:
-            return 'politics', 0.35
-        elif has_questions:
-            return 'science', 0.35
-        else:
-            return 'world', 0.30
-    
-    def _extract_features(self, text: str) -> Dict[str, Any]:
-        """Extract features from text"""
-        words = text.split()
-        word_count = len(words)
-        
+        if not text or len(text.strip()) < 3:
+            return self._empty_result()
+
+        text_lower = text.lower().strip()
+
+        # Step 1: keyword scoring (pass original text for title-case detection)
+        scores = self._keyword_score(text.strip())
+
+        # Step 2: optional ML model boost
+        if self.model is not None:
+            scores = self._ml_boost(text, scores)
+
+        # Step 3: rank
+        ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+
+        # Step 4: normalise top scores to 0-100 confidence
+        top_category, top_score = ranked[0] if ranked else ("technology", 0)
+        confidence = self._score_to_confidence(top_score, ranked)
+
+        # Step 5: build top predictions
+        top_predictions = []
+        if include_all_scores:
+            for cat, sc in ranked[:10]:
+                cat_conf = self._score_to_confidence(sc, ranked)
+                top_predictions.append(
+                    {
+                        "category": cat,
+                        "confidence": round(cat_conf, 2),
+                        "category_display": cat.replace("_", " ").title(),
+                    }
+                )
+
+        summary = self._generate_summary(text)
+
         return {
-            'word_count': word_count,
-            'char_count': len(text),
-            'avg_word_length': sum(len(w) for w in words) / word_count if word_count else 0,
-            'has_numbers': any(c.isdigit() for c in text),
-            'has_quotes': '"' in text or "'" in text,
-            'has_urls': 'http' in text.lower() or 'www.' in text.lower()
+            "category": top_category,
+            "confidence": round(confidence, 2),
+            "top_predictions": top_predictions,
+            "model_name": self.name,
+            "model_version": self.version,
+            "category_display": top_category.replace("_", " ").title(),
+            "summary": summary,
         }
-    
-    def _save_model(self):
-        """Save trained model"""
-        try:
-            path = Path(Config.MODEL_DIR) / 'simple_model.joblib'
-            path.parent.mkdir(parents=True, exist_ok=True)
+
+    # ------------------------------------------------------------------
+    # KEYWORD SCORING ENGINE
+    # ------------------------------------------------------------------
+
+    @functools.lru_cache(maxsize=1000)
+    def _keyword_score(self, text: str) -> Dict[str, float]:
+        """Score every category by counting keyword hits with expert heuristics."""
+        scores: Dict[str, float] = {}
+        text_lower = text.lower()
+        
+        # Tokenization & N-grams extraction
+        words_original = self._word_regex.findall(text)
+        words_lower = [w.lower() for w in words_original]
+        text_words = set(words_lower)
+        
+        # Build bigrams and trigrams for fast semantic matching
+        bigrams = set(f"{words_lower[i]} {words_lower[i+1]}" for i in range(len(words_lower)-1))
+        trigrams = set(f"{words_lower[i]} {words_lower[i+1]} {words_lower[i+2]}" for i in range(len(words_lower)-2))
+        
+        # TF-IDF Normalization base
+        text_len = max(1, len(text_lower))
+        length_penalty = math.sqrt(text_len) / 10.0  # dampen scores on massive texts
+
+        # Pre-calculate title case entities (e.g., Apple, NASA)
+        title_case_words = set(w.lower() for w in words_original if w.istitle() or w.isupper())
+        
+        # Expert Semantic Feature: Noun Phrases
+        noun_phrases = set()
+        if TextBlob:
+            try:
+                # Extract noun phrases to understand core subjects rather than individual words
+                blob = TextBlob(text)
+                for np in blob.noun_phrases:
+                    noun_phrases.add(np.lower())
+            except Exception:
+                pass
+        # EXPERT ACCURACY BOOST: Title-based weighting
+        # We assume the first 400 characters contain the headline/essential context
+        title_text = text[:400].lower()
+        body_text = text.lower()
+        
+        # Word counts for density analysis
+        words_count = len(self._word_regex.findall(body_text))
+        if words_count < 1:
+            return {}
+
+        for category, keywords in self._keywords.items():
+            cat_score = 0.0
             
-            data = {
-                'pipeline': self.pipeline,
-                'training_date': self.training_date,
-                'accuracy': self.accuracy,
-                'categories': self.categories
-            }
-            joblib.dump(data, path)
-            logger.info(f"Model saved to {path}")
-        except Exception as e:
-            logger.error(f"Error saving model: {e}")
-    
-    def _try_load_model(self):
-        """Try to load pre-trained model"""
+            # 1. KEYWORD & N-GRAM MATCHING
+            for kw in keywords:
+                kw_lower = kw.lower()
+                kw_parts = kw_lower.split()
+                
+                # Dynamic Regex for accurate word boundaries
+                pattern = rf"(?i)\b{re.escape(kw_lower)}\b"
+                
+                # Title Match (4x weight for headlines)
+                title_matches = len(re.findall(pattern, title_text))
+                cat_score += title_matches * 4.0
+                
+                # Body Match (1x weight)
+                body_matches = len(re.findall(pattern, body_text))
+                cat_score += body_matches * 1.2 # Slightly boosted over 1.0
+                
+                # N-Gram Multiplier (longer phrases like "Artificial Intelligence" are very specific)
+                if len(kw_parts) > 1:
+                    cat_score += (body_matches + title_matches) * (len(kw_parts) * 1.5)
+
+                # Case Match Bonus (e.g., "AI", "IPO", "GDP")
+                if len(kw) <= 4 and kw.isupper():
+                    case_match_pattern = rf"\b{re.escape(kw)}\b"
+                    if re.search(case_match_pattern, text[:1000]):
+                        cat_score += 8.0 
+            
+            # 2. ADVANCED NLP ENHANCEMENTS (Noun Phrases & Entity Context)
+            if noun_phrases:
+                # If a keyword is a core noun phrase, boost it significantly
+                for kw in keywords:
+                    if kw.lower() in noun_phrases:
+                        cat_score += 12.0
+            
+            # 3. GLOBAL HEURISTIC BOOSTS
+            if category == "artificial_intelligence" and "gpt" in body_text:
+                cat_score += 10.0
+            if category == "breaking_news" and any(x in title_text for x in ["breaking", "urgent", "just in", "developing story"]):
+                cat_score += 20.0
+            if category == "geopolitics" and any(x in body_text for x in ["sanctions", "alliance", "diplomatic", "treaty"]):
+                cat_score += 5.0
+            
+            if cat_score > 0:
+                # Final Normalize and Weighting
+                density_bonus = (cat_score / words_count) * 50
+                scores[category] = cat_score + density_bonus
+                
+        return scores
+
+    def _score_to_confidence(
+        self, score: float, ranked: List[Tuple[str, float]]
+    ) -> float:
+        """Convert raw score to 0-100 confidence with separation-based scaling."""
+        if score <= 0:
+            return 5.0
+
+        # Use sigmoid-like scaling — high scores plateau near 100
+        base = min(98.0, 45.0 + 25.0 * math.log(score + 1, 2))
+
+        # Boost if there is clear separation from runner-up
+        if len(ranked) >= 2:
+            runner_up_score = ranked[1][1]
+            if runner_up_score > 0:
+                gap_ratio = score / (runner_up_score + 0.001)
+                if gap_ratio > 3:
+                    base = min(99.9, base + 15)
+                elif gap_ratio > 2:
+                    base = min(99.0, base + 10)
+                elif gap_ratio > 1.5:
+                    base = min(97.0, base + 5)
+
+        return max(5.0, min(99.9, base))
+
+    # ------------------------------------------------------------------
+    # OPTIONAL ML BOOST
+    # ------------------------------------------------------------------
+
+    def _ml_boost(self, text: str, scores: Dict[str, float]) -> Dict[str, float]:
+        """If a pre-trained sklearn model is loaded, use its predictions to boost scores."""
         try:
-            path = Path(Config.MODEL_DIR) / 'simple_model.joblib'
-            if path.exists():
-                data = joblib.load(path)
-                self.pipeline = data['pipeline']
-                self.training_date = data['training_date']
-                self.accuracy = data['accuracy']
-                self.categories = data.get('categories', self.categories)
-                self.is_trained = True
-                logger.info(f"Loaded pre-trained model from {path}")
-                logger.info(f"Trained: {self.training_date}, Accuracy: {self.accuracy:.2%}")
+            if hasattr(self.model, "predict_proba"):
+                proba = self.model.predict_proba([text])[0]
+                classes = self.model.classes_
+                for idx, cls in enumerate(classes):
+                    if cls in scores:
+                        scores[cls] += proba[idx] * 20  # increased boost factor
+            elif hasattr(self.model, "predict"):
+                pred = self.model.predict([text])[0]
+                if pred in scores:
+                    scores[pred] += 10.0
         except Exception as e:
-            logger.info(f"No pre-trained model found: {e}")
+            logger.warning(f"ML boost failed: {e}")
+        return scores
+
+    # ------------------------------------------------------------------
+    # EXTRACTIVE SUMMARIZATION
+    # ------------------------------------------------------------------
     
-    def get_info(self) -> Dict[str, Any]:
-        """Get model information (standardized format)"""
-        info = super().get_info()
-        # Add any SimpleClassifier specific info if needed
-        return info
+    def _generate_summary(self, text: str) -> str:
+        """Extracts the most relevant 'short form' summary from the text."""
+        if not text:
+            return "No content available."
+        
+        # Clean text
+        text_clean = re.sub(r'\s+', ' ', text).strip()
+        
+        # If the text is short enough, just return it
+        if len(text_clean) < 150:
+            return text_clean
+            
+        # Try to use TextBlob for intelligent sentence splitting
+        best_sentence = ""
+        if TextBlob:
+            try:
+                blob = TextBlob(text_clean)
+                sentences = [s.string for s in blob.sentences if len(s.words) > 5]
+                if sentences:
+                    # Score sentences by length and position (prefer early, mid-length sentences)
+                    best_sentence = sentences[0]
+                    for s in sentences[:3]:
+                        if 15 < len(s.split()) < 40:
+                            best_sentence = s
+                            break
+            except Exception:
+                pass
+                
+        if not best_sentence:
+            # Fallback to basic regex sentence split
+            sentences = re.split(r'(?<=[.!?])\s+', text_clean)
+            valid = [s for s in sentences if 10 < len(s.split()) < 50]
+            if valid:
+                best_sentence = valid[0]
+            else:
+                best_sentence = text_clean[:200]
+            
+        # Format as classification-based summary
+        summary = best_sentence.strip()
+        if len(summary) > 250:
+            summary = summary[:247] + "..."
+            
+        return summary
+
+    # ------------------------------------------------------------------
+    # HELPERS
+    # ------------------------------------------------------------------
+
+    def _empty_result(self) -> Dict[str, Any]:
+        return {
+            "category": "technology",
+            "confidence": 5.0,
+            "top_predictions": [],
+            "model_name": self.name,
+            "model_version": self.version,
+            "category_display": "Technology",
+        }

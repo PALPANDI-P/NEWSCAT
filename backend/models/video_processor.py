@@ -1,937 +1,284 @@
 """
-NEWSCAT Cinematic Video Processor v10.0 - Advanced Scene AI
-===========================================================
-Next-generation video processing using:
-- Scene detection and analysis
-- Keyframe extraction with smart selection
-- Multi-modal fusion (visual + audio + OCR)
-- Temporal understanding
-- Video summarization
-- Object tracking across frames
-- Shot boundary detection
-- Deep video understanding
-
-Supports: News videos, interviews, documentaries, live footage
+NEWSCAT Video Processor — Combined audio + visual analysis for news video classification.
+Extracts audio track for STT and key frames for OCR, merges results.
+Supports OpenCV and MoviePy backends with graceful degradation.
 """
 
 import os
-import io
 import logging
 import tempfile
-import base64
-import hashlib
-import threading
-from typing import Optional, Dict, Any, List, Tuple, Set
 from dataclasses import dataclass, field
-from pathlib import Path
-from enum import Enum
-import time
-import concurrent.futures
+from typing import Optional, Dict, List
 
-# Configure logging
 logger = logging.getLogger(__name__)
 
-# =============================================================================
-# VIDEO DATA STRUCTURES
-# =============================================================================
-
-class SceneType(Enum):
-    """Types of video scenes"""
-    NEWS_STUDIO = 'news_studio'
-    INTERVIEW = 'interview'
-    B_ROLL = 'b_roll'
-    GRAPHICS = 'graphics'
-    LIVE_FOOTAGE = 'live_footage'
-    ARCHIVE = 'archive'
-    TRANSITION = 'transition'
-    UNKNOWN = 'unknown'
-
 
 @dataclass
-class VideoScene:
-    """Represents a detected scene in video"""
-    start_time: float
-    end_time: float
-    scene_type: SceneType = SceneType.UNKNOWN
-    keyframe_path: Optional[str] = None
-    description: str = ""
-    confidence: float = 0.0
-    detected_objects: List[str] = field(default_factory=list)
-    text_content: str = ""
-    
-    @property
-    def duration(self) -> float:
-        return self.end_time - self.start_time
-
-
-@dataclass
-class KeyFrame:
-    """Represents an extracted keyframe"""
-    timestamp: float
-    frame_number: int
-    image_path: str
-    quality_score: float = 0.0
-    is_representative: bool = False
+class VideoResult:
+    """Result of video processing."""
+    success: bool = False
     extracted_text: str = ""
-
-
-@dataclass
-class VideoProcessingResult:
-    """Enhanced video processing result"""
-    success: bool
-    extracted_text: str = ""
+    transcribed_audio: str = ""
     confidence: float = 0.0
     error_message: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    
-    # Scene analysis
-    scenes: List[VideoScene] = field(default_factory=list)
-    keyframes: List[KeyFrame] = field(default_factory=list)
-    
-    # Temporal data
-    duration: float = 0.0
-    frames_processed: int = 0
-    fps: float = 0.0
-    
-    # Multi-modal results
-    visual_text: str = ""  # From OCR
-    audio_text: str = ""   # From STT
-    
-    # Processing metrics
-    processing_time: float = 0.0
-    scene_count: int = 0
+    duration_seconds: float = 0.0
+    frame_count: int = 0
+    metadata: dict = field(default_factory=dict)
 
 
-# =============================================================================
-# SCENE DETECTION ENGINE
-# =============================================================================
-
-class SceneDetectionEngine:
+class VideoProcessor:
     """
-    Advanced scene detection using multiple methods:
-    - Histogram difference
-    - Edge change ratio
-    - Deep feature comparison
+    Multi-modal video processor.
+    1. Extracts audio → routes to AudioProcessor for STT.
+    2. Extracts key frames → routes to ImageProcessor for OCR.
+    3. Merges text from both for classification.
     """
-    
+
     def __init__(self):
         self._cv2_available = False
-        self._numpy_available = False
-        
+        self._moviepy_available = False
+        self._detect_backends()
+
+    def _detect_backends(self):
+        """Detect available video processing backends."""
         try:
-            import cv2
+            import cv2  # noqa: F401
             self._cv2_available = True
+            logger.info("OpenCV detected — video frame extraction available")
         except ImportError:
-            pass
-        
+            logger.debug("OpenCV not installed")
+
         try:
-            import numpy as np
-            self._numpy_available = True
+            from moviepy.editor import VideoFileClip  # noqa: F401
+            self._moviepy_available = True
+            logger.info("MoviePy detected — video audio extraction available")
         except ImportError:
-            pass
-    
-    def detect_scenes(self, video_path: str, 
-                      threshold: float = 30.0,
-                      min_scene_duration: float = 1.0) -> List[Tuple[float, float]]:
-        """
-        Detect scene boundaries in video
-        
-        Args:
-            video_path: Path to video file
-            threshold: Detection sensitivity (lower = more scenes)
-            min_scene_duration: Minimum scene duration in seconds
-        
-        Returns:
-            List of (start_time, end_time) tuples
-        """
-        if not self._cv2_available or not self._numpy_available:
-            logger.warning("OpenCV/NumPy not available for scene detection")
-            return []
-        
-        import cv2
-        import numpy as np
-        
-        scenes = []
-        cap = cv2.VideoCapture(video_path)
-        
-        if not cap.isOpened():
-            return scenes
-        
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        
-        prev_hist = None
-        scene_start = 0.0
-        frame_count = 0
-        
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
-            
-            current_time = frame_count / fps
-            
-            # Convert to grayscale and calculate histogram
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            hist = cv2.calcHist([gray], [0], None, [256], [0, 256])
-            hist = cv2.normalize(hist, hist).flatten()
-            
-            if prev_hist is not None:
-                # Calculate histogram difference
-                diff = cv2.compareHist(prev_hist, hist, cv2.HISTCMP_CHISQR)
-                
-                # Scene change detected
-                if diff > threshold:
-                    if current_time - scene_start >= min_scene_duration:
-                        scenes.append((scene_start, current_time))
-                        scene_start = current_time
-            
-            prev_hist = hist
-            frame_count += 1
-        
-        # Add final scene
-        final_time = total_frames / fps
-        if final_time - scene_start >= min_scene_duration:
-            scenes.append((scene_start, final_time))
-        
-        cap.release()
-        
-        logger.info(f"Detected {len(scenes)} scenes in video")
-        return scenes
-    
-    def classify_scene_type(self, frame) -> SceneType:
-        """
-        Classify scene type based on visual features
-        """
-        if not self._cv2_available:
-            return SceneType.UNKNOWN
-        
-        import cv2
-        import numpy as np
-        
-        # Calculate features
-        height, width = frame.shape[:2]
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        
-        # Edge detection
-        edges = cv2.Canny(gray, 100, 200)
-        edge_density = np.sum(edges > 0) / edges.size
-        
-        # Color variance
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        color_variance = np.var(hsv[:, :, 1])  # Saturation variance
-        
-        # Brightness
-        brightness = np.mean(gray) / 255.0
-        
-        # Heuristic classification
-        if edge_density < 0.05 and color_variance < 1000:
-            return SceneType.GRAPHICS
-        elif brightness > 0.6 and edge_density > 0.1:
-            return SceneType.NEWS_STUDIO
-        elif color_variance > 5000:
-            return SceneType.LIVE_FOOTAGE
-        else:
-            return SceneType.B_ROLL
+            logger.debug("MoviePy not installed")
 
-
-# =============================================================================
-# KEYFRAME EXTRACTOR
-# =============================================================================
-
-class KeyframeExtractor:
-    """
-    Intelligent keyframe extraction
-    Selects representative frames from each scene
-    """
-    
-    def __init__(self):
-        self._cv2_available = False
-        
-        try:
-            import cv2
-            self._cv2_available = True
-        except ImportError:
-            pass
-    
-    def extract_keyframes(self, video_path: str, 
-                         scenes: List[Tuple[float, float]],
-                         frames_per_scene: int = 3) -> List[KeyFrame]:
-        """
-        Extract keyframes from each scene
-        
-        Args:
-            video_path: Path to video file
-            scenes: List of (start, end) time tuples
-            frames_per_scene: Number of frames to extract per scene
-        
-        Returns:
-            List of KeyFrame objects
-        """
-        if not self._cv2_available:
-            return []
-        
-        import cv2
-        
-        keyframes = []
-        cap = cv2.VideoCapture(video_path)
-        
-        if not cap.isOpened():
-            return keyframes
-        
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        
-        for scene_idx, (start_time, end_time) in enumerate(scenes):
-            scene_duration = end_time - start_time
-            
-            # Select frame positions
-            if frames_per_scene == 1:
-                positions = [scene_duration / 2]
-            else:
-                step = scene_duration / (frames_per_scene + 1)
-                positions = [step * (i + 1) for i in range(frames_per_scene)]
-            
-            for pos_idx, offset in enumerate(positions):
-                timestamp = start_time + offset
-                frame_number = int(timestamp * fps)
-                
-                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
-                ret, frame = cap.read()
-                
-                if ret:
-                    # Calculate quality score
-                    quality = self._assess_frame_quality(frame)
-                    
-                    # Save keyframe
-                    temp_file = tempfile.NamedTemporaryFile(
-                        suffix='.jpg',
-                        delete=False,
-                        prefix=f'keyframe_{scene_idx}_{pos_idx}_'
-                    )
-                    cv2.imwrite(temp_file.name, frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
-                    temp_file.close()
-                    
-                    keyframes.append(KeyFrame(
-                        timestamp=timestamp,
-                        frame_number=frame_number,
-                        image_path=temp_file.name,
-                        quality_score=quality,
-                        is_representative=(pos_idx == 0)  # First frame is representative
-                    ))
-        
-        cap.release()
-        return keyframes
-    
-    def _assess_frame_quality(self, frame) -> float:
-        """Assess frame quality for OCR/analysis"""
-        import cv2
-        import numpy as np
-        
-        # Convert to grayscale
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        
-        # Measure sharpness (Laplacian variance)
-        laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
-        sharpness_score = min(laplacian_var / 500, 1.0)
-        
-        # Measure contrast
-        contrast = np.std(gray) / 128.0
-        
-        # Combined score
-        quality = (sharpness_score * 0.6 + contrast * 0.4)
-        
-        return round(quality, 3)
-
-
-# =============================================================================
-# VIDEO SUMMARIZATION
-# =============================================================================
-
-class VideoSummarizer:
-    """
-    Create video summaries using:
-    - Keyframe selection
-    - Scene importance scoring
-    - Text extraction from keyframes
-    """
-    
-    def __init__(self, image_processor=None):
-        self.image_processor = image_processor
-    
-    def summarize(self, keyframes: List[KeyFrame], 
-                  scenes: List[VideoScene]) -> str:
-        """
-        Generate text summary from video content
-        
-        Args:
-            keyframes: Extracted keyframes
-            scenes: Detected scenes
-        
-        Returns:
-            Text summary
-        """
-        if not self.image_processor:
-            return ""
-        
-        summaries = []
-        
-        # Process representative keyframes
-        for keyframe in keyframes:
-            if keyframe.is_representative:
-                try:
-                    result = self.image_processor.process_image_file(
-                        keyframe.image_path
-                    )
-                    if result.success and result.extracted_text:
-                        summaries.append(result.extracted_text)
-                except Exception as e:
-                    logger.debug(f"Keyframe processing failed: {e}")
-        
-        # Combine and deduplicate
-        combined = ' '.join(summaries)
-        
-        # Remove duplicate sentences
-        sentences = combined.split('. ')
-        unique_sentences = []
-        seen = set()
-        
-        for sentence in sentences:
-            sentence = sentence.strip()
-            if sentence and sentence not in seen:
-                unique_sentences.append(sentence)
-                seen.add(sentence)
-        
-        return '. '.join(unique_sentences[:20])  # Limit length
-
-
-# =============================================================================
-# MAIN CINEMATIC PROCESSOR
-# =============================================================================
-
-class CinematicProcessor:
-    """
-    Ultra-advanced video processor with scene understanding
-    
-    Features:
-    - Scene detection and classification
-    - Smart keyframe extraction
-    - Multi-modal text extraction
-    - Video summarization
-    - Temporal coherence analysis
-    """
-    
-    name = "CinematicProcessor"
-    version = "10.0.0"
-    
-    MAX_DURATION = 600  # 10 minutes
-    MAX_FILE_SIZE = 500 * 1024 * 1024  # 500MB
-    
-    def __init__(self, lazy_init: bool = True):
-        self.scene_detector = SceneDetectionEngine()
-        self.keyframe_extractor = KeyframeExtractor()
-        self.summarizer = None  # Will be initialized with image processor
-        
-        self._image_processor = None
-        self._audio_processor = None
-        self._initialized = False
-        
-        self._cv2_available = False
-        try:
-            import cv2
-            self._cv2_available = True
-        except ImportError:
-            pass
-        
-        if not lazy_init:
-            self._initialize()
-    
-    def _initialize(self):
-        """Initialize processor and dependencies"""
-        if self._initialized:
-            return
-        
-        # Initialize image processor
-        try:
-            from backend.models.image_processor import get_image_processor
-            self._image_processor = get_image_processor()
-            self.summarizer = VideoSummarizer(self._image_processor)
-        except Exception as e:
-            logger.debug(f"Image processor not available: {e}")
-        
-        # Initialize audio processor
-        try:
-            from backend.models.audio_processor import get_audio_processor
-            self._audio_processor = get_audio_processor()
-        except Exception as e:
-            logger.debug(f"Audio processor not available: {e}")
-        
-        self._initialized = True
-        logger.info("CinematicProcessor initialized")
-    
-    def _process_as_audio(self, media_path: str) -> VideoProcessingResult:
-        """
-        Process media file as audio when video processing fails.
-        This handles cases where the file is actually audio with wrong extension.
-        """
-        import os
-        import tempfile
-        
-        logger.info(f"Processing {media_path} as audio")
-        
-        # Initialize if needed
-        if not self._initialized:
-            self._initialize()
-        
-        # Use audio processor if available
-        if self._audio_processor and self._audio_processor.is_available():
-            try:
-                audio_result = self._audio_processor.process_audio_file(media_path)
-                if audio_result.success:
-                    return VideoProcessingResult(
-                        success=True,
-                        category=audio_result.category,
-                        confidence=audio_result.confidence,
-                        transcription=audio_result.transcription,
-                        summary=audio_result.summary,
-                        metadata={
-                            'processed_as': 'audio_fallback',
-                            'original_error': 'Video could not be opened'
-                        }
-                    )
-            except Exception as e:
-                logger.warning(f"Audio fallback failed: {e}")
-        
-        # If audio processing also fails, return error with suggestion
-        return VideoProcessingResult(
-            success=False,
-            category='unknown',
-            confidence=0.0,
-            error_message='Could not process media file. Please ensure it is a valid video or audio file.',
-            metadata={'processed_as': 'audio_fallback_failed'}
-        )
-    
     def is_available(self) -> bool:
-        """Check if video processing is available"""
-        return self._cv2_available
-    
-    def get_video_info(self, video_path: str) -> Dict[str, Any]:
-        """Get video file information"""
+        """At least one backend must be available."""
+        return self._cv2_available or self._moviepy_available
+
+    def get_installation_instructions(self) -> str:
+        parts = []
         if not self._cv2_available:
-            return {'error': 'OpenCV not available'}
+            parts.append("pip install opencv-python-headless")
+        if not self._moviepy_available:
+            parts.append("pip install moviepy")
+        return " && ".join(parts) if parts else "All video dependencies installed"
+
+    def get_dependencies_status(self) -> Dict[str, bool]:
+        return {
+            "opencv": self._cv2_available,
+            "moviepy": self._moviepy_available,
+        }
+
+    def process_video_file(self, file_path: str) -> VideoResult:
+        """
+        Process a video file: extract audio + key frames, merge text results.
+        """
+        if not os.path.exists(file_path):
+            return VideoResult(
+                success=False, error_message=f"File not found: {file_path}"
+            )
+
+        if not self.is_available():
+            return VideoResult(
+                success=False,
+                error_message="No video processing backend. " +
+                              self.get_installation_instructions(),
+            )
+
+        all_text_parts: List[str] = []
+        transcribed_audio = ""
+        frame_texts: List[str] = []
+        duration = 0.0
+        frame_count = 0
+
+        # 1. Extract and process audio track
+        audio_text, audio_conf, duration = self._extract_and_process_audio(file_path)
+        if audio_text:
+            transcribed_audio = audio_text
+            all_text_parts.append(audio_text)
+
+        # 2. Extract and process key frames
+        frame_texts, frame_count = self._extract_and_process_frames(file_path)
+        all_text_parts.extend(frame_texts)
+
+        # Signal Weighting: Repeat the audio transcription 3 times to ensure 
+        # it dominates the classification logic over potentially noisy OCR frames.
+        weighted_parts = []
+        if transcribed_audio:
+            # Injecting with priority tag and repetition
+            weighted_parts.append(f"[PRIORITY_AUDIO]: {transcribed_audio} {transcribed_audio} {transcribed_audio}")
         
+        # Add frame texts as supporting context
+        weighted_parts.extend(frame_texts)
+        
+        combined_text = " ".join(weighted_parts).strip()
+
+        # Calculate overall confidence
+        if transcribed_audio and frame_texts:
+            confidence = min(0.95, (audio_conf + 0.5) / 2 + 0.2)
+        elif transcribed_audio:
+            confidence = audio_conf
+        elif frame_texts:
+            confidence = 0.5
+        else:
+            confidence = 0.2
+
+        return VideoResult(
+            success=True,
+            extracted_text=combined_text,
+            transcribed_audio=transcribed_audio,
+            confidence=round(confidence, 3),
+            duration_seconds=duration,
+            frame_count=frame_count,
+            metadata={
+                "has_audio": bool(transcribed_audio),
+                "has_frames": bool(frame_texts),
+                "cv2_available": self._cv2_available,
+                "moviepy_available": self._moviepy_available,
+            },
+        )
+
+    def process_video_data(self, video_data: bytes, filename: str = "") -> VideoResult:
+        """Process video from raw bytes."""
+        ext = ".mp4"
+        if filename:
+            for vid_ext in [".avi", ".mkv", ".mov", ".webm", ".flv"]:
+                if filename.lower().endswith(vid_ext):
+                    ext = vid_ext
+                    break
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+                tmp.write(video_data)
+                tmp_path = tmp.name
+            result = self.process_video_file(tmp_path)
+        finally:
+            try:
+                os.remove(tmp_path)
+            except Exception:
+                pass
+        return result
+
+    # ------------------------------------------------------------------
+    # Audio extraction
+    # ------------------------------------------------------------------
+
+    def _extract_and_process_audio(self, video_path: str) -> tuple:
+        """Extract audio from video and transcribe."""
+        audio_text = ""
+        confidence = 0.0
+        duration = 0.0
+
+        if self._moviepy_available:
+            try:
+                from moviepy.editor import VideoFileClip
+                clip = VideoFileClip(video_path)
+                duration = clip.duration or 0.0
+
+                if clip.audio is not None:
+                    with tempfile.NamedTemporaryFile(
+                        delete=False, suffix=".wav"
+                    ) as tmp:
+                        audio_path = tmp.name
+                    clip.audio.write_audiofile(
+                        audio_path, fps=16000, nbytes=2,
+                        codec="pcm_s16le", logger=None,
+                    )
+                    clip.close()
+
+                    # Route to audio processor
+                    from backend.models.audio_processor import get_audio_processor
+                    audio_proc = get_audio_processor()
+                    if audio_proc.is_available():
+                        result = audio_proc.process_audio_file(audio_path)
+                        if result.success:
+                            audio_text = result.transcribed_text
+                            confidence = result.confidence
+
+                    try:
+                        os.remove(audio_path)
+                    except Exception:
+                        pass
+                else:
+                    clip.close()
+            except Exception as e:
+                logger.warning(f"Audio extraction failed: {e}")
+
+        return audio_text, confidence, duration
+
+    # ------------------------------------------------------------------
+    # Frame extraction
+    # ------------------------------------------------------------------
+
+    def _extract_and_process_frames(self, video_path: str) -> tuple:
+        """Extract key frames and run OCR on them."""
+        frame_texts: List[str] = []
+        frame_count = 0
+
+        if not self._cv2_available:
+            return frame_texts, frame_count
+
         try:
             import cv2
-            
             cap = cv2.VideoCapture(video_path)
             if not cap.isOpened():
-                return {'error': 'Could not open video'}
-            
-            fps = cap.get(cv2.CAP_PROP_FPS)
-            frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            duration = frame_count / fps if fps > 0 else 0
-            
-            cap.release()
-            
-            return {
-                'fps': fps,
-                'frame_count': frame_count,
-                'width': width,
-                'height': height,
-                'duration': duration,
-                'resolution': f'{width}x{height}',
-                'aspect_ratio': round(width / height, 2) if height > 0 else 0
-            }
-            
-        except Exception as e:
-            return {'error': str(e)}
-    
-    def process_video_file(self, video_path: str,
-                          extract_scenes: bool = True,
-                          extract_audio: bool = True,
-                          max_scenes: int = 1) -> VideoProcessingResult:
-        """
-        Process video with full cinematic analysis
-        Falls back to audio extraction if video processing fails
-        
-        Args:
-            video_path: Path to video file
-            extract_scenes: Whether to perform scene detection
-            extract_audio: Whether to extract audio text
-            max_scenes: Maximum number of scenes to process
-        """
-        # First try video processing
-        import cv2
-        import os
-        
-        cap = None
-        try:
-            cap = cv2.VideoCapture(video_path)
-            if not cap.isOpened():
-                # Video cannot be opened - try extracting audio
-                logger.warning(f"Video cannot be opened: {video_path}, trying audio extraction")
-                return self._process_as_audio(video_path)
-        except Exception as e:
-            # If video processing fails, try audio extraction
-            logger.warning(f"Video processing error: {e}, trying audio extraction")
-            if cap:
-                cap.release()
-            return self._process_as_audio(video_path)
-        finally:
-            if cap:
-                cap.release()
-        start_time = time.time()
-        temp_files = []
-        
-        try:
-            self._initialize()
-            
-            # Check availability
-            if not self.is_available():
-                return VideoProcessingResult(
-                    success=False,
-                    error_message="OpenCV not installed. Video processing unavailable."
-                )
-            
-            # Validate file
-            if not os.path.exists(video_path):
-                return VideoProcessingResult(
-                    success=False,
-                    error_message="Video file not found"
-                )
-            
-            # Get video info
-            try:
-                video_info = self.get_video_info(video_path)
-                if 'error' in video_info:
-                    logger.warning(f"Video info error: {video_info['error']}")
-                    return VideoProcessingResult(
-                        success=False,
-                        error_message=f"Could not read video file: {video_info['error']}"
-                    )
-            except Exception as e:
-                logger.warning(f"Could not get video info: {e}")
-                # Continue with default values
-                video_info = {'duration': 60, 'fps': 30}
-            
-            duration = video_info.get('duration', 0)
-            fps = video_info.get('fps', 0)
-            
-            # Check limits
-            if duration > self.MAX_DURATION:
-                return VideoProcessingResult(
-                    success=False,
-                    error_message=f"Video too long. Maximum duration is {self.MAX_DURATION} seconds",
-                    duration=duration
-                )
-            
-            # Scene detection
-            scenes = []
-            keyframes = []
-            scene_boundaries = []
-            
-            if extract_scenes:
-                logger.info("Detecting scenes...")
-                try:
-                    scene_boundaries = self.scene_detector.detect_scenes(video_path)
-                    logger.info(f"Detected {len(scene_boundaries)} scenes")
-                except Exception as e:
-                    logger.warning(f"Scene detection failed: {e}. Using entire video as one scene.")
-                    # Fallback: use entire video as one scene
-                    scene_boundaries = [(0, duration)]
-            
-            # Limit scenes
-            if len(scene_boundaries) > max_scenes:
-                # Keep first, last, and evenly distributed middle scenes
-                indices = [0] + [
-                    int(i * (len(scene_boundaries) - 1) / (max_scenes - 1))
-                    for i in range(1, max_scenes - 1)
-                ] + [len(scene_boundaries) - 1]
-                scene_boundaries = [scene_boundaries[i] for i in sorted(set(indices))]
-            
-            # Create scene objects
-            for start, end in scene_boundaries:
-                scenes.append(VideoScene(
-                    start_time=start,
-                    end_time=end,
-                    scene_type=SceneType.UNKNOWN,
-                    confidence=0.8
-                ))
-            
-            # Extract keyframes
-            if scenes:
-                logger.info("Extracting keyframes...")
-                try:
-                    keyframes = self.keyframe_extractor.extract_keyframes(
-                        video_path, 
-                        scene_boundaries,
-                        frames_per_scene=1
-                    )
-                    temp_files.extend([k.image_path for k in keyframes])
-                except Exception as e:
-                    logger.warning(f"Keyframe extraction failed: {e}")
-            
-            # Classify scenes using keyframes
-            for i, scene in enumerate(scenes):
-                scene_keyframes = [k for k in keyframes 
-                                 if scene.start_time <= k.timestamp < scene.end_time]
-                if scene_keyframes:
-                    scene.keyframe_path = scene_keyframes[0].image_path
-            
-            # -----------------------------------------------------------------
-            # PARALLEL EXECUTION OF OCR AND STT
-            # -----------------------------------------------------------------
-            visual_text = ""
-            audio_text = ""
-            texts = []
-            
-            def process_keyframes():
-                if keyframes and self._image_processor:
-                    logger.info("Extracting text from keyframes (Parallel OCR)...")
-                    for keyframe in keyframes:
-                        try:
-                            result = self._image_processor.process_image_file(
-                                keyframe.image_path,
-                                extract_regions=False
-                            )
-                            if result.success and result.extracted_text:
-                                texts.append(result.extracted_text)
-                                keyframe.extracted_text = result.extracted_text
-                        except Exception as e:
-                            logger.debug(f"Keyframe OCR failed: {e}")
-                    return ' '.join(texts)
-                return ""
-                
-            def process_audio():
-                if extract_audio and self._audio_processor and duration < 300:
-                    logger.info("Extracting audio (Parallel STT)...")
+                return frame_texts, frame_count
+
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            fps = cap.get(cv2.CAP_PROP_FPS) or 30
+
+            # Sample up to 5 frames evenly spread across the video
+            sample_count = min(5, max(1, total_frames // int(fps * 5)))
+            interval = max(1, total_frames // (sample_count + 1))
+
+            from backend.models.image_processor import get_image_processor
+            img_proc = get_image_processor()
+
+            for i in range(1, sample_count + 1):
+                frame_num = i * interval
+                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
+                ret, frame = cap.read()
+                if not ret:
+                    continue
+
+                frame_count += 1
+
+                if img_proc.is_available():
+                    # Save frame to temp file and process
+                    with tempfile.NamedTemporaryFile(
+                        delete=False, suffix=".jpg"
+                    ) as tmp:
+                        frame_path = tmp.name
+                    cv2.imwrite(frame_path, frame)
+
+                    result = img_proc.process_image_file(frame_path)
+                    if result.success and result.extracted_text.strip():
+                        frame_texts.append(result.extracted_text)
+
                     try:
-                        audio_result = self._extract_audio_text(video_path)
-                        if audio_result:
-                            return audio_result
-                    except Exception as e:
-                        logger.debug(f"Audio extraction failed: {e}")
-                return ""
-            
-            # Execute both heavyweight tasks concurrently
-            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-                future_visual = executor.submit(process_keyframes)
-                future_audio = executor.submit(process_audio)
-                
-                visual_text = future_visual.result()
-                audio_text = future_audio.result()
-                
-            # Combine texts
-            combined_text = self._merge_texts([visual_text, audio_text])
-            
-            processing_time = time.time() - start_time
-            
-            # Build metadata
-            metadata = {
-                'video_info': video_info,
-                'processing': {
-                    'scenes_detected': len(scenes),
-                    'keyframes_extracted': len(keyframes),
-                    'visual_text_length': len(visual_text),
-                    'audio_text_length': len(audio_text),
-                    'combined_text_length': len(combined_text)
-                },
-                'scene_types': list(set(s.scene_type.value for s in scenes))
-            }
-            
-            return VideoProcessingResult(
-                success=True,
-                extracted_text=combined_text,
-                confidence=0.8 if combined_text else 0.0,
-                metadata=metadata,
-                scenes=scenes,
-                keyframes=keyframes,
-                duration=duration,
-                frames_processed=int(duration * fps) if fps > 0 else 0,
-                fps=fps,
-                visual_text=visual_text,
-                audio_text=audio_text,
-                processing_time=round(processing_time, 2),
-                scene_count=len(scenes)
-            )
-            
+                        os.remove(frame_path)
+                    except Exception:
+                        pass
+
+            cap.release()
         except Exception as e:
-            logger.error(f"Video processing error: {e}")
-            return VideoProcessingResult(
-                success=False,
-                error_message=f"Processing failed: {str(e)}"
-            )
-        
-        finally:
-            # Cleanup temp files
-            for temp_file in temp_files:
-                try:
-                    if os.path.exists(temp_file):
-                        os.remove(temp_file)
-                except Exception:
-                    pass
-    
-    def _extract_audio_text(self, video_path: str) -> str:
-        """Extract and transcribe audio from video"""
-        try:
-            from moviepy.editor import VideoFileClip
-            
-            # Extract audio
-            video = VideoFileClip(video_path)
-            if video.audio is None:
-                return ""
-            
-            # Save to temp file
-            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp:
-                audio_path = tmp.name
-            
-            video.audio.write_audiofile(audio_path, verbose=False, logger=None)
-            video.close()
-            
-            # Process with audio processor
-            if self._audio_processor:
-                result = self._audio_processor.process_audio_file(audio_path)
-                
-                # Cleanup
-                try:
-                    os.remove(audio_path)
-                except:
-                    pass
-                
-                if result.success:
-                    return result.extracted_text
-            
-            return ""
-            
-        except ImportError:
-            logger.debug("moviepy not available")
-            return ""
-        except Exception as e:
-            logger.debug(f"Audio extraction error: {e}")
-            return ""
-    
-    def _merge_texts(self, texts: List[str]) -> str:
-        """Merge multiple text sources, removing duplicates"""
-        # Filter empty
-        texts = [t.strip() for t in texts if t and t.strip()]
-        
-        if not texts:
-            return ""
-        
-        # Combine
-        combined = ' '.join(texts)
-        
-        # Simple deduplication by sentences
-        sentences = combined.split('. ')
-        unique = []
-        seen = set()
-        
-        for sentence in sentences:
-            sentence = sentence.strip()
-            if sentence and sentence not in seen:
-                unique.append(sentence)
-                seen.add(sentence)
-        
-        return '. '.join(unique)
-    
-    def process_video_bytes(self, video_bytes: bytes, 
-                           file_extension: str = '.mp4',
-                           **kwargs) -> VideoProcessingResult:
-        """Process video from bytes"""
-        temp_file = None
-        
-        try:
-            temp_file = tempfile.NamedTemporaryFile(
-                suffix=file_extension,
-                delete=False,
-                prefix='newscat_video_'
-            )
-            temp_file.write(video_bytes)
-            temp_file.close()
-            
-            return self.process_video_file(temp_file.name, **kwargs)
-            
-        except Exception as e:
-            return VideoProcessingResult(
-                success=False,
-                error_message=f"Failed to process video bytes: {str(e)}"
-            )
-        finally:
-            if temp_file and os.path.exists(temp_file.name):
-                try:
-                    os.remove(temp_file.name)
-                except:
-                    pass
-    
-    def get_capabilities(self) -> Dict[str, Any]:
-        """Get processor capabilities"""
-        return {
-            'name': self.name,
-            'version': self.version,
-            'available': self.is_available(),
-            'opencv_available': self._cv2_available,
-            'features': [
-                'scene_detection',
-                'keyframe_extraction',
-                'visual_ocr',
-                'audio_extraction',
-                'video_summarization'
-            ],
-            'limits': {
-                'max_duration': self.MAX_DURATION,
-                'max_file_size': self.MAX_FILE_SIZE
-            }
-        }
-    
-    def get_installation_instructions(self) -> str:
-        """Get instructions for installing dependencies"""
-        return "Install dependencies: pip install opencv-python-headless moviepy"
-    
-    def get_dependencies_status(self) -> Dict[str, bool]:
-        """Get status of all dependencies"""
-        status = {
-            'opencv': self._cv2_available,
-        }
-        try:
-            import moviepy
-            status['moviepy'] = True
-        except ImportError:
-            status['moviepy'] = False
-        return status
+            logger.warning(f"Frame extraction failed: {e}")
+
+        return frame_texts, frame_count
 
 
-# Backward compatibility
-VideoProcessor = CinematicProcessor
+# ------------------------------------------------------------------
+# Singleton factory
+# ------------------------------------------------------------------
 
-# Singleton
-_video_processor = None
-_lock = threading.Lock()
+_video_processor: Optional[VideoProcessor] = None
 
-def get_video_processor() -> CinematicProcessor:
-    """Get singleton video processor"""
+
+def get_video_processor() -> VideoProcessor:
     global _video_processor
-    
     if _video_processor is None:
-        with _lock:
-            if _video_processor is None:
-                _video_processor = CinematicProcessor()
-    
+        _video_processor = VideoProcessor()
     return _video_processor
-
-
-# =============================================================================
-# TESTING
-# =============================================================================
-
-if __name__ == '__main__':
-    print(f"\n{'='*70}")
-    print(f"CinematicProcessor v10.0 - Test Mode")
-    print(f"{'='*70}\n")
-    
-    processor = CinematicProcessor()
-    caps = processor.get_capabilities()
-    
-    print(f"Capabilities:")
-    for key, value in caps.items():
-        print(f"  {key}: {value}")

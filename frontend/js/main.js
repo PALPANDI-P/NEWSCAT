@@ -1493,6 +1493,16 @@ async function analyzeContent() {
             case 'text':
                 const textarea = document.getElementById('text-input');
                 inputText = textarea?.value.trim() || '';
+                
+                // Prevent submission of empty or too short text (matches backend MIN_LENGTH)
+                if (inputText.length < CONFIG.MIN_CHARS) {
+                    notificationManager.show(`Please enter at least ${CONFIG.MIN_CHARS} characters to analyze.`, 'warning');
+                    state.isAnalyzing = false;
+                    uiManager.updateAnalyzeButton();
+                    loadingManager.hide();
+                    return;
+                }
+                
                 result = await api.classifyText(inputText);
                 break;
 
@@ -1743,8 +1753,8 @@ function loadTextCharByChar(text) {
 }
 
 function loadSample(type) {
-    if (!samples[type]) return;
-    loadTextCharByChar(samples[type]);
+    if (!sampleArticles[type]) return;
+    loadTextCharByChar(sampleArticles[type]);
 }
 
 async function fetchRealtimeNews() {

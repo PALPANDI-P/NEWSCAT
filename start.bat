@@ -24,7 +24,7 @@ echo.
 echo     N E W S C A T
 echo.
 echo     News Classification System
-echo     Multi-Modal AI News Classification System v5.0
+echo     Multi-Modal AI News Classification System v8.0.0 (FastAPI Optimized)
 echo.
 echo  ================================================================
 echo.
@@ -78,11 +78,11 @@ if not exist "server.py" (
     echo        [OK] server.py found
 )
 
-if not exist "backend\app.py" (
-    echo        [ERROR] backend\app.py not found!
+if not exist "backend\main.py" (
+    echo        [ERROR] backend\main.py not found!
     set FILES_OK=0
 ) else (
-    echo        [OK] backend\app.py found
+    echo        [OK] backend\main.py found
 )
 
 if not exist "frontend\index.html" (

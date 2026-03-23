@@ -1,493 +1,353 @@
 """
-Parallel Processor Controller for NEWSCAT
-==========================================
-Main controller that manages parallel execution of all model types.
-Uses ProcessPoolExecutor for concurrent subprocess execution.
-
-Features:
-- Parallel execution of text, audio, image, video models
-- Independent subprocess for each model type
-- Global timeout management (5 seconds)
-- Graceful degradation on partial failures
-- Result merging and confidence calculation
-
-Author: NEWSCAT Team
-Version: 1.0.0
+NEWSCAT Parallel Processor — Async multi-modal news classification engine.
+Routes text, image, audio, and video inputs to their respective workers,
+runs them concurrently, and aggregates results via weighted voting.
 """
 
-import os
-import sys
-import time
+import asyncio
 import logging
-import json
-import traceback
-from typing import Dict, Any, Optional, List
-from concurrent.futures import ProcessPoolExecutor, TimeoutError, as_completed
-import threading
+import os
+import tempfile
+from dataclasses import dataclass, field
+from typing import Optional, Dict, List, Any
 
-# Add backend to path for imports
-sys.path.insert(0, os.path.dirname(__file__))
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
 logger = logging.getLogger(__name__)
 
-# Import modules
-from backend.models.result_merger import ResultMerger, ModelResult, MergedResult
 
-# Import workers
-from backend.models.workers import (
-    process_text,
-    process_audio,
-    process_image,
-    process_video
-)
-
-# =============================================================================
-# CONFIGURATION
-# =============================================================================
-
-DEFAULT_CONFIG = {
-    'global_timeout': 5.0,  # Global timeout in seconds
-    'model_timeout': 4.0,  # Individual model timeout
-    'max_workers': 4,  # Maximum parallel workers
-    'weights': {
-        'text': 0.4,
-        'audio': 0.2,
-        'image': 0.2,
-        'video': 0.2
-    }
-}
+@dataclass
+class ClassificationResult:
+    """Unified classification result from one or more modalities."""
+    primary_category: str = "technology"
+    confidence: float = 0.0  # 0.0 – 1.0
+    model_results: Dict[str, Any] = field(default_factory=dict)
 
 
 class ParallelProcessor:
     """
-    Main parallel processor controller.
-    
-    Manages concurrent execution of all model types (text, audio, image, video)
-    using ProcessPoolExecutor for true parallel processing.
-    
-    Features:
-    - Spawns independent subprocess for each model type
-    - Collects and merges results from all models
-    - Global timeout management
-    - Graceful degradation on failures
+    Async engine that dispatches classification tasks to modality-specific
+    workers and aggregates their results.
     """
-    
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
-        """
-        Initialize the parallel processor.
-        
-        Args:
-            config: Optional configuration override
-        """
-        self.config = {**DEFAULT_CONFIG, **(config or {})}
-        self._result_merger = ResultMerger(weights=self.config.get('weights'))
-        self._lock = threading.Lock()
-        
-        # Model functions mapping
-        self._model_functions = {
-            'text': process_text,
-            'audio': process_audio,
-            'image': process_image,
-            'video': process_video
-        }
-        
-        logger.info(f"ParallelProcessor initialized with config: {self.config}")
-    
-    def process(
+
+    def __init__(self):
+        self._classifier = None
+        logger.info("ParallelProcessor initialized")
+
+    def _get_classifier(self):
+        """Lazy-load the text classifier."""
+        if self._classifier is None:
+            from backend.models.simple_classifier import SimpleNewsClassifier
+            self._classifier = SimpleNewsClassifier()
+        return self._classifier
+
+    # ------------------------------------------------------------------
+    # PUBLIC API
+    # ------------------------------------------------------------------
+
+    async def process(
         self,
         text: Optional[str] = None,
-        audio_path: Optional[str] = None,
-        image_path: Optional[str] = None,
-        video_path: Optional[str] = None,
-        audio_data: Optional[bytes] = None,
         image_data: Optional[bytes] = None,
+        audio_data: Optional[bytes] = None,
         video_data: Optional[bytes] = None,
-        audio_base64: Optional[str] = None,
-        image_base64: Optional[str] = None,
-        video_base64: Optional[str] = None,
-        timeout: Optional[float] = None,
-        models: Optional[List[str]] = None
-    ) -> MergedResult:
+        models: Optional[List[str]] = None,
+        **kwargs,
+    ) -> ClassificationResult:
         """
-        Process input data using all model types in parallel.
-        
-        Args:
-            text: Text input for text classification
-            audio_path: Path to audio file
-            image_path: Path to image file
-            video_path: Path to video file
-            audio_data: Raw audio bytes
-            image_data: Raw image bytes
-            video_data: Raw video bytes
-            audio_base64: Base64 encoded audio
-            image_base64: Base64 encoded image
-            video_base64: Base64 encoded video
-            timeout: Optional timeout override (default: 5 seconds)
-            models: Optional list of models to run (default: all)
-            
-        Returns:
-            MergedResult containing all classification results
+        Process one or more modalities in parallel.
+
+        Parameters
+        ----------
+        text        : raw text to classify
+        image_data  : raw image bytes
+        audio_data  : raw audio bytes
+        video_data  : raw video bytes
+        models      : explicit list of models to run (e.g. ["text", "image"])
+        **kwargs    : image_filename, audio_filename, video_filename for context
+
+        Returns
+        -------
+        ClassificationResult with aggregated primary_category and confidence.
         """
-        start_time = time.time()
-        
-        # Determine which models to run
-        if models is None:
-            models = ['text', 'audio', 'image', 'video']
-        
-        # Prepare input data for each model
-        model_inputs = {}
-        
-        if 'text' in models and text:
-            model_inputs['text'] = {'text': text}
-        
-        if 'audio' in models:
-            if audio_path:
-                model_inputs['audio'] = {'audio_path': audio_path}
-            elif audio_data:
-                model_inputs['audio'] = {'audio_data': audio_data}
-            elif audio_base64:
-                model_inputs['audio'] = {'audio_base64': audio_base64}
-            elif text:  # Fallback: use text for audio classification
-                model_inputs['audio'] = {'text': text}
-        
-        if 'image' in models:
-            if image_path:
-                model_inputs['image'] = {'image_path': image_path}
-            elif image_data:
-                model_inputs['image'] = {'image_data': image_data}
-            elif image_base64:
-                model_inputs['image'] = {'image_base64': image_base64}
-            elif text:  # Fallback: use text for image classification
-                model_inputs['image'] = {'text': text}
-        
-        if 'video' in models:
-            if video_path:
-                model_inputs['video'] = {'video_path': video_path}
-            elif video_data:
-                model_inputs['video'] = {'video_data': video_data}
-            elif video_base64:
-                model_inputs['video'] = {'video_base64': video_base64}
-            elif text:  # Fallback: use text for video classification
-                model_inputs['video'] = {'text': text}
-        
-        # Execute models in parallel
-        results = self._execute_parallel(
-            model_inputs,
-            timeout or self.config.get('global_timeout', 5.0)
-        )
-        
-        # Merge results
-        merged_result = self._result_merger.merge_results(results, start_time)
-        
-        # Log results
-        logger.info(
-            f"Parallel processing complete: {len(results)} models, "
-            f"success={merged_result.success}, "
-            f"category={merged_result.primary_category}, "
-            f"confidence={merged_result.confidence:.2f}, "
-            f"time={merged_result.total_processing_time:.2f}s"
-        )
-        
-        return merged_result
-    
-    def _execute_parallel(
-        self,
-        model_inputs: Dict[str, Dict[str, Any]],
-        timeout: float
-    ) -> Dict[str, ModelResult]:
-        """
-        Execute all models in parallel using ProcessPoolExecutor.
-        
-        Args:
-            model_inputs: Dictionary of input data for each model
-            timeout: Global timeout for all operations
-            
-        Returns:
-            Dictionary of ModelResult for each model
-        """
-        results: Dict[str, ModelResult] = {}
-        
-        if not model_inputs:
-            logger.warning("No model inputs provided")
-            return results
-        
-        # Determine effective timeout per model
-        model_timeout = min(
-            self.config.get('model_timeout', 4.0),
-            timeout / max(len(model_inputs), 1)
-        )
-        
-        # Use ProcessPoolExecutor for true parallel execution
-        with ProcessPoolExecutor(max_workers=self.config.get('max_workers', 4)) as executor:
-            # Submit all tasks
-            future_to_model = {}
-            
-            for model_type, input_data in model_inputs.items():
-                model_func = self._model_functions.get(model_type)
-                if model_func:
-                    future = executor.submit(model_func, input_data)
-                    future_to_model[future] = model_type
-                    logger.debug(f"Submitted {model_type} model for processing")
-            
-            # Collect results with timeout
-            remaining_timeout = timeout
-            
-            for future in as_completed(future_to_model, timeout=remaining_timeout):
-                model_type = future_to_model[future]
-                model_start = time.time()
-                
-                try:
-                    # Get result with timeout
-                    result_data = future.result(timeout=model_timeout)
-                    
-                    # Convert to ModelResult
-                    model_result = self._create_model_result(model_type, result_data)
-                    results[model_type] = model_result
-                    
-                    logger.debug(
-                        f"{model_type} model completed: "
-                        f"success={model_result.success}, "
-                        f"time={model_result.processing_time:.2f}s"
-                    )
-                    
-                except TimeoutError:
-                    logger.warning(f"{model_type} model timed out after {model_timeout}s")
-                    results[model_type] = self._create_error_result(
-                        model_type,
-                        f"Timeout after {model_timeout}s",
-                        time.time() - model_start
-                    )
-                    
-                except Exception as e:
-                    logger.error(f"{model_type} model failed: {e}")
-                    logger.error(traceback.format_exc())
-                    results[model_type] = self._create_error_result(
-                        model_type,
-                        str(e),
-                        time.time() - model_start
-                    )
-        
-        return results
-    
-    def _create_model_result(
-        self,
-        model_type: str,
-        result_data: Dict[str, Any]
-    ) -> ModelResult:
-        """Create a ModelResult from worker result data"""
-        return ModelResult(
-            model_type=model_type,
-            success=result_data.get('success', False),
-            categories=result_data.get('categories', []),
-            primary_category=result_data.get('primary_category', 'unknown'),
-            confidence=result_data.get('confidence', 0.0),
-            error_message=result_data.get('error', '') or result_data.get('error_message', ''),
-            processing_time=result_data.get('processing_time', 0.0),
-            metadata=result_data.get('metadata', {})
-        )
-    
-    def _create_error_result(
-        self,
-        model_type: str,
-        error_message: str,
-        processing_time: float
-    ) -> ModelResult:
-        """Create an error ModelResult"""
-        return ModelResult(
-            model_type=model_type,
-            success=False,
-            categories=[],
-            primary_category='unknown',
-            confidence=0.0,
-            error_message=error_message,
-            processing_time=processing_time,
-            metadata={}
-        )
-    
-    def process_text_only(self, text: str) -> MergedResult:
-        """Process text only (convenience method)"""
-        return self.process(text=text, models=['text'])
-    
-    def process_all(self, data: Dict[str, Any]) -> MergedResult:
-        """
-        Process mixed input data.
-        
-        Args:
-            data: Dictionary containing any of:
-                - text: str
-                - audio_path: str
-                - image_path: str
-                - video_path: str
-                - audio_data: bytes
-                - image_data: bytes
-                - video_data: bytes
-                - audio_base64: str
-                - image_base64: str
-                - video_base64: str
-                
-        Returns:
-            MergedResult
-        """
-        return self.process(
-            text=data.get('text'),
-            audio_path=data.get('audio_path'),
-            image_path=data.get('image_path'),
-            video_path=data.get('video_path'),
-            audio_data=data.get('audio_data'),
-            image_data=data.get('image_data'),
-            video_data=data.get('video_data'),
-            audio_base64=data.get('audio_base64'),
-            image_base64=data.get('image_base64'),
-            video_base64=data.get('video_base64'),
-            timeout=data.get('timeout'),
-            models=data.get('models')
-        )
+        tasks = {}
 
+        # Determine which workers to run
+        if models:
+            run_models = set(models)
+        else:
+            run_models = set()
+            if text:
+                run_models.add("text")
+            if image_data:
+                run_models.add("image")
+            if audio_data:
+                run_models.add("audio")
+            if video_data:
+                run_models.add("video")
 
-# =============================================================================
-# UTILITY FUNCTIONS
-# =============================================================================
+        if not run_models:
+            return ClassificationResult()
 
-# Global processor instance
-_processor: Optional[ParallelProcessor] = None
-_processor_lock = threading.Lock()
-
-
-def get_processor(config: Optional[Dict[str, Any]] = None) -> ParallelProcessor:
-    """
-    Get or create the global parallel processor instance.
-    
-    Args:
-        config: Optional configuration override
-        
-    Returns:
-        ParallelProcessor instance
-    """
-    global _processor
-    
-    with _processor_lock:
-        if _processor is None:
-            _processor = ParallelProcessor(config)
-    
-    return _processor
-
-
-def process_classification(
-    text: Optional[str] = None,
-    audio_path: Optional[str] = None,
-    image_path: Optional[str] = None,
-    video_path: Optional[str] = None,
-    timeout: Optional[float] = 5.0,
-    config: Optional[Dict[str, Any]] = None
-) -> Dict[str, Any]:
-    """
-    Convenience function for classification.
-    
-    Args:
-        text: Text input
-        audio_path: Path to audio file
-        image_path: Path to image file
-        video_path: Path to video file
-        timeout: Timeout in seconds (default: 5)
-        config: Optional configuration
-        
-    Returns:
-        Dictionary with classification results
-    """
-    processor = get_processor(config)
-    
-    result = processor.process(
-        text=text,
-        audio_path=audio_path,
-        image_path=image_path,
-        video_path=video_path,
-        timeout=timeout
-    )
-    
-    return result.to_dict()
-
-
-# =============================================================================
-# FLASK INTEGRATION
-# =============================================================================
-
-def create_classification_endpoint(app, processor: Optional[ParallelProcessor] = None):
-    """
-    Create Flask route for parallel classification.
-    
-    Args:
-        app: Flask application instance
-        processor: Optional ParallelProcessor instance
-    """
-    from flask import request, jsonify
-    
-    processor = processor or get_processor()
-    
-    @app.route('/api/classify/parallel', methods=['POST'])
-    def classify_parallel():
-        """Parallel classification endpoint"""
-        try:
-            data = request.get_json() or {}
-            
-            # Extract parameters
-            text = data.get('text')
-            audio_path = data.get('audio_path')
-            image_path = data.get('image_path')
-            video_path = data.get('video_path')
-            audio_base64 = data.get('audio_base64')
-            image_base64 = data.get('image_base64')
-            video_base64 = data.get('video_base64')
-            timeout = data.get('timeout', 5.0)
-            models = data.get('models')  # Optional: ['text', 'audio', etc.]
-            
-            # Process
-            result = processor.process(
-                text=text,
-                audio_path=audio_path,
-                image_path=image_path,
-                video_path=video_path,
-                audio_base64=audio_base64,
-                image_base64=image_base64,
-                video_base64=video_base64,
-                timeout=timeout,
-                models=models
+        # Create coroutine tasks
+        if "text" in run_models and text:
+            tasks["text"] = asyncio.create_task(
+                self._text_worker(text)
             )
+        if "image" in run_models and image_data:
+            tasks["image"] = asyncio.create_task(
+                self._image_worker(
+                    image_data, kwargs.get("image_filename", "")
+                )
+            )
+        if "audio" in run_models and audio_data:
+            tasks["audio"] = asyncio.create_task(
+                self._audio_worker(
+                    audio_data, kwargs.get("audio_filename", "")
+                )
+            )
+        if "video" in run_models and video_data:
+            tasks["video"] = asyncio.create_task(
+                self._video_worker(
+                    video_data, kwargs.get("video_filename", "")
+                )
+            )
+
+        # Await all tasks with a strict timeout to meet the < 5s requirement
+        model_results: Dict[str, Any] = {}
+        for model_name, task in tasks.items():
+            try:
+                # 4.5s timeout per worker (total parallel time remains ~4.5s)
+                model_results[model_name] = await asyncio.wait_for(task, timeout=4.5)
+            except asyncio.TimeoutError:
+                logger.warning(f"Worker {model_name} timed out after 4.5s")
+                # Fallback for timeout
+                model_results[model_name] = {
+                    "category": "technology", # General fallback
+                    "confidence": 0.1,
+                    "timeout": True
+                }
+            except Exception as e:
+                logger.error(f"Worker {model_name} failed: {e}")
+                model_results[model_name] = {
+                    "category": "technology",
+                    "confidence": 0.0,
+                    "error": str(e),
+                }
+
+        # Aggregate results
+        return self._aggregate(model_results)
+
+    # ------------------------------------------------------------------
+    # WORKERS
+    # ------------------------------------------------------------------
+
+    async def _text_worker(self, text: str) -> Dict[str, Any]:
+        """Classify raw text."""
+        loop = asyncio.get_event_loop()
+        classifier = self._get_classifier()
+        result = await loop.run_in_executor(
+            None,
+            lambda: classifier.classify(text, include_confidence=True, include_all_scores=True),
+        )
+        return {
+            "category": result["category"],
+            "confidence": result["confidence"] / 100.0,  # normalise 0-1
+            "top_predictions": result.get("top_predictions", []),
+        }
+
+    async def _image_worker(
+        self, image_data: bytes, filename: str = ""
+    ) -> Dict[str, Any]:
+        """Extract text from image, then classify."""
+        from backend.models.image_processor import get_image_processor
+
+        processor = get_image_processor()
+        loop = asyncio.get_event_loop()
+
+        # Process image
+        result = await loop.run_in_executor(
+            None, lambda: processor.process_image_data(image_data)
+        )
+
+        extracted_text = result.extracted_text if result.success else ""
+
+        # Enrich with filename keywords
+        if filename:
+            fname_words = os.path.splitext(filename)[0].replace("_", " ").replace("-", " ")
+            classification_input = f"{fname_words} {extracted_text}".strip()
+        else:
+            classification_input = extracted_text
+
+        if not classification_input or len(classification_input.strip()) < 3:
+            return {"category": "technology", "confidence": 0.1}
+
+        # Classify
+        classifier = self._get_classifier()
+        cls_result = await loop.run_in_executor(
+            None,
+            lambda: classifier.classify(
+                classification_input, include_confidence=True, include_all_scores=True
+            ),
+        )
+
+        return {
+            "category": cls_result["category"],
+            "confidence": cls_result["confidence"] / 100.0,
+            "extracted_text": extracted_text[:500],
+        }
+
+    async def _audio_worker(
+        self, audio_data: bytes, filename: str = ""
+    ) -> Dict[str, Any]:
+        """Transcribe audio, then classify."""
+        from backend.models.audio_processor import get_audio_processor
+
+        processor = get_audio_processor()
+        loop = asyncio.get_event_loop()
+
+        result = await loop.run_in_executor(
+            None, lambda: processor.process_audio_data(audio_data, filename)
+        )
+
+        transcribed = result.transcribed_text if result.success else ""
+
+        # Filename enrichment
+        if filename:
+            fname_words = os.path.splitext(filename)[0].replace("_", " ").replace("-", " ")
+            classification_input = f"{fname_words} {transcribed}".strip()
+        else:
+            classification_input = transcribed
+
+        if not classification_input or len(classification_input.strip()) < 3:
+            return {"category": "technology", "confidence": 0.1}
+
+        classifier = self._get_classifier()
+        cls_result = await loop.run_in_executor(
+            None,
+            lambda: classifier.classify(
+                classification_input, include_confidence=True, include_all_scores=True
+            ),
+        )
+
+        return {
+            "category": cls_result["category"],
+            "confidence": cls_result["confidence"] / 100.0,
+            "transcribed_text": transcribed[:500],
+        }
+
+    async def _video_worker(
+        self, video_data: bytes, filename: str = ""
+    ) -> Dict[str, Any]:
+        """Process video (audio + frames), then classify."""
+        from backend.models.video_processor import get_video_processor
+
+        processor = get_video_processor()
+        loop = asyncio.get_event_loop()
+
+        result = await loop.run_in_executor(
+            None, lambda: processor.process_video_data(video_data, filename)
+        )
+
+        # Perform independent classification to avoid dilution
+        classifier = self._get_classifier()
+        loop = asyncio.get_event_loop()
+        fname_context = ""
+        if filename:
+            fname_context = os.path.splitext(filename)[0].replace("_", " ").replace("-", " ")
+
+        # 1. Classify Audio Track (Primary Signal)
+        audio_result = {"category": "unknown", "confidence": 0.0}
+        if result.transcribed_audio:
+            audio_input = f"{fname_context} {result.transcribed_audio}".strip()
+            audio_result = await loop.run_in_executor(
+                None, lambda: classifier.classify(audio_input, include_confidence=True)
+            )
+
+        # 2. Classify Frame Extracts (Secondary Signal)
+        frame_result = {"category": "unknown", "confidence": 0.0}
+        if result.success and result.extracted_text:
+            frame_result = await loop.run_in_executor(
+                None, lambda: classifier.classify(f"{fname_context} {result.extracted_text}".strip(), include_confidence=True)
+            )
+
+        # 3. Pick the winner based on highest confidence
+        if audio_result["confidence"] >= frame_result["confidence"]:
+            winner = audio_result
+        else:
+            winner = frame_result
             
-            return jsonify(result.to_dict())
-            
-        except Exception as e:
-            logger.error(f"Classification error: {e}")
-            logger.error(traceback.format_exc())
-            return jsonify({
-                'success': False,
-                'error': str(e),
-                'primary_category': 'unknown',
-                'confidence': 0.0
-            }), 500
-    
-    return classify_parallel
+        # Standard fallback if both are extremely low
+        if winner["confidence"] < 5.0 and not result.success:
+            winner = {"category": "technology", "confidence": 5.0}
+
+        return {
+            "category": winner["category"],
+            "confidence": winner["confidence"] / 100.0,
+            "transcribed_text": result.transcribed_audio[:500] if result.transcribed_audio else "",
+        }
+
+    # ------------------------------------------------------------------
+    # AGGREGATION
+    # ------------------------------------------------------------------
+
+    # Weight each modality by reliability
+    _MODEL_WEIGHTS = {
+        "text": 1.0,
+        "audio": 0.85,
+        "image": 0.7,
+        "video": 0.9,
+    }
+
+    def _aggregate(self, model_results: Dict[str, Any]) -> ClassificationResult:
+        """Weighted voting across modality results."""
+        if not model_results:
+            return ClassificationResult()
+
+        # Single model — return directly
+        if len(model_results) == 1:
+            key = list(model_results.keys())[0]
+            r = model_results[key]
+            return ClassificationResult(
+                primary_category=r.get("category", "technology"),
+                confidence=r.get("confidence", 0.0),
+                model_results=model_results,
+            )
+
+        # Multiple models — weighted vote
+        category_scores: Dict[str, float] = {}
+        for model_name, r in model_results.items():
+            cat = r.get("category", "technology")
+            conf = r.get("confidence", 0.0)
+            weight = self._MODEL_WEIGHTS.get(model_name, 0.5)
+            score = conf * weight
+            category_scores[cat] = category_scores.get(cat, 0) + score
+
+        # Pick winner
+        if category_scores:
+            best_cat = max(category_scores, key=category_scores.get)
+            total_weight = sum(
+                self._MODEL_WEIGHTS.get(m, 0.5) for m in model_results
+            )
+            best_conf = category_scores[best_cat] / total_weight if total_weight else 0
+        else:
+            best_cat = "technology"
+            best_conf = 0.0
+
+        return ClassificationResult(
+            primary_category=best_cat,
+            confidence=min(1.0, best_conf),
+            model_results=model_results,
+        )
 
 
-# For direct testing
-if __name__ == '__main__':
-    # Test the parallel processor
-    processor = ParallelProcessor()
-    
-    test_text = """
-    Technology stocks surged today as Apple and Google announced new AI features.
-    The Nasdaq composite rose 2.5% while the Dow Jones industrial average gained 500 points.
-    Analysts predict continued growth in the tech sector.
-    """
-    
-    print("Testing parallel processor with text input...")
-    result = processor.process(
-        text=test_text,
-        models=['text', 'audio', 'image', 'video']
-    )
-    
-    print(json.dumps(result.to_dict(), indent=2))
+# ------------------------------------------------------------------
+# Singleton factory
+# ------------------------------------------------------------------
+
+_processor: Optional[ParallelProcessor] = None
+
+
+def get_processor() -> ParallelProcessor:
+    global _processor
+    if _processor is None:
+        _processor = ParallelProcessor()
+    return _processor

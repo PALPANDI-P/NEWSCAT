@@ -1,0 +1,140 @@
+﻿python : 2026-03-22 23:17:41,340 - 
+backend.models.simple_classifier - INFO - Loaded 
+pre-trained model from E:\NEWSCAT\backend\data\models\p
+retrained\simple_model.joblib
+At line:1 char:1
++ python server.py 2>&1 | Out-File -FilePath 
+server_error.txt -Encoding ...
++ ~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (2026-03-2 
+   2 23:1...le_model.joblib:String) [], RemoteExcepti  
+  on
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+2026-03-22 23:17:41,340 - 
+backend.models.simple_classifier - INFO - Trained: 
+2026-03-21 09:29:50.567806, Accuracy: 95.05%
+2026-03-22 23:17:41,340 - 
+backend.models.simple_classifier - INFO - CV Scores: 
+[0.9619047619047619, 0.9714285714285714, 
+0.9695238095238096, 0.9619047619047619, 0.96]
+2026-03-22 23:17:41,340 - 
+backend.models.simple_classifier - INFO - 
+SimpleNewsClassifier v3.1.0 initialized (Optimized for 
+low-spec)
+2026-03-22 23:17:41,409 - 
+backend.models.audio_processor - INFO - 
+NeuralAudioProcessor initialized successfully
+INFO:     Started server process [19428]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:5000 
+(Press CTRL+C to quit)
+2026-03-22 23:24:36,401 - backend.models.result_merger 
+- INFO - ResultMerger initialized with weights: 
+{'text': 0.5, 'audio': 0.17, 'image': 0.17, 'video': 
+0.16}
+2026-03-22 23:24:36,401 - 
+backend.models.parallel_processor - INFO - Creating 
+persistent ProcessPoolExecutor with 4 workers
+2026-03-22 23:24:36,403 - 
+backend.models.parallel_processor - INFO - Persistent 
+pool created successfully
+2026-03-22 23:24:36,403 - 
+backend.models.parallel_processor - INFO - Pool warmed 
+up with 4 workers
+2026-03-22 23:24:36,403 - 
+backend.models.parallel_processor - INFO - 
+ParallelProcessor initialized with config: 
+{'global_timeout': 8.0, 'model_timeout': 6.0, 
+'max_workers': 4, 'weights': {'text': 0.5, 'audio': 
+0.17, 'image': 0.17, 'video': 0.16}}
+2026-03-22 23:24:37,192 - 
+backend.models.workers.video_worker - INFO - Video 
+worker: Saved uploaded bytes to temp file C:\Users\PALP
+ANDI\AppData\Local\Temp\newscat_vid_aeu6iybl.mp4
+2026-03-22 23:24:37,256 - 
+backend.models.video_processor - WARNING - Video 
+cannot be opened: C:\Users\PALPANDI\AppData\Local\Temp\
+newscat_vid_aeu6iybl.mp4, trying audio extraction
+2026-03-22 23:24:37,259 - 
+backend.models.video_processor - INFO - Processing C:\U
+sers\PALPANDI\AppData\Local\Temp\newscat_vid_aeu6iybl.m
+p4 as audio
+2026-03-22 23:24:37,260 - 
+backend.models.video_processor - INFO - 
+CinematicProcessor initialized
+2026-03-22 23:24:37,260 - 
+backend.models.audio_processor - INFO - 
+NeuralAudioProcessor initialized successfully
+2026-03-22 23:24:43,714 - 
+backend.models.audio_processor - INFO - Loading 
+Whisper base model...
+C:\Users\PALPANDI\AppData\Local\Programs\Python\Python3
+10\lib\site-packages\torch\_utils.py:831: UserWarning: 
+TypedStorage is deprecated. It will be removed in the 
+future and UntypedStorage will be the only storage 
+class. This should only matter to you if you are using 
+storages directly.  To access UntypedStorage directly, 
+use tensor.untyped_storage() instead of 
+tensor.storage()
+  return self.fget.__get__(instance, owner)()
+2026-03-22 23:24:44,426 - 
+backend.models.parallel_processor - WARNING - video 
+model timed out after 8.0s
+2026-03-22 23:24:44,426 - 
+backend.models.parallel_processor - INFO - Parallel 
+processing complete: 1 models, success=False, 
+category=unknown, confidence=0.00, time=8.02s
+NEWSCAT v5.0 - Starting...
+
+[MODEL PRELOAD] Initializing all models...
+  [OK] Text model loaded from simple_model.joblib
+  [OK] Image processor: ready
+  [OK] Audio processor: ready
+  [OK] Video processor: ready
+[MODEL PRELOAD] Complete: 4/4 model types initialized
+
+Server ready at http://127.0.0.1:5000
+Press Ctrl+C to stop the server
+
+[BROWSER] Opened http://127.0.0.1:5000
+INFO:     127.0.0.1:55819 - "POST /api/classify/video HTTP/1.1" 200 OK
+2026-03-22 23:24:45,474 - 
+backend.models.audio_processor - INFO - Whisper base 
+loaded in 1.8s
+NEWSCAT v5.0 - Starting...
+Detected language: English
+
+  0%|          | 0/28637 [00:00<?, ?frames/s]
+ 10%|#         | 3000/28637 [00:05<00:46, 
+553.78frames/s]
+ 20%|#9        | 5600/28637 [00:10<00:43, 
+528.15frames/s]
+ 30%|###       | 8600/28637 [00:14<00:33, 
+593.54frames/s]
+ 40%|###9      | 11352/28637 [00:18<00:26, 
+643.65frames/s]
+ 49%|####8     | 13904/28637 [00:23<00:24, 
+609.88frames/s]
+ 59%|#####8    | 16888/28637 [00:29<00:20, 
+571.21frames/s]
+ 69%|######8   | 19624/28637 [00:35<00:17, 
+526.07frames/s]
+ 78%|#######8  | 22464/28637 [00:39<00:11, 
+545.99frames/s]
+ 86%|########5 | 24560/28637 [00:44<00:07, 
+519.05frames/s]
+ 96%|#########5| 27456/28637 [00:50<00:02, 
+515.83frames/s]
+100%|##########| 28637/28637 [00:52<00:00, 
+512.54frames/s]
+100%|##########| 28637/28637 [00:52<00:00, 
+544.78frames/s]
+2026-03-22 23:25:40,215 - 
+backend.models.audio_processor - INFO - Whisper 
+transcription successful: 4155 chars
+2026-03-22 23:25:40,248 - 
+backend.models.video_processor - WARNING - Audio 
+fallback failed: 'AudioProcessingResult' object has no 
+attribute 'transcription'

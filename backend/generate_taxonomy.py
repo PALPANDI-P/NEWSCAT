@@ -5,7 +5,10 @@ import json
 CATEGORIES_DEF = {
     # 1. TECHNOLOGY (18)
     "technology": {"parent": None, "name": "Technology"},
-    "artificial_intelligence": {"parent": "technology", "name": "Artificial Intelligence"},
+    "artificial_intelligence": {
+        "parent": "technology",
+        "name": "Artificial Intelligence",
+    },
     "cybersecurity": {"parent": "technology", "name": "Cybersecurity"},
     "software_development": {"parent": "technology", "name": "Software Development"},
     "hardware_devices": {"parent": "technology", "name": "Hardware & Devices"},
@@ -22,7 +25,6 @@ CATEGORIES_DEF = {
     "semiconductors": {"parent": "technology", "name": "Semiconductors"},
     "nanotechnology": {"parent": "technology", "name": "Nanotechnology"},
     "biotechnology": {"parent": "technology", "name": "Biotechnology"},
-
     # 2. BUSINESS & FINANCE (18)
     "business": {"parent": None, "name": "Business & Finance"},
     "finance": {"parent": "business", "name": "Finance & Markets"},
@@ -42,7 +44,6 @@ CATEGORIES_DEF = {
     "accounting": {"parent": "business", "name": "Accounting & Tax"},
     "investments": {"parent": "business", "name": "Investments & Wealth"},
     "international_trade": {"parent": "business", "name": "International Trade"},
-
     # 3. HEALTH & WELLNESS (16)
     "health": {"parent": None, "name": "Health & Wellness"},
     "medicine": {"parent": "health", "name": "Medicine & Clinical"},
@@ -60,7 +61,6 @@ CATEGORIES_DEF = {
     "dentistry": {"parent": "health", "name": "Dentistry & Oral Care"},
     "veterinary": {"parent": "health", "name": "Veterinary Medicine"},
     "dermatology": {"parent": "health", "name": "Dermatology"},
-
     # 4. SCIENCE & ENVIRONMENT (18)
     "science": {"parent": None, "name": "Science & Environment"},
     "space": {"parent": "science", "name": "Space & Astronomy"},
@@ -80,12 +80,14 @@ CATEGORIES_DEF = {
     "energy": {"parent": "science", "name": "Energy & Power"},
     "renewable_energy": {"parent": "science", "name": "Renewable Energy"},
     "materials_science": {"parent": "science", "name": "Materials Science"},
-
     # 5. POLITICS & WORLD (16)
     "politics": {"parent": None, "name": "Politics & Government"},
     "elections": {"parent": "politics", "name": "Elections & Campaigns"},
     "geopolitics": {"parent": "politics", "name": "Geopolitics"},
-    "international_relations": {"parent": "politics", "name": "International Relations"},
+    "international_relations": {
+        "parent": "politics",
+        "name": "International Relations",
+    },
     "public_policy": {"parent": "politics", "name": "Public Policy"},
     "law_justice": {"parent": "politics", "name": "Law & Justice"},
     "war_conflict": {"parent": "politics", "name": "War & Conflict"},
@@ -98,7 +100,6 @@ CATEGORIES_DEF = {
     "local_government": {"parent": "politics", "name": "Local Government"},
     "global_organizations": {"parent": "politics", "name": "Global Organizations"},
     "activism": {"parent": "politics", "name": "Activism & Protests"},
-
     # 6. ENTERTAINMENT & ARTS (16)
     "entertainment": {"parent": None, "name": "Entertainment & Arts"},
     "film_tv": {"parent": "entertainment", "name": "Film & Television"},
@@ -116,7 +117,6 @@ CATEGORIES_DEF = {
     "awards_shows": {"parent": "entertainment", "name": "Awards Shows"},
     "streaming": {"parent": "entertainment", "name": "Streaming Platforms"},
     "comics": {"parent": "entertainment", "name": "Comics & Graphic Novels"},
-
     # 7. SPORTS (15)
     "sports": {"parent": None, "name": "Sports"},
     "football_soccer": {"parent": "sports", "name": "Football (Soccer)"},
@@ -134,7 +134,6 @@ CATEGORIES_DEF = {
     "cycling": {"parent": "sports", "name": "Cycling"},
     "rugby": {"parent": "sports", "name": "Rugby"},
     "esports": {"parent": "sports", "name": "E-Sports"},
-
     # 8. LIFESTYLE & SOCIETY (16)
     "lifestyle": {"parent": None, "name": "Lifestyle & Society"},
     "travel": {"parent": "lifestyle", "name": "Travel & Tourism"},
@@ -151,7 +150,18 @@ CATEGORIES_DEF = {
     "personal_finance": {"parent": "lifestyle", "name": "Personal Finance"},
     "diy_crafts": {"parent": "lifestyle", "name": "DIY & Crafts"},
     "automotive": {"parent": "lifestyle", "name": "Automotive & Cars"},
-    "beauty": {"parent": "lifestyle", "name": "Beauty & Cosmetics"}
+    "beauty": {"parent": "lifestyle", "name": "Beauty & Cosmetics"},
+    # 9. REAL-TIME & LIVE NEWS (10)
+    "breaking_news": {"parent": None, "name": "Breaking News & Alerts"},
+    "live_updates": {"parent": "breaking_news", "name": "Live Updates"},
+    "market_movers": {"parent": "business", "name": "Market Movers"},
+    "weather_alerts": {"parent": "science", "name": "Weather Alerts"},
+    "press_releases": {"parent": "business", "name": "Press Releases"},
+    "trending_topics": {"parent": "entertainment", "name": "Trending Topics"},
+    "sports_live": {"parent": "sports", "name": "Sports Live Updates"},
+    "investigative_journalism": {"parent": None, "name": "Investigative Journalism"},
+    "opinion_editorial": {"parent": None, "name": "Opinion & Editorial"},
+    "fact_check": {"parent": None, "name": "Fact Check"},
 }
 
 # Generate config.py CATEGORIES dictionary text
@@ -161,28 +171,35 @@ for k, v in CATEGORIES_DEF.items():
 config_opts += "    }"
 
 # Overwrite config.py
-with open(r'e:\\NEWSCAT\\backend\\config.py', 'r', encoding='utf-8') as f:
+with open(r"e:\\NEWSCAT\\backend\\config.py", "r", encoding="utf-8") as f:
     config_content = f.read()
 
 new_config_content = re.sub(
-    r'    CATEGORIES = \{[\s\S]*?\n    \}',
-    "    " + config_opts,
-    config_content
+    r"    CATEGORIES = \{[\s\S]*?\n    \}", "    " + config_opts, config_content
 )
 
-with open(r'e:\\NEWSCAT\\backend\\config.py', 'w', encoding='utf-8') as f:
+with open(r"e:\\NEWSCAT\\backend\\config.py", "w", encoding="utf-8") as f:
     f.write(new_config_content)
 print("Updated config.py")
 
 # Generate lightning_classifier.py CategoryKnowledgeGraph
 graph_opts = "CATEGORIES = {\n"
 for k, v in CATEGORIES_DEF.items():
-    parent_str = f"'{v['parent']}'" if v['parent'] else "None"
-    
+    parent_str = f"'{v['parent']}'" if v["parent"] else "None"
+
     # Generic embeddings generator based on name logic
-    parts = [p for p in v['name'].lower().replace('&', '').replace('(', '').replace(')', '').split() if len(p) > 2]
-    core_kw = [k.replace('_', ' ')] + parts + [v['name'].lower()]
-    
+    parts = [
+        p
+        for p in v["name"]
+        .lower()
+        .replace("&", "")
+        .replace("(", "")
+        .replace(")", "")
+        .split()
+        if len(p) > 2
+    ]
+    core_kw = [k.replace("_", " ")] + parts + [v["name"].lower()]
+
     graph_opts += f"""        '{k}': {{
             'parent': {parent_str}, 'neural_weight': 0.9,
             'embeddings': {{
@@ -194,15 +211,17 @@ for k, v in CATEGORIES_DEF.items():
         }},\n"""
 graph_opts += "    }"
 
-with open(r'e:\\NEWSCAT\\backend\\models\\lightning_classifier.py', 'r', encoding='utf-8') as f:
+with open(
+    r"e:\\NEWSCAT\\backend\\models\\lightning_classifier.py", "r", encoding="utf-8"
+) as f:
     lightning_content = f.read()
 
 new_lightning_content = re.sub(
-    r'    CATEGORIES = \{[\s\S]*?\n    \}',
-    "    " + graph_opts,
-    lightning_content
+    r"    CATEGORIES = \{[\s\S]*?\n    \}", "    " + graph_opts, lightning_content
 )
 
-with open(r'e:\\NEWSCAT\\backend\\models\\lightning_classifier.py', 'w', encoding='utf-8') as f:
+with open(
+    r"e:\\NEWSCAT\\backend\\models\\lightning_classifier.py", "w", encoding="utf-8"
+) as f:
     f.write(new_lightning_content)
 print("Updated lightning_classifier.py")
